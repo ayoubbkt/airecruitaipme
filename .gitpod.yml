@@ -1,5 +1,5 @@
-# .gitpod.yml
-image: gitpod/workspace-full
+image:
+  file: .gitpod.Dockerfile
 
 tasks:
   - name: Install Java 17
