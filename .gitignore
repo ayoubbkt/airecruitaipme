@@ -1,0 +1,11 @@
+node_modules/
+.pythonlibs/
+venv/
+*.log
+*.cache
+__pycache__/
+*.pyc
+frontend/build/
+backend/*/target/
+.env
+*.env

@@ -1,0 +1,23 @@
+version: '3.8'
+services:
+  frontend:
+    build: ../frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../frontend:/app
+    command: npm run start
+  api-gateway:
+    build: ../backend/api-gateway
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../backend/api-gateway:/app
+    command: ./mvnw spring-boot:run
+  ai-service:
+    build: ../ai-service
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../ai-service:/app
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000

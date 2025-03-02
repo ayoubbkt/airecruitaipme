@@ -1,0 +1,25 @@
+# .gitpod.yml
+image:
+  file: .gitpod.Dockerfile
+
+tasks:
+  - name: Install Frontend Dependencies
+    command: cd frontend && npm install
+  - name: Start Frontend
+    command: cd frontend && npm run start
+  - name: Install Backend Dependencies
+    command: cd backend/api-gateway && ./mvnw dependency:resolve
+  - name: Start Backend (API Gateway)
+    command: cd backend/api-gateway && ./mvnw spring-boot:run
+  - name: Install AI-Service Dependencies
+    command: cd ai-service && pip install -r requirements.txt
+  - name: Start AI-Service
+    command: cd ai-service && uvicorn api.main:app --host 0.0.0.0 --port 8000
+
+ports:
+  - port: 3000
+    onOpen: open-browser
+  - port: 8080
+    onOpen: open-browser
+  - port: 8000
+    onOpen: open-browser
