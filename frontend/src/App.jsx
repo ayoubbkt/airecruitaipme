@@ -16,7 +16,16 @@ import ForgotPassword from './pages/auth/ForgotPassword';
 import Dashboard from './pages/dashboard/Dashboard';
 import CVAnalysis from './pages/cv/CVAnalysis';
 import CVDetail from './pages/cv/CVDetail';
-          
+import TalentPool from './pages/talent/TalentPool';
+import TalentDetail from './pages/talent/TalentDetail';
+import JobListings from './pages/jobs/JobListings';
+import JobDetail from './pages/jobs/JobDetail';
+import JobCreate from './pages/jobs/JobCreate';
+import Interviews from './pages/interviews/Interviews';
+import InterviewDetail from './pages/interviews/InterviewDetail';
+import Reports from './pages/reports/Reports';
+import ATSIntegration from './pages/settings/ATSIntegration';
+import Settings from './pages/settings/Settings';
 
 // Auth Guard
 import PrivateRoute from './components/auth/PrivateRoute';
@@ -44,7 +53,16 @@ function App() {
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/cv-analysis" element={<CVAnalysis />} />
                 <Route path="/cv/:id" element={<CVDetail />} />
-                       
+                <Route path="/talent-pool" element={<TalentPool />} />
+                <Route path="/talent/:id" element={<TalentDetail />} />
+                <Route path="/jobs" element={<JobListings />} />
+                <Route path="/jobs/create" element={<JobCreate />} />
+                <Route path="/jobs/:id" element={<JobDetail />} />
+                <Route path="/interviews" element={<Interviews />} />
+                <Route path="/interviews/:id" element={<InterviewDetail />} />
+                <Route path="/reports" element={<Reports />} />
+                <Route path="/ats-integration" element={<ATSIntegration />} />
+                <Route path="/settings" element={<Settings />} />
               </Route>
             </Route>
           </Routes>
