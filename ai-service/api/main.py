@@ -4,8 +4,10 @@ from typing import List
 import uuid
 import json
 import redis.asyncio as redis
-from pydantic import BaseModel
+import os
+import io
 import logging
+from pydantic import BaseModel
 
 app = FastAPI()
 
@@ -52,9 +54,10 @@ async def analyze_cv_batch(
         # Traitement asynchrone
         for index, file in enumerate(files):
             content = await file.read()
+            file_extension = os.path.splitext(file.filename)[1]  # Récupère l'extension du fichier
             
             # Extraire les informations du CV
-            extracted_info = {"skills": ["Java", "Spring"], "experience": "5 years"} # À compléter
+            extracted_info = cv_processor.extract_information(content, file_extension)
             
             # Analyse simulée
             analysis_result = CVAnalysisResponse(

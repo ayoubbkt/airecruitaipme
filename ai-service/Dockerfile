@@ -5,11 +5,7 @@ WORKDIR /app
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
-    libpoppler-cpp-dev \
-    pkg-config \
     python3-dev \
-    tesseract-ocr \
-    libtesseract-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install Python dependencies
@@ -21,7 +17,7 @@ RUN pip install -U pip && \
 COPY . .
 
 # Download spaCy model
-RUN python -m spacy download fr_core_news_md
+RUN pip install https://github.com/explosion/spacy-models/releases/download/fr_core_news_md-3.5.0/fr_core_news_md-3.5.0-py3-none-any.whl
 
 # Expose port
 EXPOSE 8000

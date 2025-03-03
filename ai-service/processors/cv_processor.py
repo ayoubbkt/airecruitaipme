@@ -3,13 +3,19 @@ import spacy
 from sentence_transformers import SentenceTransformer
 from datetime import datetime
 import re
+from pypdf import PdfReader  # Pour les PDF
+from docx import Document  # Pour les fichiers Word
+import io
 
 class CVProcessor:
     def __init__(self):
         self.nlp = spacy.load("fr_core_news_md")
         self.sentence_model = SentenceTransformer('paraphrase-MiniLM-L3-v2')
 
-    def extract_information(self, text: str) -> Dict[str, Any]:
+    def extract_information(self, content: bytes, file_extension: str) -> Dict[str, Any]:
+        # Déterminer le type de fichier à partir de l'extension
+        text = self._extract_text(content, file_extension)
+
         doc = self.nlp(text)
         extracted_info = {
             "full_name": "",
@@ -58,6 +64,25 @@ class CVProcessor:
 
         return extracted_info
 
+    def _extract_text(self, content: bytes, file_extension: str) -> str:
+        if file_extension.lower() == '.pdf':
+            # Extraction de texte à partir d'un PDF
+            reader = PdfReader(io.BytesIO(content))
+            text = ""
+            for page in reader.pages:
+                text += page.extract_text()
+            return text
+        elif file_extension.lower() in ['.doc', '.docx']:
+            # Extraction de texte à partir d'un fichier Word
+            doc = Document(io.BytesIO(content))
+            text = ""
+            for paragraph in doc.paragraphs:
+                text += paragraph.text + "\n"
+            return text
+        else:
+            raise ValueError(f"Unsupported file extension: {file_extension}")
+
+    # Le reste du fichier (extract_skills, extract_experience, etc.) reste inchangé
     def extract_skills(self, text: str, doc: Any) -> List[str]:
         tech_skills = [
             "Python", "Java", "JavaScript", "TypeScript", "React", "Angular", "Vue.js", "Node.js",
@@ -103,7 +128,6 @@ class CVProcessor:
         description_lines = []
 
         for line in experience_section:
-            # Détecter les dates
             date_match = re.search(r'(\d{4})\s*[-–]\s*(\d{4}|présent|present)', line, re.IGNORECASE)
             if date_match:
                 if current_exp:
@@ -196,16 +220,9 @@ class CVProcessor:
             "education_insights": []
         }
 
-        # Forces
         insights["strengths"] = self.identify_strengths(extracted_info, required_skills, preferred_skills, job_description)
-
-        # Faiblesses
         insights["weaknesses"] = self.identify_weaknesses(extracted_info, required_skills, preferred_skills, job_description)
-
-        # Insights sur l'expérience
         insights["experience_insights"] = self.generate_experience_insights(extracted_info["experience"])
-
-        # Insights sur la formation
         insights["education_insights"] = self.generate_education_insights(extracted_info["education"])
 
         return insights
