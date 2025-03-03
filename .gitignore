@@ -1,11 +1,18 @@
-node_modules/
-.pythonlibs/
-venv/
+# Java
+/backend/*/target/
+*.class
+*.jar
+*.war
+# Node.js
+/frontend/node_modules/
+/frontend/dist/
+# Python
+/ai-service/__pycache__/
+/ai-service/*.pyc
+# Docker
 *.log
-*.cache
-__pycache__/
-*.pyc
-frontend/build/
-backend/*/target/
+# IDE
+.idea/
+*.iml
+# Local environment
 .env
-*.env
