@@ -1,8 +1,7 @@
-
 services:
   frontend:
     build:
-      context: ./frontend
+      context: ../frontend
       dockerfile: Dockerfile
     ports:
       - "3000:80"
@@ -15,7 +14,7 @@ services:
 
   api-gateway:
     build:
-      context: ./backend/api-gateway
+      context: ../backend/api-gateway
       dockerfile: Dockerfile
     ports:
       - "8080:8080"
@@ -51,7 +50,7 @@ services:
 
   auth-service:
     build:
-      context: ./backend/auth-service
+      context: ../backend/auth-service
       dockerfile: Dockerfile
     ports:
       - "8081:8081"
@@ -72,7 +71,7 @@ services:
 
   cv-service:
     build:
-      context: ./backend/cv-service
+      context: ../backend/cv-service
       dockerfile: Dockerfile
     ports:
       - "8082:8082"
@@ -97,7 +96,7 @@ services:
 
   job-service:
     build:
-      context: ./backend/job-service
+      context: ../backend/job-service
       dockerfile: Dockerfile
     ports:
       - "8083:8083"
@@ -117,7 +116,7 @@ services:
 
   interview-service:
     build:
-      context: ./backend/interview-service
+      context: ../backend/interview-service
       dockerfile: Dockerfile
     ports:
       - "8084:8084"
@@ -135,7 +134,7 @@ services:
 
   notification-service:
     build:
-      context: ./backend/notification-service
+      context: ../backend/notification-service
       dockerfile: Dockerfile
     ports:
       - "8085:8085"
@@ -158,7 +157,7 @@ services:
 
   ai-service:
     build:
-      context: ./ai-service
+      context: ../ai-service
       dockerfile: Dockerfile
     ports:
       - "8000:8000"
