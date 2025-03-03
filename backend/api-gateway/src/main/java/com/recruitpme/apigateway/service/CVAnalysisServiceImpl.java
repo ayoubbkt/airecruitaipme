@@ -2,11 +2,11 @@ package com.recruitpme.apigateway.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
-import org.springframework.data.elasticsearch.client.elc.ElasticsearchTemplate;
 import org.springframework.data.elasticsearch.core.SearchHits;
 import org.springframework.data.elasticsearch.core.query.Query;
 import org.springframework.data.elasticsearch.core.query.StringQuery;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -16,10 +16,12 @@ import com.recruitpme.apigateway.model.CVIndex;
 import com.recruitpme.apigateway.repository.CVRepository;
 import com.recruitpme.apigateway.client.AIServiceClient;
 import com.recruitpme.apigateway.exception.CVAnalysisException;
+import com.recruitpme.apigateway.utils.TextExtractor; // Added import for TextExtractor
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor

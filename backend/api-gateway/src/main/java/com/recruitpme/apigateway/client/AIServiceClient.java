@@ -2,6 +2,7 @@ package com.recruitpme.apigateway.client;
 
 import org.springframework.stereotype.Component;
 import com.recruitpme.apigateway.model.AnalysisResult;
+import java.util.List; // Added import for List
 
 @Component
 public class AIServiceClient {
