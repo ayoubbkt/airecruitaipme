@@ -1,15 +1,11 @@
 import React from 'react';
-import { Outlet } from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom';
+import { useUsers } from '../../contexts/UserContext.jsx';
 
 const PrivateRoute = () => {
-  // TODO: Implémenter la logique d'authentification réelle
-  const isAuthenticated = true; // Simulation d'un utilisateur connecté
-  
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-  
-  return <Outlet />;
+  const { user } = useUsers();
+
+  return user ? <Outlet /> : <Navigate to="/login" />;
 };
 
 export default PrivateRoute;
