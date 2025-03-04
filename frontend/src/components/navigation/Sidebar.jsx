@@ -1,21 +1,21 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useUsers } from '../../contexts/UserContext.jsx'; // Update the import
-import { DashboardIcon, FileTextIcon } from '@heroicons/react/outline'; // Example icons
+import { useUsers } from '../../contexts/UserContext.jsx';
+import { ChartBarIcon, DocumentTextIcon } from '@heroicons/react/24/outline'; // Updated import path
 
 const Sidebar = ({ collapsed }) => {
-  const { user } = useUsers(); // Safely access user
+  const { user } = useUsers();
 
   const navItems = [
     {
       path: '/',
       label: 'Tableau de bord',
-      icon: <DashboardIcon size={20} />,
+      icon: <ChartBarIcon className="h-5 w-5" />, // Updated icon name
     },
     {
       path: '/cv-analysis',
       label: 'Analyse des CV',
-      icon: <FileTextIcon size={20} />,
+      icon: <DocumentTextIcon className="h-5 w-5" />, // Updated icon name
     },
   ];
 
