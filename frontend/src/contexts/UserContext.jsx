@@ -7,9 +7,8 @@ const UsersContext = createContext({
 
 export const UsersProvider = ({ children }) => {
   const [user, setUser] = useState({
-    name: 'Test User',
-    email: 'test@example.com',
-    role: 'admin', // Example role
+    name: 'Guest', // Temporary user for testing
+    email: 'guest@example.com',
   });
 
   return (
