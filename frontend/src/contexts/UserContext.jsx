@@ -5,13 +5,14 @@ const UsersContext = createContext({
   user: null,
   setUser: () => {},
   login: () => {},
+  register: () => {},
+  logout: () => {},
 });
 
 export const UsersProvider = ({ children }) => {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    // Check if user is stored in localStorage on app load
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
@@ -33,13 +34,29 @@ export const UsersProvider = ({ children }) => {
     }
   };
 
+  const register = async (email, password, name) => {
+    try {
+      const response = await axios.post('http://api-gateway:8080/api/auth/register', {
+        email,
+        password,
+        name,
+      });
+      const userData = response.data;
+      setUser(userData);
+      localStorage.setItem('user', JSON.stringify(userData));
+    } catch (error) {
+      console.error('Registration failed:', error);
+      throw error;
+    }
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem('user');
   };
 
   return (
-    <UsersContext.Provider value={{ user, setUser, login, logout }}>
+    <UsersContext.Provider value={{ user, setUser, login, register, logout }}>
       {children}
     </UsersContext.Provider>
   );
