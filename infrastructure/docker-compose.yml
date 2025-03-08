@@ -11,11 +11,13 @@ services:
       - recruitpme-network
     environment:
       - REACT_APP_API_URL=http://api-gateway:8080
-
+    
   api-gateway:
-    build:
-      context: ../backend/api-gateway
-      dockerfile: Dockerfile
+    image: openjdk:17-jdk-slim
+    volumes:
+      - ../backend/api-gateway/target/*.jar:/app/app.jar
+    working_dir: /app
+    command: ["java", "-jar", "app.jar"]
     ports:
       - "8080:8080"
     depends_on:
@@ -23,6 +25,8 @@ services:
       - cv-service
       - job-service
       - interview-service
+      - notification-service
+      - user-service
     networks:
       - recruitpme-network
     environment:
@@ -32,6 +36,7 @@ services:
       - JOB_SERVICE_URL=http://job-service:8083
       - INTERVIEW_SERVICE_URL=http://interview-service:8084
       - NOTIFICATION_SERVICE_URL=http://notification-service:8085
+      - USER_SERVICE_URL=http://user-service:8086
       - SPRING_CLOUD_GATEWAY_ROUTES[0].ID=auth-service
       - SPRING_CLOUD_GATEWAY_ROUTES[0].URI=http://auth-service:8081
       - SPRING_CLOUD_GATEWAY_ROUTES[0].PREDICATES[0]=Path=/api/auth/**
@@ -47,11 +52,16 @@ services:
       - SPRING_CLOUD_GATEWAY_ROUTES[4].ID=notification-service
       - SPRING_CLOUD_GATEWAY_ROUTES[4].URI=http://notification-service:8085
       - SPRING_CLOUD_GATEWAY_ROUTES[4].PREDICATES[0]=Path=/api/notifications/**
+      - SPRING_CLOUD_GATEWAY_ROUTES[5].ID=user-service
+      - SPRING_CLOUD_GATEWAY_ROUTES[5].URI=http://user-service:8086
+      - SPRING_CLOUD_GATEWAY_ROUTES[5].PREDICATES[0]=Path=/api/users/**
 
   auth-service:
-    build:
-      context: ../backend/auth-service
-      dockerfile: Dockerfile
+    image: openjdk:17-jdk-slim
+    volumes:
+      - ../backend/auth-service/target/*.jar:/app/app.jar
+    working_dir: /app
+    command: ["java", "-jar", "app.jar"]
     ports:
       - "8081:8081"
     depends_on:
@@ -70,9 +80,11 @@ services:
       - JWT_EXPIRATION=86400000
 
   cv-service:
-    build:
-      context: ../backend/cv-service
-      dockerfile: Dockerfile
+    image: openjdk:17-jdk-slim
+    volumes:
+      - ../backend/cv-service/target/*.jar:/app/app.jar
+    working_dir: /app
+    command: ["java", "-jar", "app.jar"]
     ports:
       - "8082:8082"
     depends_on:
@@ -95,9 +107,11 @@ services:
       - SERVICES_AI_SERVICE_URL=http://ai-service:8000
 
   job-service:
-    build:
-      context: ../backend/job-service
-      dockerfile: Dockerfile
+    image: openjdk:17-jdk-slim
+    volumes:
+      - ../backend/job-service/target/*.jar:/app/app.jar
+    working_dir: /app
+    command: ["java", "-jar", "app.jar"]
     ports:
       - "8083:8083"
     depends_on:
@@ -115,9 +129,11 @@ services:
       - SERVICES_AI_SERVICE_URL=http://ai-service:8000
 
   interview-service:
-    build:
-      context: ../backend/interview-service
-      dockerfile: Dockerfile
+    image: openjdk:17-jdk-slim
+    volumes:
+      - ../backend/interview-service/target/*.jar:/app/app.jar
+    working_dir: /app
+    command: ["java", "-jar", "app.jar"]
     ports:
       - "8084:8084"
     depends_on:
@@ -133,9 +149,11 @@ services:
       - SERVICES_AI_SERVICE_URL=http://ai-service:8000
 
   notification-service:
-    build:
-      context: ../backend/notification-service
-      dockerfile: Dockerfile
+    image: openjdk:17-jdk-slim
+    volumes:
+      - ../backend/notification-service/target/*.jar:/app/app.jar
+    working_dir: /app
+    command: ["java", "-jar", "app.jar"]
     ports:
       - "8085:8085"
     depends_on:
@@ -154,7 +172,28 @@ services:
       - MAIL_PORT=587
       - MAIL_USERNAME=your-email@gmail.com
       - MAIL_PASSWORD=your-email-password
-
+ 
+  user-service:
+    image: openjdk:17-jdk-slim
+    volumes:
+      - ../backend/user-service/target/*.jar:/app/app.jar
+    working_dir: /app
+    command: ["java", "-jar", "app.jar"]
+    ports:
+      - "8086:8086"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - recruitpme-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/user_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      
   ai-service:
     build:
       context: ../ai-service
@@ -182,7 +221,7 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-      - POSTGRES_MULTIPLE_DATABASES=auth_db,cv_db,job_db,interview_db,notification_db
+      - POSTGRES_MULTIPLE_DATABASES=auth_db,cv_db,job_db,interview_db,notification_db,user_db
 
   redis:
     image: redis:7-alpine
