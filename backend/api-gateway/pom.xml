@@ -12,7 +12,6 @@
         <version>2.7.5</version>
         <relativePath/>
     </parent>
-    
     <artifactId>api-gateway</artifactId>
     <name>API Gateway Service</name>
     <description>RecrutPME API Gateway Service</description>

@@ -3,6 +3,7 @@ package com.recruitpme.interviewservice.dto;
 import lombok.Data;
 import java.util.List;
 
+
 @Data
 public class InterviewQuestionsRequestDTO {
     private List<String> skills;

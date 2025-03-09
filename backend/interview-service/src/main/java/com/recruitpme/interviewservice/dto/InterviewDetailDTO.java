@@ -2,6 +2,7 @@ package com.recruitpme.interviewservice.dto;
 
 import lombok.Data;
 
+
 import java.time.LocalDateTime;
 import java.util.List;
 

@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.List;
 
+
 @Repository
 public interface InterviewRepository extends JpaRepository<Interview, Long> {
     List<Interview> findByStatus(String status);

@@ -2,6 +2,7 @@ package com.recruitpme.cvservice.entity;
 
 import lombok.Data;
 
+
 import javax.persistence.*;
 
 @Entity

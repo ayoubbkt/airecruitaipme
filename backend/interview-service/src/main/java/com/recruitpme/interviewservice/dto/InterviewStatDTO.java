@@ -2,6 +2,7 @@ package com.recruitpme.interviewservice.dto;
 
 import lombok.Data;
 
+
 @Data
 public class InterviewStatDTO {
     private int scheduledCount;

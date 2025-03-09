@@ -1,5 +1,6 @@
 package com.recruitpme.authservice.repository;
 
+
 import com.recruitpme.authservice.entity.PasswordResetToken;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;

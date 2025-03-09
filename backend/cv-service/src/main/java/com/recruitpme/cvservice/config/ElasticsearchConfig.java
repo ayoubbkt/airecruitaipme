@@ -9,6 +9,7 @@ import org.springframework.data.elasticsearch.config.AbstractElasticsearchConfig
 import org.springframework.data.elasticsearch.repository.config.EnableElasticsearchRepositories;
 import org.springframework.beans.factory.annotation.Value;
 
+
 @Configuration
 @EnableElasticsearchRepositories(basePackages = "com.recruitpme.cvservice.repository")
 public class ElasticsearchConfig extends AbstractElasticsearchConfiguration {

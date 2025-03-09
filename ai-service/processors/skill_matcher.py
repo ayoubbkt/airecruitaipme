@@ -3,6 +3,7 @@ from sentence_transformers import SentenceTransformer, util
 import torch
 from typing import List, Tuple, Set
 
+
 class SkillMatcher:
     def __init__(self):
         self.nlp = spacy.load("fr_core_news_md")

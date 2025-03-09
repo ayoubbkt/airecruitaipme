@@ -4,6 +4,7 @@ import lombok.Data;
 
 import java.util.List;
 
+
 @Data
 public class NotificationPreferenceDTO {
     private Long id;

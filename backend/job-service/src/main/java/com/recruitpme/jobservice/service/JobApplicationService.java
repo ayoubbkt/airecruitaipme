@@ -3,6 +3,7 @@ package com.recruitpme.jobservice.service;
 import com.recruitpme.jobservice.dto.JobApplicationDTO;
 import java.util.List;
 
+
 public interface JobApplicationService {
     List<JobApplicationDTO> getApplicationsByJob(Long jobId);
     

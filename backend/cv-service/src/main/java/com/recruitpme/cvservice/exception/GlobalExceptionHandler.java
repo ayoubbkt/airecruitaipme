@@ -1,6 +1,7 @@
 // Exemple pour cv-service: recruitpme/backend/cv-service/src/main/java/com/recruitpme/cvservice/exception/GlobalExceptionHandler.java
 package com.recruitpme.cvservice.exception;
 
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

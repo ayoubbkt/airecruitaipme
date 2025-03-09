@@ -4,6 +4,7 @@ import com.recruitpme.authservice.dto.LoginResponse;
 import com.recruitpme.authservice.dto.RegistrationRequest;
 import com.recruitpme.authservice.dto.UserDTO;
 
+
 public interface AuthService {
     
     LoginResponse login(String email, String password);

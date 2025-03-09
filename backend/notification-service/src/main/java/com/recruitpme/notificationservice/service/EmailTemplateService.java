@@ -4,6 +4,7 @@ import com.recruitpme.notificationservice.dto.EmailTemplateDTO;
 
 import java.util.List;
 
+
 public interface EmailTemplateService {
     
     List<EmailTemplateDTO> getAllTemplates();

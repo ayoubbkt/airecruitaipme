@@ -1,10 +1,11 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Upload, BriefcaseBusiness, ChevronDown, Brain, Filter, CheckCircle, Star, Activity } from 'lucide-react';
 import axios from '../../utils/axios';
 import { toast } from 'react-toastify';
 import AnalysisCard from '../../components/analysis/AnalysisCard';
 import CandidateAnalysisRow from '../../components/analysis/CandidateAnalysisRow';
+import { cvService, jobService } from '../../services/api';
 
 const CVAnalysis = () => {
   const navigate = useNavigate();
@@ -23,13 +24,13 @@ const CVAnalysis = () => {
   });
   const fileInputRef = useRef(null);
   
-  React.useEffect(() => {
+  useEffect(() => {
     const fetchJobs = async () => {
       try {
-        const response = await axios.get('/api/jobs/active');
-        setJobs(response.data);
-        if (response.data.length > 0) {
-          setSelectedJobId(response.data[0].id);
+        const response = await jobService.getJobs({ status: 'ACTIVE' });
+        setJobs(response);
+        if (response.length > 0) {
+          setSelectedJobId(response[0].id);
         }
       } catch (error) {
         console.error('Error fetching jobs:', error);
@@ -72,21 +73,14 @@ const CVAnalysis = () => {
       setAnalysisInProgress(true);
       setProgress(0);
       
-      const formData = new FormData();
-      formData.append('jobId', selectedJobId);
-      files.forEach(file => {
-        formData.append('files', file);
-      });
-      
-      // Make initial request to start analysis
-      const response = await axios.post('/api/cv/analyze', formData);
-      const analysisId = response.data.analysisId;
+      // Start batch analysis
+      const analysisId = await cvService.analyzeBatch(files, selectedJobId);
       
       // Poll for analysis progress
       const progressInterval = setInterval(async () => {
         try {
-          const progressResponse = await axios.get(`/api/cv/analyze/progress/${analysisId}`);
-          const { progress, completed, results, stats } = progressResponse.data;
+          const progressResponse = await cvService.getAnalysisProgress(analysisId);
+          const { progress, completed, results, stats } = progressResponse;
           
           setProgress(progress);
           
@@ -166,6 +160,7 @@ const CVAnalysis = () => {
               onChange={handleFileChange}
               className="hidden"
               multiple
+              accept=".pdf,.doc,.docx,.txt,.rtf"
             />
           </div>
         </div>

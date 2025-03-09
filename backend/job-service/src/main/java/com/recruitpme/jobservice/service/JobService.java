@@ -4,6 +4,7 @@ import com.recruitpme.jobservice.dto.*;
 
 import java.util.List;
 
+
 public interface JobService {
     List<JobListingDTO> getJobs(String status, int page, int size);
     

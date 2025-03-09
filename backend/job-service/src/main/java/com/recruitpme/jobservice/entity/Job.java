@@ -2,6 +2,7 @@ package com.recruitpme.jobservice.entity;
 
 import lombok.Data;
 
+
 import javax.persistence.*;
 import java.time.LocalDateTime;
 

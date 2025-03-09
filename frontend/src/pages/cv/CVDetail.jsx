@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ChevronLeft, Download, Share2, Mail, Phone, Calendar, Brain, BriefcaseBusiness, CheckCircle, Star, ArrowUpRight, Eye, Download as DownloadIcon } from 'lucide-react';
-import axios from '../../utils/axios';
+import { ChevronLeft, Download, Share2, Mail, Phone, Calendar, Brain, BriefcaseBusiness, CheckCircle, Star, ArrowUpRight, Eye } from 'lucide-react';
 import { toast } from 'react-toastify';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import SkillMatch from '../../components/analysis/SkillMatch';
+import { cvService } from '../../services/api';
 
 const CVDetail = () => {
   const { id } = useParams();
@@ -17,8 +17,8 @@ const CVDetail = () => {
     const fetchCandidateDetails = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`/api/cv/${id}`);
-        setCandidate(response.data);
+        const response = await cvService.getCVById(id);
+        setCandidate(response);
       } catch (error) {
         console.error('Error fetching candidate details:', error);
         toast.error('Erreur lors du chargement des détails du candidat');
@@ -38,7 +38,7 @@ const CVDetail = () => {
   if (!candidate) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-2xl font-semibold text-slate-800 mb-2">Candidate non trouvé</h2>
+        <h2 className="text-2xl font-semibold text-slate-800 mb-2">Candidat non trouvé</h2>
         <p className="text-slate-600 mb-6">Le candidat que vous recherchez n'existe pas ou a été supprimé.</p>
         <Link to="/cv-analysis" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
           Retour à l'analyse des CV
@@ -95,7 +95,10 @@ const CVDetail = () => {
               <Calendar className="w-4 h-4 mr-2" />
               Entretien
             </button>
-            <button className="p-2 rounded-full hover:bg-slate-100">
+            <button 
+              className="p-2 rounded-full hover:bg-slate-100"
+              onClick={() => cvService.downloadCV(id)}
+            >
               <Download className="w-5 h-5 text-slate-600" />
             </button>
             <button className="p-2 rounded-full hover:bg-slate-100">
@@ -209,9 +212,9 @@ const CVDetail = () => {
                     </button>
                     <button 
                       className="p-1.5 rounded bg-slate-50 text-slate-600 hover:bg-slate-100"
-                      onClick={() => window.open(`/api/cv/download/${candidate.id}`, '_blank')}
+                      onClick={() => cvService.downloadCV(candidate.id)}
                     >
-                      <DownloadIcon className="h-4 w-4" />
+                      <Download className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
@@ -435,7 +438,7 @@ const CVDetail = () => {
                   </button>
                 </div>
               </div>
-            </div>
+              </div>
           )}
           
           {activeTab === 'notes' && (
@@ -448,21 +451,31 @@ const CVDetail = () => {
               {candidate.notes && candidate.notes.length > 0 ? (
                 <div className="space-y-4">
                   {candidate.notes.map((note, index) => (
-                    <div key={index} className="p-4 bg-slate-50 rounded-lg">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="text-sm font-medium text-slate-800">{note.author}</p>
-                          <p className="text-xs text-slate-500">{note.date}</p>
+                    <div key={index} className="bg-slate-50 rounded-lg p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex items-center">
+                          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium text-sm">
+                            {note.authorInitials}
+                          </div>
+                          <div className="ml-2">
+                            <p className="text-sm font-medium text-slate-800">{note.authorName}</p>
+                            <p className="text-xs text-slate-500">{new Date(note.date).toLocaleDateString()}</p>
+                          </div>
                         </div>
-                        <button className="text-xs text-blue-600 hover:text-blue-800">Modifier</button>
+                        <div className="px-2 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
+                          {note.type}
+                        </div>
                       </div>
-                      <p className="text-sm text-slate-700 mt-2">{note.content}</p>
+                      <p className="text-sm text-slate-700">{note.content}</p>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8">
-                  <p className="text-slate-600">Aucune note pour ce candidat.</p>
+                <div className="text-center py-12 bg-slate-50 rounded-lg">
+                  <p className="text-slate-500">Aucune note pour ce candidat</p>
+                  <button className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium">
+                    Ajouter la première note
+                  </button>
                 </div>
               )}
             </div>

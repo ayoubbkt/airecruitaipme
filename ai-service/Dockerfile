@@ -1,5 +1,6 @@
 FROM python:3.9-slim
 
+
 WORKDIR /app
 
 # Install system dependencies
@@ -7,7 +8,7 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     libpoppler-cpp-dev \
     pkg-config \
-    python-dev \
+    python3-dev \
     tesseract-ocr \
     libtesseract-dev \
     && rm -rf /var/lib/apt/lists/*

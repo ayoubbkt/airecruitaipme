@@ -5,6 +5,7 @@ import com.recruitpme.authservice.dto.RegistrationRequest;
 import com.recruitpme.authservice.dto.UserDTO;
 import com.recruitpme.authservice.entity.PasswordResetToken;
 import com.recruitpme.authservice.entity.Role;
+
 import com.recruitpme.authservice.entity.User;
 import com.recruitpme.authservice.exception.AuthenticationException;
 import com.recruitpme.authservice.exception.ResourceNotFoundException;

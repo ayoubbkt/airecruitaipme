@@ -5,6 +5,7 @@ import com.recruitpme.userservice.dto.UserDTO;
 import com.recruitpme.userservice.dto.UserUpdateDTO;
 import org.springframework.data.domain.Page;
 
+
 import java.util.List;
 
 public interface UserService {

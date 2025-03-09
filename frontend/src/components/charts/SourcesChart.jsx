@@ -1,24 +1,36 @@
 import React from 'react';
-import { Doughnut } from 'react-chartjs-2';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
-
-ChartJS.register(ArcElement, Tooltip, Legend);
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 const SourcesChart = ({ data }) => {
-  const chartData = {
-    labels: data.map(source => source.name),
-    datasets: [
-      {
-        data: data.map(source => source.percentage),
-        backgroundColor: data.map(source => source.color),
-      },
-    ],
-  };
-
+  // Ensure data is in the correct format for the chart
+  const chartData = data.map(item => ({
+    name: item.name,
+    value: item.percentage,
+    color: item.color
+  }));
+  
   return (
-    <div className="w-full h-full">
-      <Doughnut data={chartData} />
-    </div>
+    <ResponsiveContainer width="100%" height="100%">
+      <PieChart>
+        <Pie
+          data={chartData}
+          cx="50%"
+          cy="50%"
+          innerRadius={30}
+          outerRadius={60}
+          paddingAngle={5}
+          dataKey="value"
+        >
+          {chartData.map((entry, index) => (
+            <Cell key={`cell-${index}`} fill={entry.color} />
+          ))}
+        </Pie>
+        <Tooltip 
+          formatter={(value) => [`${value}%`, 'Pourcentage']}
+          labelFormatter={(name) => `Source: ${name}`}
+        />
+      </PieChart>
+    </ResponsiveContainer>
   );
 };
 

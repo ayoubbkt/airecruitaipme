@@ -5,6 +5,7 @@ import com.recruitpme.interviewservice.dto.*;
 import java.time.LocalDate;
 import java.util.List;
 
+
 public interface InterviewService {
     List<InterviewListDTO> getInterviews(String status, LocalDate from, LocalDate to);
     

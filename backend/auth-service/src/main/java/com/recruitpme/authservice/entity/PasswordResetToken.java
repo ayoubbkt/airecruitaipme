@@ -1,5 +1,6 @@
 package com.recruitpme.authservice.entity;
 
+
 import lombok.Data;
 
 import javax.persistence.Entity;

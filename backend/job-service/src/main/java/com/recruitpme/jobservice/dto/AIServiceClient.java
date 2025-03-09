@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 
+
 @FeignClient(name = "ai-service", url = "${services.ai-service.url}")
 public interface AIServiceClient {
 

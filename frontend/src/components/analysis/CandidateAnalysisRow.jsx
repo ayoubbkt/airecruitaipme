@@ -7,6 +7,7 @@ const CandidateAnalysisRow = ({ candidate, onViewDetails }) => {
   let matchColor = "bg-red-100 text-red-800";
   let matchText = "Insuffisante";
   
+  
   if (candidate.score >= 85) {
     scoreColor = "bg-green-100 text-green-800";
     matchColor = "bg-green-100 text-green-800";

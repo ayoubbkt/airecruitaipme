@@ -6,6 +6,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+
 @Repository
 public interface InterviewQuestionRepository extends JpaRepository<InterviewQuestion, Long> {
     List<InterviewQuestion> findByInterviewIdOrderByOrderIndexAsc(Long interviewId);

@@ -1,5 +1,4 @@
 package com.recruitpme.apigateway.model;
-
 import java.util.List;
 import lombok.Data;
 

@@ -4,6 +4,7 @@ import com.recruitpme.notificationservice.dto.NotificationCountDTO;
 import com.recruitpme.notificationservice.dto.NotificationCreateDTO;
 import com.recruitpme.notificationservice.dto.NotificationDTO;
 
+
 import java.util.List;
 
 public interface NotificationService {

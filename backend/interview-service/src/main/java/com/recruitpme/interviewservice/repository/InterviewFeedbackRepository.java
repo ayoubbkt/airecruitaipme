@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.List;
 
+
 @Repository
 public interface InterviewFeedbackRepository extends JpaRepository<InterviewFeedback, Long> {
     List<InterviewFeedback> findByInterviewId(Long interviewId);

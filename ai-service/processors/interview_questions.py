@@ -2,6 +2,7 @@ from typing import List, Dict, Any
 from sentence_transformers import SentenceTransformer, util
 import random
 
+
 class InterviewQuestionGenerator:
     def __init__(self):
         self.sentence_model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
