@@ -5,7 +5,7 @@ services:
       context: ../frontend
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - "3000:80"
     depends_on:
       - api-gateway
     networks:
@@ -14,11 +14,9 @@ services:
       - REACT_APP_API_URL=http://api-gateway:8080
     
   api-gateway:
-    image: openjdk:17-jdk-slim
-    volumes:
-      - ../backend/api-gateway/target/*.jar:/app/app.jar
-    working_dir: /app
-    command: ["java", "-jar", "app.jar"]
+    build:
+      context: ../backend/api-gateway
+      dockerfile: Dockerfile
     ports:
       - "8080:8080"
     depends_on:
@@ -56,13 +54,12 @@ services:
       - SPRING_CLOUD_GATEWAY_ROUTES[5].ID=user-service
       - SPRING_CLOUD_GATEWAY_ROUTES[5].URI=http://user-service:8086
       - SPRING_CLOUD_GATEWAY_ROUTES[5].PREDICATES[0]=Path=/api/users/**
+      - SPRING_CLOUD_GATEWAY_ROUTES[0].FILTERS[0]=StripPrefix=0
 
   auth-service:
-    image: openjdk:17-jdk-slim
-    volumes:
-      - ../backend/auth-service/target/*.jar:/app/app.jar
-    working_dir: /app
-    command: ["java", "-jar", "app.jar"]
+    build:
+      context: ../backend/auth-service
+      dockerfile: Dockerfile
     ports:
       - "8081:8081"
     depends_on:
@@ -81,11 +78,9 @@ services:
       - JWT_EXPIRATION=86400000
 
   cv-service:
-    image: openjdk:17-jdk-slim
-    volumes:
-      - ../backend/cv-service/target/*.jar:/app/app.jar
-    working_dir: /app
-    command: ["java", "-jar", "app.jar"]
+    build:
+      context: ../backend/cv-service
+      dockerfile: Dockerfile
     ports:
       - "8082:8082"
     depends_on:
@@ -108,11 +103,9 @@ services:
       - SERVICES_AI_SERVICE_URL=http://ai-service:8000
 
   job-service:
-    image: openjdk:17-jdk-slim
-    volumes:
-      - ../backend/job-service/target/*.jar:/app/app.jar
-    working_dir: /app
-    command: ["java", "-jar", "app.jar"]
+    build:
+      context: ../backend/job-service
+      dockerfile: Dockerfile
     ports:
       - "8083:8083"
     depends_on:
@@ -130,11 +123,9 @@ services:
       - SERVICES_AI_SERVICE_URL=http://ai-service:8000
 
   interview-service:
-    image: openjdk:17-jdk-slim
-    volumes:
-      - ../backend/interview-service/target/*.jar:/app/app.jar
-    working_dir: /app
-    command: ["java", "-jar", "app.jar"]
+    build:
+      context: ../backend/interview-service
+      dockerfile: Dockerfile
     ports:
       - "8084:8084"
     depends_on:
@@ -150,11 +141,9 @@ services:
       - SERVICES_AI_SERVICE_URL=http://ai-service:8000
 
   notification-service:
-    image: openjdk:17-jdk-slim
-    volumes:
-      - ../backend/notification-service/target/*.jar:/app/app.jar
-    working_dir: /app
-    command: ["java", "-jar", "app.jar"]
+    build:
+      context: ../backend/notification-service
+      dockerfile: Dockerfile
     ports:
       - "8085:8085"
     depends_on:
@@ -175,11 +164,9 @@ services:
       - MAIL_PASSWORD=your-email-password
  
   user-service:
-    image: openjdk:17-jdk-slim
-    volumes:
-      - ../backend/user-service/target/*.jar:/app/app.jar
-    working_dir: /app
-    command: ["java", "-jar", "app.jar"]
+    build:
+      context: ../backend/user-service
+      dockerfile: Dockerfile
     ports:
       - "8086:8086"
     depends_on:
