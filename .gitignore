@@ -9,10 +9,18 @@
 # Python
 /ai-service/__pycache__/
 /ai-service/*.pyc
-# Docker
-*.log
-# IDE
+
+# Maven Wrapper (si tu choisis de ne pas les versionner)
+mvnw
+mvnw.cmd
+.mvn/
+
+# Fichiers IDE
 .idea/
 *.iml
+.vscode/
+
+# Logs
+*.log
 # Local environment
 .env

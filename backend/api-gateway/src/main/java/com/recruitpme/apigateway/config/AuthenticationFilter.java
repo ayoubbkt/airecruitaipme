@@ -1,4 +1,3 @@
-
 package com.recruitpme.apigateway.config;
 
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +15,7 @@ import reactor.core.publisher.Mono;
 @Component
 @Slf4j
 public class AuthenticationFilter extends AbstractGatewayFilterFactory<AuthenticationFilter.Config> {
+
     private final WebClient.Builder webClientBuilder;
     private final RouteValidator routeValidator;
 
@@ -31,38 +31,39 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
             ServerHttpRequest request = exchange.getRequest();
 
             // Skip validation for non-secured endpoints
-            if (routeValidator.isSecured.test(request)) {
-                if (!request.getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
-                    return onError(exchange, "Authorization header is missing", HttpStatus.UNAUTHORIZED);
-                }
-
-                String authHeader = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
-                if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                    return onError(exchange, "Invalid authorization header", HttpStatus.UNAUTHORIZED);
-                }
-
-                String token = authHeader.substring(7);
-
-                // Validate token with auth service
-                return webClientBuilder.build()
-                        .get()
-                        .uri("http://auth-service/api/auth/validate-token?token=" + token)
-                        .retrieve()
-                        .bodyToMono(Boolean.class)
-                        .flatMap(isValid -> {
-                            if (isValid) {
-                                return chain.filter(exchange);
-                            } else {
-                                return onError(exchange, "Invalid token", HttpStatus.UNAUTHORIZED);
-                            }
-                        })
-                        .onErrorResume(error -> {
-                            log.error("Error validating token: {}", error.getMessage());
-                            return onError(exchange, "Token validation failed", HttpStatus.INTERNAL_SERVER_ERROR);
-                        });
+            if (!routeValidator.isSecured(request)) {
+                return chain.filter(exchange);
             }
 
-            return chain.filter(exchange);
+            // Check for Authorization header
+            if (!request.getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
+                return onError(exchange, "Authorization header is missing", HttpStatus.UNAUTHORIZED);
+            }
+
+            String authHeader = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                return onError(exchange, "Invalid authorization header", HttpStatus.UNAUTHORIZED);
+            }
+
+            String token = authHeader.substring(7);
+
+            // Validate token with auth service
+            return webClientBuilder.build()
+                    .get()
+                    .uri("http://auth-service/api/auth/validate-token?token=" + token)
+                    .retrieve()
+                    .bodyToMono(Boolean.class)
+                    .flatMap(isValid -> {
+                        if (isValid) {
+                            return chain.filter(exchange);
+                        } else {
+                            return onError(exchange, "Invalid token", HttpStatus.UNAUTHORIZED);
+                        }
+                    })
+                    .onErrorResume(error -> {
+                        log.error("Error validating token: {}", error.getMessage());
+                        return onError(exchange, "Token validation failed", HttpStatus.INTERNAL_SERVER_ERROR);
+                    });
         };
     }
 
