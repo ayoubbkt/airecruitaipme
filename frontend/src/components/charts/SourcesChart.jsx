@@ -8,7 +8,8 @@ const SourcesChart = ({ data }) => {
     value: item.percentage,
     color: item.color
   }));
-  
+
+
   return (
     <ResponsiveContainer width="100%" height="100%">
       <PieChart>

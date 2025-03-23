@@ -10,6 +10,7 @@ import java.util.Map;
 @FeignClient(name = "notification-service", url = "${services.notification-service.url}")
 public interface NotificationServiceClient {
 
+
     @PostMapping("/api/notifications/email")
     void sendEmail(
             @RequestParam("to") String to,

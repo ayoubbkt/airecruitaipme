@@ -1,16 +1,17 @@
 package com.recruitpme.jobservice.service;
 
 import com.recruitpme.jobservice.dto.JobApplicationDTO;
-import com.recruitpme.jobservice.entity.Job;
+import com.recruitpme.jobservice.dto.JobApplicationCreateDTO;
 import com.recruitpme.jobservice.entity.JobApplication;
+import com.recruitpme.jobservice.entity.JobApplication.ApplicationStatus;
 import com.recruitpme.jobservice.exception.ResourceNotFoundException;
 import com.recruitpme.jobservice.repository.JobApplicationRepository;
 import com.recruitpme.jobservice.repository.JobRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -18,117 +19,103 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class JobApplicationServiceImpl implements JobApplicationService {
 
-    private final JobApplicationRepository jobApplicationRepository;
+    private final JobApplicationRepository applicationRepository;
     private final JobRepository jobRepository;
 
     @Override
-    @Transactional(readOnly = true)
-    public List<JobApplicationDTO> getApplicationsByJob(Long jobId) {
-        List<JobApplication> applications = jobApplicationRepository.findByJobId(jobId);
-        
-        return applications.stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+    @Transactional
+    public JobApplicationDTO createApplication(JobApplicationCreateDTO applicationDTO) {
+        jobRepository.findById(applicationDTO.getJobId())
+                .orElseThrow(() -> new ResourceNotFoundException("Job not found with id: " + applicationDTO.getJobId()));
+
+        JobApplication application = JobApplication.builder()
+                .jobId(applicationDTO.getJobId())
+                .candidateId(applicationDTO.getCandidateId())
+                .stageId(applicationDTO.getStageId())
+                .status(ApplicationStatus.APPLIED)
+                .answers(applicationDTO.getAnswers())
+                .coverLetter(applicationDTO.getCoverLetter())
+                .resumeUrl(applicationDTO.getResumeUrl())
+                .source(applicationDTO.getSource())
+                .lastStageChangeAt(LocalDateTime.now())
+                .build();
+
+        JobApplication savedApplication = applicationRepository.save(application);
+        return mapToDTO(savedApplication);
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public List<JobApplicationDTO> getApplicationsByCandidate(String candidateId) {
-        List<JobApplication> applications = jobApplicationRepository.findByCandidateId(candidateId);
-        
-        return applications.stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    @Transactional(readOnly = true)
     public JobApplicationDTO getApplicationById(Long id) {
-        JobApplication application = jobApplicationRepository.findById(id)
+        JobApplication application = applicationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Application not found with id: " + id));
-        
-        return convertToDTO(application);
+        return mapToDTO(application);
+    }
+
+    @Override
+    public Page<JobApplicationDTO> getApplicationsByJob(Long jobId, Pageable pageable) {
+        Page<JobApplication> applications = applicationRepository.findByJobId(jobId, pageable);
+        return applications.map(this::mapToDTO);
+    }
+
+    @Override
+    public List<JobApplicationDTO> getApplicationsByCandidate(Long candidateId) {
+        List<JobApplication> applications = applicationRepository.findByCandidateId(candidateId);
+        return applications.stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
     }
 
     @Override
     @Transactional
-    public JobApplicationDTO createApplication(JobApplicationDTO applicationDto) {
-        // Verify job exists
-        Job job = jobRepository.findById(applicationDto.getJobId())
-                .orElseThrow(() -> new ResourceNotFoundException("Job not found with id: " + applicationDto.getJobId()));
-        
-        // Check if application already exists
-        List<JobApplication> existingApplications = jobApplicationRepository.findByJobIdAndCandidateId(
-                applicationDto.getJobId(), applicationDto.getCandidateId());
-        
-        if (!existingApplications.isEmpty()) {
-            throw new IllegalStateException("Candidate has already applied for this job");
-        }
-        
-        JobApplication application = new JobApplication();
-        application.setJob(job);
-        application.setCandidateId(applicationDto.getCandidateId());
-        application.setStatus("APPLIED");
-        application.setScore(applicationDto.getScore());
-        application.setNotes(applicationDto.getNotes());
-        application.setAppliedAt(LocalDateTime.now());
-        
-        JobApplication savedApplication = jobApplicationRepository.save(application);
-        
-        return convertToDTO(savedApplication);
+    public JobApplicationDTO updateApplicationStage(Long id, String stageId) {
+        JobApplication application = applicationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Application not found with id: " + id));
+
+        application.setStageId(stageId);
+        application.setLastStageChangeAt(LocalDateTime.now());
+
+        JobApplication updatedApplication = applicationRepository.save(application);
+        return mapToDTO(updatedApplication);
     }
 
     @Override
     @Transactional
     public JobApplicationDTO updateApplicationStatus(Long id, String status) {
-        JobApplication application = jobApplicationRepository.findById(id)
+        JobApplication application = applicationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Application not found with id: " + id));
-        
-        application.setStatus(status);
-        application.setUpdatedAt(LocalDateTime.now());
-        
-        // If status is HIRED, update job status to FILLED
-        if ("HIRED".equals(status)) {
-            Job job = application.getJob();
-            job.setStatus("FILLED");
-            job.setUpdatedAt(LocalDateTime.now());
-            jobRepository.save(job);
-        }
-        
-        JobApplication updatedApplication = jobApplicationRepository.save(application);
-        
-        return convertToDTO(updatedApplication);
+
+        application.setStatus(ApplicationStatus.valueOf(status.toUpperCase()));
+
+        JobApplication updatedApplication = applicationRepository.save(application);
+        return mapToDTO(updatedApplication);
     }
 
     @Override
     @Transactional
-    public JobApplicationDTO addApplicationNotes(Long id, String notes) {
-        JobApplication application = jobApplicationRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Application not found with id: " + id));
-        
-        application.setNotes(notes);
-        application.setUpdatedAt(LocalDateTime.now());
-        
-        JobApplication updatedApplication = jobApplicationRepository.save(application);
-        
-        return convertToDTO(updatedApplication);
+    public void deleteApplication(Long id) {
+        if (!applicationRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Application not found with id: " + id);
+        }
+        applicationRepository.deleteById(id);
     }
-    
-    private JobApplicationDTO convertToDTO(JobApplication application) {
-        JobApplicationDTO dto = new JobApplicationDTO();
-        dto.setId(application.getId());
-        dto.setJobId(application.getJob().getId());
-        dto.setJobTitle(application.getJob().getTitle());
-        dto.setCandidateId(application.getCandidateId());
-        dto.setStatus(application.getStatus());
-        dto.setScore(application.getScore());
-        dto.setNotes(application.getNotes());
-        dto.setAppliedAt(application.getAppliedAt());
-        dto.setUpdatedAt(application.getUpdatedAt());
-        
-        return dto;
+
+    private JobApplicationDTO mapToDTO(JobApplication application) {
+        return JobApplicationDTO.builder()
+                .id(application.getId())
+                .jobId(application.getJobId())
+                .candidateId(application.getCandidateId())
+                .stageId(application.getStageId())
+                .status(application.getStatus())
+                .answers(application.getAnswers())
+                .coverLetter(application.getCoverLetter())
+                .resumeUrl(application.getResumeUrl())
+                .source(application.getSource())
+                .createdAt(application.getCreatedAt())
+                .updatedAt(application.getUpdatedAt())
+                .lastStageChangeAt(application.getLastStageChangeAt())
+                // Note: Candidate details would typically be fetched from a CV service
+                .build();
     }
 }

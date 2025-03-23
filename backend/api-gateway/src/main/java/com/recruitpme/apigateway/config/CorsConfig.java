@@ -10,12 +10,15 @@ import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
 
+
+
 @Configuration
 public class CorsConfig {
     @Bean
     public CorsWebFilter corsWebFilter() {
         CorsConfiguration corsConfig = new CorsConfiguration();
-        corsConfig.setAllowedOrigins(Arrays.asList("*")); // In production, restrict to your frontend domain
+        corsConfig.setAllowedOrigins(Arrays.asList("http://localhost:3000")); // In production, restrict to your frontend domain
+        corsConfig.setAllowCredentials(true);
         corsConfig.setMaxAge(3600L);
         corsConfig.setAllowedMethods(Arrays.asList(
                 HttpMethod.GET.name(),
@@ -25,6 +28,7 @@ public class CorsConfig {
                 HttpMethod.OPTIONS.name()
         ));
         corsConfig.setAllowedHeaders(Arrays.asList("*"));
+        corsConfig.setExposedHeaders(Arrays.asList("Authorization"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", corsConfig);

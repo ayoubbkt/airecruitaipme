@@ -7,6 +7,7 @@ import AnalysisCard from '../../components/analysis/AnalysisCard';
 import CandidateAnalysisRow from '../../components/analysis/CandidateAnalysisRow';
 import { cvService, jobService } from '../../services/api';
 
+
 const CVAnalysis = () => {
   const navigate = useNavigate();
   const [files, setFiles] = useState([]);

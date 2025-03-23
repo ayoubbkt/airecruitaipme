@@ -7,7 +7,8 @@ import { useSettings } from '../../contexts/SettingsProvider';
 const Settings = () => {
   const { user } = useAuth();
   const { settings, updateSettings } = useSettings();
-  
+
+
   const [profileForm, setProfileForm] = useState({
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',

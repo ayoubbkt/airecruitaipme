@@ -12,6 +12,7 @@ const Register = () => {
     password: '',
     confirmPassword: ''
   });
+
   const [loading, setLoading] = useState(false);
   
   const { register } = useAuth();

@@ -1,25 +1,18 @@
 package com.recruitpme.notificationservice.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
-
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
-
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class NotificationCreateDTO {
-    
-    @NotBlank(message = "User ID is required")
     private String userId;
-    
-    @NotBlank(message = "Notification type is required")
-    private String type;
-    
-    @NotBlank(message = "Title is required")
     private String title;
-    
-    @NotBlank(message = "Message is required")
     private String message;
-    
-    private String link;
+    private String type;
+    private String relatedEntityId;
+    private String relatedEntityType;
+    private String actionUrl;
 }

@@ -3,6 +3,7 @@ package com.recruitpme.userservice.dto;
 import lombok.Data;
 
 
+
 @Data
 public class UserPreferenceDTO {
     private Long id;

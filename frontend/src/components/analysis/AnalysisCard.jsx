@@ -1,6 +1,7 @@
 import React from 'react';
 
 
+
 const AnalysisCard = ({ icon, title, description }) => {
   return (
     <div className="bg-white rounded-lg shadow-sm p-5 hover:shadow-md transition-shadow">

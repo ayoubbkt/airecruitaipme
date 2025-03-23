@@ -1,11 +1,13 @@
 package com.recruitpme.notificationservice.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
-
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class NotificationCountDTO {
-    private String userId;
-    private long unreadCount;
-    private long totalCount;
+    private Long total;
+    private Long unread;
 }

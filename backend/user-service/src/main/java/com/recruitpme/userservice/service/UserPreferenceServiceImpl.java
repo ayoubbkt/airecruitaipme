@@ -19,6 +19,7 @@ import java.util.Optional;
 @Slf4j
 public class UserPreferenceServiceImpl implements UserPreferenceService {
 
+
     private final UserRepository userRepository;
     private final UserPreferenceRepository userPreferenceRepository;
 

@@ -15,7 +15,8 @@ import java.util.Map;
 public class InterviewFeedbackDTO {
     @NotBlank(message = "L'interviewer est obligatoire")
     private String interviewer;
-    
+
+
     @NotNull(message = "Le score technique est obligatoire")
     @Min(value = 1, message = "Le score minimum est 1")
     @Max(value = 5, message = "Le score maximum est 5")

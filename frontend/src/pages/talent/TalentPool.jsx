@@ -15,6 +15,7 @@ const TalentPool = () => {
     skills: [],
     experience: null,
   });
+
   const [showFilters, setShowFilters] = useState(false);
   const [selectedSkills, setSelectedSkills] = useState([]);
   const [availableSkills, setAvailableSkills] = useState([]);

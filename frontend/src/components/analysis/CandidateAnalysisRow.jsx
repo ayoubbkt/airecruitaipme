@@ -1,6 +1,7 @@
 import React from 'react';
 import { Eye, Download } from 'lucide-react';
 
+
 const CandidateAnalysisRow = ({ candidate, onViewDetails }) => {
   // Determine color based on score
   let scoreColor = "bg-red-100 text-red-800";

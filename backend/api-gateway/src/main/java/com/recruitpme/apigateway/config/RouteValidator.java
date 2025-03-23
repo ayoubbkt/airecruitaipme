@@ -9,6 +9,8 @@ import java.util.function.Predicate;
 /**
  * This class validates if a route should be secured or not
  */
+
+
 @Component
 public class RouteValidator {
 

@@ -4,112 +4,114 @@ import com.recruitpme.notificationservice.dto.EmailTemplateDTO;
 import com.recruitpme.notificationservice.entity.EmailTemplate;
 import com.recruitpme.notificationservice.exception.ResourceNotFoundException;
 import com.recruitpme.notificationservice.repository.EmailTemplateRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
 
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
-@Slf4j
 public class EmailTemplateServiceImpl implements EmailTemplateService {
 
-    private final EmailTemplateRepository emailTemplateRepository;
+    @Autowired
+    private EmailTemplateRepository emailTemplateRepository;
+
+    @Autowired
+    private TemplateEngine templateEngine;
 
     @Override
-    @Transactional(readOnly = true)
     public List<EmailTemplateDTO> getAllTemplates() {
-        List<EmailTemplate> templates = emailTemplateRepository.findAll();
-        
-        return templates.stream()
+        return emailTemplateRepository.findAll().stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public EmailTemplateDTO getTemplateById(Long id) {
+    public EmailTemplateDTO getTemplateById(String id) {
         EmailTemplate template = emailTemplateRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Email template not found with id: " + id));
-        
+
         return convertToDTO(template);
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public EmailTemplateDTO getTemplateByCode(String code) {
-        EmailTemplate template = emailTemplateRepository.findByCode(code)
-                .orElseThrow(() -> new ResourceNotFoundException("Email template not found with code: " + code));
-        
-        return convertToDTO(template);
+    public List<EmailTemplateDTO> getTemplatesByCategory(String category) {
+        return emailTemplateRepository.findByCategory(category).stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
     }
 
     @Override
-    @Transactional
-    public EmailTemplateDTO createTemplate(EmailTemplateDTO templateDto) {
-        // Check if template with same code already exists
-        if (emailTemplateRepository.findByCode(templateDto.getCode()).isPresent()) {
-            throw new IllegalStateException("Email template with code " + templateDto.getCode() + " already exists");
-        }
-        
-        EmailTemplate template = new EmailTemplate();
-        template.setCode(templateDto.getCode());
-        template.setName(templateDto.getName());
-        template.setSubject(templateDto.getSubject());
-        template.setContent(templateDto.getContent());
-        template.setDescription(templateDto.getDescription());
-        
+    public EmailTemplateDTO createTemplate(EmailTemplateDTO templateDTO) {
+        EmailTemplate template = convertToEntity(templateDTO);
+        template.setId(UUID.randomUUID().toString());
+
         EmailTemplate savedTemplate = emailTemplateRepository.save(template);
-        
         return convertToDTO(savedTemplate);
     }
 
     @Override
-    @Transactional
-    public EmailTemplateDTO updateTemplate(Long id, EmailTemplateDTO templateDto) {
-        EmailTemplate template = emailTemplateRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Email template not found with id: " + id));
-        
-        // Check if code is being changed and if new code already exists
-        if (!template.getCode().equals(templateDto.getCode()) && 
-            emailTemplateRepository.findByCode(templateDto.getCode()).isPresent()) {
-            throw new IllegalStateException("Email template with code " + templateDto.getCode() + " already exists");
+    public EmailTemplateDTO updateTemplate(String id, EmailTemplateDTO templateDTO) {
+        if (!emailTemplateRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Email template not found with id: " + id);
         }
-        
-        template.setCode(templateDto.getCode());
-        template.setName(templateDto.getName());
-        template.setSubject(templateDto.getSubject());
-        template.setContent(templateDto.getContent());
-        template.setDescription(templateDto.getDescription());
-        
+
+        EmailTemplate template = convertToEntity(templateDTO);
+        template.setId(id);
+
         EmailTemplate updatedTemplate = emailTemplateRepository.save(template);
-        
         return convertToDTO(updatedTemplate);
     }
 
     @Override
-    @Transactional
-    public void deleteTemplate(Long id) {
+    public void deleteTemplate(String id) {
         if (!emailTemplateRepository.existsById(id)) {
             throw new ResourceNotFoundException("Email template not found with id: " + id);
         }
-        
+
         emailTemplateRepository.deleteById(id);
     }
-    
+
+    @Override
+    public String processTemplate(String templateId, Object model) {
+        EmailTemplate template = emailTemplateRepository.findById(templateId)
+                .orElseThrow(() -> new ResourceNotFoundException("Email template not found with id: " + templateId));
+
+        Context context = new Context();
+        if (model instanceof Map) {
+            ((Map<String, Object>) model).forEach(context::setVariable);
+        }
+
+        return templateEngine.process(template.getContent(), context);
+    }
+
     private EmailTemplateDTO convertToDTO(EmailTemplate template) {
         EmailTemplateDTO dto = new EmailTemplateDTO();
         dto.setId(template.getId());
-        dto.setCode(template.getCode());
         dto.setName(template.getName());
         dto.setSubject(template.getSubject());
         dto.setContent(template.getContent());
         dto.setDescription(template.getDescription());
-        
+        dto.setDefault(template.isDefault());
+        dto.setCategory(template.getCategory());
+
         return dto;
+    }
+
+    private EmailTemplate convertToEntity(EmailTemplateDTO dto) {
+        EmailTemplate template = new EmailTemplate();
+        template.setId(dto.getId());
+        template.setName(dto.getName());
+        template.setSubject(dto.getSubject());
+        template.setContent(dto.getContent());
+        template.setDescription(dto.getDescription());
+        template.setDefault(dto.isDefault());
+        template.setCategory(dto.getCategory());
+
+        return template;
     }
 }

@@ -2,6 +2,7 @@ import React from 'react';
 import { Check, X } from 'lucide-react';
 
 
+
 const SkillMatch = ({ name, matched, confidence }) => {
   return (
     <div className="mb-2">

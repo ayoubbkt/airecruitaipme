@@ -1,0 +1,2009 @@
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\CvServiceApplication.java ===
+package com.recruitpme.cvservice;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.cloud.openfeign.EnableFeignClients;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+
+
+@SpringBootApplication
+@EnableFeignClients
+@EntityScan("com.recruitpme.cvservice.entity")
+@EnableJpaRepositories("com.recruitpme.cvservice.repository")
+public class CvServiceApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(CvServiceApplication.class, args);
+    }
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\client\AIServiceClient.java ===
+package com.recruitpme.cvservice.client;
+
+import com.recruitpme.cvservice.dto.*;
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import java.util.List;
+
+@FeignClient(name = "ai-service", url = "${services.ai-service.url}")
+public interface AIServiceClient {
+
+    @PostMapping("/api/ai/analyze-cv")
+    AnalysisResultDTO analyzeCv(@RequestBody String cvText, @RequestParam("jobId") String jobId);
+
+    @PostMapping("/api/ai/generate-questions")
+    List<InterviewQuestionDTO> generateInterviewQuestions(@RequestBody InterviewQuestionRequestDTO request);
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\client\JobServiceClient.java ===
+package com.recruitpme.cvservice.client;
+
+import com.recruitpme.cvservice.dto.JobDetailDTO;
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+
+@FeignClient(name = "job-service", url = "${services.job-service.url}")
+public interface JobServiceClient {
+
+    @GetMapping("/api/jobs/{id}")
+    JobDetailDTO getJobById(@PathVariable("id") String jobId);
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\config\ElasticsearchConfig.java ===
+package com.recruitpme.cvservice.config;
+
+import org.elasticsearch.client.RestHighLevelClient;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.data.elasticsearch.client.ClientConfiguration;
+import org.springframework.data.elasticsearch.client.RestClients;
+import org.springframework.data.elasticsearch.config.AbstractElasticsearchConfiguration;
+import org.springframework.data.elasticsearch.repository.config.EnableElasticsearchRepositories;
+import org.springframework.beans.factory.annotation.Value;
+
+
+@Configuration
+@EnableElasticsearchRepositories(basePackages = "com.recruitpme.cvservice.repository")
+public class ElasticsearchConfig extends AbstractElasticsearchConfiguration {
+
+    @Value("${spring.elasticsearch.rest.uris}")
+    private String elasticsearchUri;
+
+    @Override
+    @Bean
+    public RestHighLevelClient elasticsearchClient() {
+        final ClientConfiguration clientConfiguration = ClientConfiguration.builder()
+                .connectedTo(elasticsearchUri.replace("http://", ""))
+                .build();
+
+        return RestClients.create(clientConfiguration).rest();
+    }
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\config\FeignConfig.java ===
+// recruitpme/backend/cv-service/src/main/java/com/recruitpme/cvservice/config/FeignConfig.java
+package com.recruitpme.cvservice.config;
+
+import feign.RequestInterceptor;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+
+
+@Configuration
+public class FeignConfig {
+
+    @Bean
+    public RequestInterceptor requestInterceptor() {
+        return requestTemplate -> {
+            ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+            if (attrs != null) {
+                String authHeader = attrs.getRequest().getHeader("Authorization");
+                if (authHeader != null) {
+                    requestTemplate.header("Authorization", authHeader);
+                }
+            }
+        };
+    }
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\config\MinioConfig.java ===
+package com.recruitpme.cvservice.config;
+
+import io.minio.MinioClient;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+
+
+@Configuration
+public class MinioConfig {
+
+    @Value("${minio.url}")
+    private String url;
+
+    @Value("${minio.access-key}")
+    private String accessKey;
+
+    @Value("${minio.secret-key}")
+    private String secretKey;
+
+    @Value("${minio.bucket-name}")
+    private String bucketName;
+
+    @Bean
+    public MinioClient minioClient() {
+        return MinioClient.builder()
+                .endpoint(url)
+                .credentials(accessKey, secretKey)
+                .build();
+    }
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\config\StorageProperties.java ===
+package com.recruitpme.cvservice.config;
+
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
+
+@Component
+@ConfigurationProperties(prefix = "storage")
+@Data
+public class StorageProperties {
+    private String bucketName;
+
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\controller\CandidateController.java ===
+package com.recruitpme.cvservice.controller;
+
+import com.recruitpme.cvservice.dto.CandidateDTO;
+import com.recruitpme.cvservice.dto.CandidateNoteDTO;
+import com.recruitpme.cvservice.service.CandidateServiceImpl;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/candidates")
+public class CandidateController {
+
+    @Autowired
+    private CandidateServiceImpl candidateService;
+
+    @GetMapping
+    public ResponseEntity<List<CandidateDTO>> getAllCandidates(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) List<String> skills,
+            @RequestParam(required = false) Integer minScore) {
+
+        List<CandidateDTO> candidates = candidateService.getAllCandidates(status, skills, minScore);
+        return ResponseEntity.ok(candidates);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<CandidateDTO> getCandidateById(@PathVariable String id) {
+        CandidateDTO candidate = candidateService.getCandidateById(id);
+        return ResponseEntity.ok(candidate);
+    }
+
+    @GetMapping("/by-job/{jobId}")
+    public ResponseEntity<List<CandidateDTO>> getCandidatesByJob(@PathVariable String jobId) {
+        List<CandidateDTO> candidates = candidateService.getCandidatesByJob(jobId);
+        return ResponseEntity.ok(candidates);
+    }
+
+    @PostMapping("/{id}/notes")
+    public ResponseEntity<CandidateNoteDTO> addCandidateNote(
+            @PathVariable String id,
+            @RequestBody CandidateNoteDTO noteDto) {
+
+        CandidateNoteDTO savedNote = candidateService.addCandidateNote(id, noteDto);
+        return ResponseEntity.ok(savedNote);
+    }
+
+    @PutMapping("/{id}/stage")
+    public ResponseEntity<CandidateDTO> updateCandidateStage(
+            @PathVariable String id,
+            @RequestParam String stageId) {
+
+        CandidateDTO updatedCandidate = candidateService.updateCandidateStage(id, stageId);
+        return ResponseEntity.ok(updatedCandidate);
+    }
+
+    @PostMapping("/{id}/disqualify")
+    public ResponseEntity<Void> disqualifyCandidate(@PathVariable String id) {
+        candidateService.disqualifyCandidate(id);
+        return ResponseEntity.noContent().build();
+    }
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\controller\CVController.java ===
+package com.recruitpme.cvservice.controller;
+
+import com.recruitpme.cvservice.dto.*;
+import com.recruitpme.cvservice.service.CVAnalysisService;
+import com.recruitpme.cvservice.service.CVStorageService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/cv")
+public class CVController {
+
+    @Autowired
+    private CVStorageService cvStorageService;
+
+    @Autowired
+    private CVAnalysisService cvAnalysisService;
+
+    @PostMapping("/upload")
+    public ResponseEntity<CVUploadResponseDTO> uploadCV(
+            @RequestParam("files") MultipartFile[] files,
+            @RequestParam(value = "jobId", required = false) String jobId) {
+
+        List<String> uploadedFileIds = cvStorageService.storeFiles(files);
+        CVUploadResponseDTO response = new CVUploadResponseDTO();
+        response.setFileIds(uploadedFileIds);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/analyze")
+    public ResponseEntity<AnalysisRequestDTO> analyzeCV(
+            @RequestParam("files") MultipartFile[] files,
+            @RequestParam("jobId") String jobId) {
+
+        String analysisId = cvAnalysisService.submitBatchAnalysis(files, jobId);
+        AnalysisRequestDTO response = new AnalysisRequestDTO();
+        response.setAnalysisId(analysisId);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/analyze-single")
+    public ResponseEntity<CVAnalysisResponseDTO> analyzeSingleCV(
+            @RequestBody CVAnalysisRequestDTO request) {
+
+        CVAnalysisResponseDTO analysis = cvAnalysisService.analyzeSingleCV(request.getCvId(), request.getJobId());
+        return ResponseEntity.ok(analysis);
+    }
+
+    @GetMapping("/analyze/progress/{analysisId}")
+    public ResponseEntity<AnalysisProgressDTO> getAnalysisProgress(
+            @PathVariable String analysisId) {
+
+        AnalysisProgressDTO progress = cvAnalysisService.getAnalysisProgress(analysisId);
+        return ResponseEntity.ok(progress);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<CVDetailResponseDTO> getCVDetails(@PathVariable String id) {
+        CVDetailResponseDTO cvDetails = cvAnalysisService.getCVDetails(id);
+        return ResponseEntity.ok(cvDetails);
+    }
+
+    @GetMapping("/download/{id}")
+    public ResponseEntity<Resource> downloadCV(@PathVariable String id) {
+        Resource file = cvStorageService.loadFileAsResource(id);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFilename() + "\"")
+                .body(file);
+    }
+
+    @GetMapping("/view/{id}")
+    public ResponseEntity<Resource> viewCV(@PathVariable String id) {
+        Resource file = cvStorageService.loadFileAsResource(id);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(file);
+    }
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\controller\DashboardController.java ===
+package com.recruitpme.cvservice.controller;
+
+import com.recruitpme.cvservice.dto.DashboardStatsDTO;
+import com.recruitpme.cvservice.dto.RecruitmentSourceDTO;
+import com.recruitpme.cvservice.service.DashboardService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/dashboard")
+public class DashboardController {
+
+    @Autowired
+    private DashboardService dashboardService;
+
+    @GetMapping("/stats")
+    public ResponseEntity<DashboardStatsDTO> getStats(
+            @RequestParam(value = "period", defaultValue = "30days") String period) {
+
+        DashboardStatsDTO stats = dashboardService.getStats(period);
+        return ResponseEntity.ok(stats);
+    }
+
+    @GetMapping("/sources")
+    public ResponseEntity<List<RecruitmentSourceDTO>> getRecruitmentSources() {
+        List<RecruitmentSourceDTO> sources = dashboardService.getRecruitmentSources();
+        return ResponseEntity.ok(sources);
+    }
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\dto\AnalysisProgressDTO.java ===
+package com.recruitpme.cvservice.dto;
+
+import lombok.Data;
+
+import java.util.List;
+
+@Data
+public class AnalysisProgressDTO {
+    private String analysisId;
+    private int progress;
+    private boolean completed;
+    private List<CVAnalysisResponseDTO> results;
+    private AnalysisStatsDTO stats;
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\dto\AnalysisRequestDTO.java ===
+package com.recruitpme.cvservice.dto;
+
+import lombok.Data;
+
+@Data
+public class AnalysisRequestDTO {
+    private String analysisId;
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\dto\AnalysisResultDTO.java ===
+package com.recruitpme.cvservice.dto;
+
+import lombok.Data;
+
+import java.util.List;
+import java.util.Map;
+
+@Data
+public class AnalysisResultDTO {
+    private String cvId;
+    private int score;
+    private String firstName;
+    private String lastName;
+    private String email;
+    private String phone;
+    private String title;
+    private String location;
+    private int yearsOfExperience;
+    private List<String> skills;
+    private List<SkillAnalysisDTO> requiredSkillsAnalysis;
+    private List<SkillAnalysisDTO> preferredSkillsAnalysis;
+    private int requiredSkillsMatch;
+    private int requiredSkillsTotal;
+    private int preferredSkillsMatch;
+    private int preferredSkillsTotal;
+    private List<String> experienceInsights;
+    private List<String> educationInsights;
+    private List<String> strengths;
+    private List<String> areasForImprovement;
+    private String jobFitAnalysis;
+    private List<Map<String, Object>> categoryScores;
+    private List<InterviewQuestionDTO> interviewQuestions;
+    private List<ExperienceDTO> experience;
+    private List<EducationDTO> education;
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\dto\AnalysisStatsDTO.java ===
+package com.recruitpme.cvservice.dto;
+
+import lombok.Data;
+
+@Data
+public class AnalysisStatsDTO {
+    private int skillsDetected;
+    private int recommendedCandidates;
+    private String topCandidateName;
+    private int topCandidateScore;
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\dto\CandidateDTO.java ===
+package com.recruitpme.cvservice.dto;
+
+import lombok.Data;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Data
+public class CandidateDTO {
+    private String id;
+    private String firstName;
+    private String lastName;
+    private String email;
+    private String phone;
+    private String title;
+    private String location;
+    private List<String> skills;
+    private int score;
+    private int yearsOfExperience;
+    private String status;
+    private String stage;
+    private String source;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+    private List<CandidateNoteDTO> notes;
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\dto\CandidateNoteDTO.java ===
+package com.recruitpme.cvservice.dto;
+
+import lombok.Data;
+
+import java.time.LocalDateTime;
+
+@Data
+public class CandidateNoteDTO {
+    private String id;
+    private String candidateId;
+    private String authorId;
+    private String authorName;
+    private String authorInitials;
+    private String content;
+    private String type;
+    private LocalDateTime date;
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\dto\CVAnalysisRequestDTO.java ===
+package com.recruitpme.cvservice.dto;
+
+import lombok.Data;
+
+@Data
+public class CVAnalysisRequestDTO {
+    private String cvId;
+    private String jobId;
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\dto\CVAnalysisResponseDTO.java ===
+package com.recruitpme.cvservice.dto;
+
+import lombok.Data;
+
+import java.util.List;
+
+@Data
+public class CVAnalysisResponseDTO {
+    private String id;
+    private String firstName;
+    private String lastName;
+    private String email;
+    private String phone;
+    private String title;
+    private int score;
+    private int yearsOfExperience;
+    private List<String> skills;
+    private int requiredSkillsMatch;
+    private int requiredSkillsTotal;
+    private int preferredSkillsMatch;
+    private int preferredSkillsTotal;
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\dto\CVDetailDTO.java ===
+package com.recruitpme.cvservice.dto;
+
+import lombok.Data;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Data
+public class CVDetailDTO {
+    private String id;
+    private String firstName;
+    private String lastName;
+    private String email;
+    private String phone;
+    private String title;
+    private String location;
+    private String summary;
+    private int score;
+    private int yearsOfExperience;
+    private List<String> skills;
+    private List<ExperienceDTO> experience;
+    private List<EducationDTO> education;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\dto\CVDetailResponseDTO.java ===
+package com.recruitpme.cvservice.dto;
+
+import lombok.Data;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+
+@Data
+public class CVDetailResponseDTO {
+    private String id;
+    private String firstName;
+    private String lastName;
+    private String email;
+    private String phone;
+    private String title;
+    private String location;
+    private int score;
+    private int yearsOfExperience;
+    private List<String> skills;
+    private List<ExperienceDTO> experience;
+    private List<EducationDTO> education;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+
+    // Analysis details
+    private List<SkillAnalysisDTO> requiredSkillsAnalysis;
+    private List<SkillAnalysisDTO> preferredSkillsAnalysis;
+    private int requiredSkillsMatch;
+    private int requiredSkillsTotal;
+    private int preferredSkillsMatch;
+    private int preferredSkillsTotal;
+    private List<String> experienceInsights;
+    private List<String> educationInsights;
+    private List<String> strengths;
+    private List<String> areasForImprovement;
+    private String jobFitAnalysis;
+    private List<Map<String, Object>> categoryScores;
+    private List<InterviewQuestionDTO> interviewQuestions;
+
+    // Notes
+    private List<CandidateNoteDTO> notes;
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\dto\CVSearchCriteriaDTO.java ===
+package com.recruitpme.cvservice.dto;
+
+import lombok.Data;
+
+import java.util.List;
+
+@Data
+public class CVSearchCriteriaDTO {
+    private String keyword;
+    private List<String> skills;
+    private Integer minYearsExperience;
+    private Integer minScore;
+    private String location;
+    private List<String> jobTitles;
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\dto\CVUploadResponseDTO.java ===
+package com.recruitpme.cvservice.dto;
+
+import lombok.Data;
+
+import java.util.List;
+
+@Data
+public class CVUploadResponseDTO {
+    private List<String> fileIds;
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\dto\DashboardStatsDTO.java ===
+package com.recruitpme.cvservice.dto;
+
+import lombok.Data;
+
+import java.util.List;
+import java.util.Map;
+
+@Data
+public class DashboardStatsDTO {
+    private int totalCandidates;
+    private int totalJobs;
+    private int activeJobs;
+    private int newCandidatesThisWeek;
+    private int interviewsScheduledThisWeek;
+    private int averageCandidatesPerJob;
+    private double averageTimeToHire;
+    private List<Map<String, Object>> candidatesByStage;
+    private List<Map<String, Object>> candidatesByScore;
+    private List<Map<String, Object>> hiringActivity;
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\dto\EducationDTO.java ===
+package com.recruitpme.cvservice.dto;
+
+import lombok.Data;
+
+@Data
+public class EducationDTO {
+    private String degree;
+    private String institution;
+    private String location;
+    private String field;
+    private String startYear;
+    private String endYear;
+    private String period;
+    private String description;
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\dto\ExperienceDTO.java ===
+package com.recruitpme.cvservice.dto;
+
+import lombok.Data;
+
+@Data
+public class ExperienceDTO {
+    private String title;
+    private String company;
+    private String location;
+    private String startDate;
+    private String endDate;
+    private String period;
+    private String description;
+    private boolean currentPosition;
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\dto\InterviewQuestionDTO.java ===
+package com.recruitpme.cvservice.dto;
+
+import lombok.Data;
+
+@Data
+public class InterviewQuestionDTO {
+    private String question;
+    private String rationale;
+    private String category;
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\dto\InterviewQuestionRequestDTO.java ===
+package com.recruitpme.cvservice.dto;
+
+import lombok.Data;
+
+@Data
+public class InterviewQuestionRequestDTO {
+    private String candidateId;
+    private String jobId;
+    private int numberOfQuestions;
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\dto\JobDetailDTO.java ===
+package com.recruitpme.cvservice.dto;
+
+import lombok.Data;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Data
+public class JobDetailDTO {
+    private String id;
+    private String title;
+    private String description;
+    private String location;
+    private String jobType;
+    private String workType;
+    private String department;
+    private String status;
+    private String salaryRange;
+    private int minYearsExperience;
+    private List<JobSkillDTO> requiredSkills;
+    private List<JobSkillDTO> preferredSkills;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\dto\JobSkillDTO.java ===
+package com.recruitpme.cvservice.dto;
+
+import lombok.Data;
+
+@Data
+public class JobSkillDTO {
+    private String id;
+    private String skillName;
+    private boolean required;
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\dto\RecruitmentSourceDTO.java ===
+package com.recruitpme.cvservice.dto;
+
+import lombok.Data;
+
+@Data
+public class RecruitmentSourceDTO {
+    private String source;
+    private int count;
+    private double percentage;
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\dto\SkillAnalysisDTO.java ===
+package com.recruitpme.cvservice.dto;
+
+import lombok.Data;
+
+@Data
+public class SkillAnalysisDTO {
+    private String name;
+    private boolean matched;
+    private int confidence;
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\entity\CVAnalysis.java ===
+package com.recruitpme.cvservice.entity;
+
+import lombok.Data;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.elasticsearch.annotations.Document;
+import org.springframework.data.elasticsearch.annotations.Field;
+import org.springframework.data.elasticsearch.annotations.FieldType;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+
+@Data
+@Document(indexName = "cv_analyses")
+public class CVAnalysis {
+
+    @Id
+    private String id;
+
+    @Field(type = FieldType.Keyword)
+    private String cvId;
+
+    @Field(type = FieldType.Keyword)
+    private String jobId;
+
+    @Field(type = FieldType.Integer)
+    private int score;
+
+    @Field(type = FieldType.Text)
+    private String firstName;
+
+    @Field(type = FieldType.Text)
+    private String lastName;
+
+    @Field(type = FieldType.Text)
+    private String email;
+
+    @Field(type = FieldType.Text)
+    private String phone;
+
+    @Field(type = FieldType.Text)
+    private String title;
+
+    @Field(type = FieldType.Text)
+    private String location;
+
+    @Field(type = FieldType.Integer)
+    private int yearsOfExperience;
+
+    @Field(type = FieldType.Text)
+    private List<String> skills;
+
+    @Field(type = FieldType.Nested)
+    private List<Map<String, Object>> requiredSkillsAnalysis;
+
+    @Field(type = FieldType.Nested)
+    private List<Map<String, Object>> preferredSkillsAnalysis;
+
+    @Field(type = FieldType.Integer)
+    private int requiredSkillsMatch;
+
+    @Field(type = FieldType.Integer)
+    private int requiredSkillsTotal;
+
+    @Field(type = FieldType.Integer)
+    private int preferredSkillsMatch;
+
+    @Field(type = FieldType.Integer)
+    private int preferredSkillsTotal;
+
+    @Field(type = FieldType.Text)
+    private List<String> experienceInsights;
+
+    @Field(type = FieldType.Text)
+    private List<String> educationInsights;
+
+    @Field(type = FieldType.Text)
+    private List<String> strengths;
+
+    @Field(type = FieldType.Text)
+    private List<String> areasForImprovement;
+
+    @Field(type = FieldType.Text)
+    private String jobFitAnalysis;
+
+    @Field(type = FieldType.Nested)
+    private List<Map<String, Object>> categoryScores;
+
+    @Field(type = FieldType.Nested)
+    private List<Map<String, Object>> interviewQuestions;
+
+    @Field(type = FieldType.Nested)
+    private List<Map<String, Object>> experience;
+
+    @Field(type = FieldType.Nested)
+    private List<Map<String, Object>> education;
+
+    @Field(type = FieldType.Date)
+    private LocalDateTime createdAt;
+
+    @Field(type = FieldType.Date)
+    private LocalDateTime updatedAt;
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\entity\CVDocument.java ===
+package com.recruitpme.cvservice.entity;
+
+import lombok.Data;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.elasticsearch.annotations.Document;
+import org.springframework.data.elasticsearch.annotations.Field;
+import org.springframework.data.elasticsearch.annotations.FieldType;
+
+import java.time.LocalDateTime;
+
+@Data
+@Document(indexName = "cv_documents")
+public class CVDocument {
+
+    @Id
+    private String id;
+
+    @Field(type = FieldType.Text)
+    private String originalFilename;
+
+    @Field(type = FieldType.Text)
+    private String contentType;
+
+    @Field(type = FieldType.Long)
+    private long size;
+
+    @Field(type = FieldType.Text)
+    private String extractedText;
+
+    @Field(type = FieldType.Keyword)
+    private String candidateId;
+
+    @Field(type = FieldType.Date)
+    private LocalDateTime uploadedAt;
+
+    @Field(type = FieldType.Boolean)
+    private boolean analyzed;
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\entity\CVSkill.java ===
+package com.recruitpme.cvservice.entity;
+
+import lombok.Data;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.elasticsearch.annotations.Document;
+import org.springframework.data.elasticsearch.annotations.Field;
+import org.springframework.data.elasticsearch.annotations.FieldType;
+
+@Data
+@Document(indexName = "cv_skills")
+public class CVSkill {
+
+    @Id
+    private String id;
+
+    @Field(type = FieldType.Keyword)
+    private String cvId;
+
+    @Field(type = FieldType.Keyword)
+    private String skillName;
+
+    @Field(type = FieldType.Integer)
+    private int confidence;
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\exception\FileStorageException.java ===
+package com.recruitpme.cvservice.exception;
+
+public class FileStorageException extends RuntimeException {
+
+    public FileStorageException(String message) {
+        super(message);
+    }
+
+    public FileStorageException(String message, Throwable cause) {
+        super(message, cause);
+    }
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\exception\GlobalExceptionHandler.java ===
+package com.recruitpme.cvservice.exception;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@ControllerAdvice
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleResourceNotFoundException(ResourceNotFoundException ex) {
+        Map<String, String> response = new HashMap<>();
+        response.put("error", "Not Found");
+        response.put("message", ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(FileStorageException.class)
+    public ResponseEntity<Map<String, String>> handleFileStorageException(FileStorageException ex) {
+        Map<String, String> response = new HashMap<>();
+        response.put("error", "File Storage Error");
+        response.put("message", ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<Map<String, String>> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException ex) {
+        Map<String, String> response = new HashMap<>();
+        response.put("error", "File Size Exceeded");
+        response.put("message", "One or more files exceed the maximum allowed size");
+        return new ResponseEntity<>(response, HttpStatus.PAYLOAD_TOO_LARGE);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, String>> handleGenericException(Exception ex) {
+        Map<String, String> response = new HashMap<>();
+        response.put("error", "Internal Server Error");
+        response.put("message", ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\exception\ResourceNotFoundException.java ===
+package com.recruitpme.cvservice.exception;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.ResponseStatus;
+
+
+@ResponseStatus(HttpStatus.NOT_FOUND)
+public class ResourceNotFoundException extends RuntimeException {
+    public ResourceNotFoundException(String message) {
+        super(message);
+    }
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\repository\CVAnalysisRepository.java ===
+package com.recruitpme.cvservice.repository;
+
+import com.recruitpme.cvservice.entity.CVAnalysis;
+import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Optional;
+
+@Repository
+public interface CVAnalysisRepository extends ElasticsearchRepository<CVAnalysis, String> {
+
+    Optional<CVAnalysis> findByCvIdAndJobId(String cvId, String jobId);
+
+    List<CVAnalysis> findByCvId(String cvId);
+
+    List<CVAnalysis> findByJobId(String jobId);
+
+    List<CVAnalysis> findByJobIdOrderByScoreDesc(String jobId);
+
+    List<CVAnalysis> findByScoreGreaterThanEqual(int minScore);
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\repository\CVDocumentRepository.java ===
+package com.recruitpme.cvservice.repository;
+
+import com.recruitpme.cvservice.entity.CVDocument;
+import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Optional;
+
+@Repository
+public interface CVDocumentRepository extends ElasticsearchRepository<CVDocument, String> {
+
+    Optional<CVDocument> findById(String id);
+
+    List<CVDocument> findByCandidateId(String candidateId);
+
+    List<CVDocument> findByAnalyzedFalse();
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\repository\CVSkillRepository.java ===
+package com.recruitpme.cvservice.repository;
+
+import com.recruitpme.cvservice.entity.CVSkill;
+import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface CVSkillRepository extends ElasticsearchRepository<CVSkill, String> {
+
+    List<CVSkill> findByCvId(String cvId);
+
+    List<CVSkill> findBySkillNameContainingIgnoreCase(String skillName);
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\service\CandidateServiceImpl.java ===
+package com.recruitpme.cvservice.service;
+
+import com.recruitpme.cvservice.dto.CandidateDTO;
+import com.recruitpme.cvservice.dto.CandidateNoteDTO;
+import com.recruitpme.cvservice.entity.CVAnalysis;
+import com.recruitpme.cvservice.exception.ResourceNotFoundException;
+import com.recruitpme.cvservice.repository.CVAnalysisRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
+
+@Service
+public class CandidateServiceImpl {
+
+    @Autowired
+    private CVAnalysisRepository cvAnalysisRepository;
+
+    public List<CandidateDTO> getAllCandidates(String status, List<String> skills, Integer minScore) {
+        Iterable<CVAnalysis> analyses;
+
+        // Get all analyses
+        analyses = cvAnalysisRepository.findAll();
+
+        // Convert to list
+        List<CVAnalysis> analysisList = StreamSupport
+                .stream(analyses.spliterator(), false)
+                .collect(Collectors.toList());
+
+        // Apply filters if needed
+        if (minScore != null) {
+            analysisList = analysisList.stream()
+                    .filter(a -> a.getScore() >= minScore)
+                    .collect(Collectors.toList());
+        }
+
+        if (skills != null && !skills.isEmpty()) {
+            analysisList = analysisList.stream()
+                    .filter(a -> a.getSkills() != null && a.getSkills().containsAll(skills))
+                    .collect(Collectors.toList());
+        }
+
+        // Convert to DTOs
+        return analysisList.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    public CandidateDTO getCandidateById(String id) {
+        Optional<CVAnalysis> analysisOpt = cvAnalysisRepository.findById(id);
+
+        if (analysisOpt.isPresent()) {
+            return convertToDTO(analysisOpt.get());
+        } else {
+            throw new ResourceNotFoundException("Candidate not found with id: " + id);
+        }
+    }
+
+    public List<CandidateDTO> getCandidatesByJob(String jobId) {
+        List<CVAnalysis> analyses = cvAnalysisRepository.findByJobIdOrderByScoreDesc(jobId);
+
+        return analyses.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    public CandidateNoteDTO addCandidateNote(String candidateId, CandidateNoteDTO noteDto) {
+        // Implementation depends on how notes are stored
+        // For simplicity, we'll just return the DTO with an ID
+        noteDto.setId(UUID.randomUUID().toString());
+        noteDto.setCandidateId(candidateId);
+        noteDto.setDate(LocalDateTime.now());
+
+        return noteDto;
+    }
+
+    public CandidateDTO updateCandidateStage(String id, String stageId) {
+        Optional<CVAnalysis> analysisOpt = cvAnalysisRepository.findById(id);
+
+        if (analysisOpt.isPresent()) {
+            CVAnalysis analysis = analysisOpt.get();
+            // In a real implementation, you would update the stage
+            // For now, we just return the existing candidate
+            return convertToDTO(analysis);
+        } else {
+            throw new ResourceNotFoundException("Candidate not found with id: " + id);
+        }
+    }
+
+    public void disqualifyCandidate(String id) {
+        Optional<CVAnalysis> analysisOpt = cvAnalysisRepository.findById(id);
+
+        if (analysisOpt.isPresent()) {
+            // Implementation depends on how disqualifications are handled
+            // For simplicity, we'll just check if the candidate exists
+        } else {
+            throw new ResourceNotFoundException("Candidate not found with id: " + id);
+        }
+    }
+
+    private CandidateDTO convertToDTO(CVAnalysis analysis) {
+        CandidateDTO dto = new CandidateDTO();
+        dto.setId(analysis.getId());
+        dto.setFirstName(analysis.getFirstName());
+        dto.setLastName(analysis.getLastName());
+        dto.setEmail(analysis.getEmail());
+        dto.setPhone(analysis.getPhone());
+        dto.setTitle(analysis.getTitle());
+        dto.setLocation(analysis.getLocation());
+        dto.setSkills(analysis.getSkills());
+        dto.setScore(analysis.getScore());
+        dto.setYearsOfExperience(analysis.getYearsOfExperience());
+        // Status and stage would come from a workflow system
+        dto.setStatus("ACTIVE");
+        dto.setStage("APPLIED");
+        dto.setCreatedAt(analysis.getCreatedAt());
+        dto.setUpdatedAt(analysis.getUpdatedAt());
+        dto.setNotes(new ArrayList<>());
+
+        return dto;
+    }
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\service\CVAnalysisService.java ===
+package com.recruitpme.cvservice.service;
+
+import com.recruitpme.cvservice.client.AIServiceClient;
+import com.recruitpme.cvservice.client.JobServiceClient;
+import com.recruitpme.cvservice.dto.*;
+import com.recruitpme.cvservice.entity.CVAnalysis;
+import com.recruitpme.cvservice.entity.CVDocument;
+import com.recruitpme.cvservice.exception.FileStorageException;
+import com.recruitpme.cvservice.exception.ResourceNotFoundException;
+import com.recruitpme.cvservice.repository.CVAnalysisRepository;
+import com.recruitpme.cvservice.repository.CVDocumentRepository;
+import io.minio.GetObjectArgs;
+import io.minio.MinioClient;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+
+@Service
+@Slf4j
+public class CVAnalysisService {
+
+    @Autowired
+    private MinioClient minioClient;
+
+    @Autowired
+    private CVDocumentRepository cvDocumentRepository;
+
+    @Autowired
+    private CVAnalysisRepository cvAnalysisRepository;
+
+    @Autowired
+    private CVStorageService cvStorageService;
+
+    @Autowired
+    private AIServiceClient aiServiceClient;
+
+    @Autowired
+    private JobServiceClient jobServiceClient;
+
+    // Cache for analysis progress
+    private final Map<String, AnalysisProgressDTO> analysisProgressCache = new ConcurrentHashMap<>();
+
+    public String submitBatchAnalysis(MultipartFile[] files, String jobId) {
+        // Generate analysis ID
+        String analysisId = UUID.randomUUID().toString();
+
+        // Store files
+        List<String> fileIds = cvStorageService.storeFiles(files);
+
+        // Initialize progress
+        AnalysisProgressDTO progress = new AnalysisProgressDTO();
+        progress.setAnalysisId(analysisId);
+        progress.setProgress(0);
+        progress.setCompleted(false);
+        progress.setResults(new ArrayList<>());
+
+        // Cache progress
+        analysisProgressCache.put(analysisId, progress);
+
+        // Submit analysis jobs in background
+        Thread analysisThread = new Thread(() -> processAnalysisBatch(analysisId, fileIds, jobId));
+        analysisThread.start();
+
+        return analysisId;
+    }
+
+    private void processAnalysisBatch(String analysisId, List<String> fileIds, String jobId) {
+        AnalysisProgressDTO progress = analysisProgressCache.get(analysisId);
+
+        if (progress == null) {
+            return;
+        }
+
+        int totalFiles = fileIds.size();
+        int processedFiles = 0;
+        List<CVAnalysisResponseDTO> results = new ArrayList<>();
+
+        for (String fileId : fileIds) {
+            try {
+                // Analyze CV
+                CVAnalysisResponseDTO result = analyzeSingleCV(fileId, jobId);
+                results.add(result);
+
+                // Update progress
+                processedFiles++;
+                int percentage = (processedFiles * 100) / totalFiles;
+                progress.setProgress(percentage);
+                progress.setResults(results);
+                analysisProgressCache.put(analysisId, progress);
+
+            } catch (Exception e) {
+                log.error("Error analyzing CV {}: {}", fileId, e.getMessage(), e);
+            }
+        }
+
+        // Compute statistics
+        AnalysisStatsDTO stats = computeAnalysisStats(results);
+        progress.setStats(stats);
+
+        // Mark as completed
+        progress.setCompleted(true);
+        analysisProgressCache.put(analysisId, progress);
+    }
+
+    private AnalysisStatsDTO computeAnalysisStats(List<CVAnalysisResponseDTO> results) {
+        AnalysisStatsDTO stats = new AnalysisStatsDTO();
+
+        // Count unique skills
+        Set<String> allSkills = new HashSet<>();
+        results.forEach(result -> {
+            if (result.getSkills() != null) {
+                allSkills.addAll(result.getSkills());
+            }
+        });
+        stats.setSkillsDetected(allSkills.size());
+
+        // Count recommended candidates (score >= 85)
+        long recommendedCount = results.stream()
+                .filter(result -> result.getScore() >= 85)
+                .count();
+        stats.setRecommendedCandidates((int) recommendedCount);
+
+        // Find top candidate
+        Optional<CVAnalysisResponseDTO> topCandidate = results.stream()
+                .max(Comparator.comparing(CVAnalysisResponseDTO::getScore));
+
+        if (topCandidate.isPresent()) {
+            CVAnalysisResponseDTO top = topCandidate.get();
+            stats.setTopCandidateName(top.getFirstName() + " " + top.getLastName());
+            stats.setTopCandidateScore(top.getScore());
+        }
+
+        return stats;
+    }
+
+    public AnalysisProgressDTO getAnalysisProgress(String analysisId) {
+        AnalysisProgressDTO progress = analysisProgressCache.get(analysisId);
+
+        if (progress == null) {
+            throw new ResourceNotFoundException("Analysis not found with id: " + analysisId);
+        }
+
+        return progress;
+    }
+
+    public CVAnalysisResponseDTO analyzeSingleCV(String cvId, String jobId) {
+        try {
+            // Check if CV exists
+            CVDocument cvDocument = cvDocumentRepository.findById(cvId)
+                    .orElseThrow(() -> new ResourceNotFoundException("CV not found with id: " + cvId));
+
+            // Extract text from CV if not already extracted
+            String extractedText = cvDocument.getExtractedText();
+            if (extractedText == null || extractedText.isEmpty()) {
+                extractedText = extractTextFromFile(cvId);
+                cvDocument.setExtractedText(extractedText);
+                cvDocumentRepository.save(cvDocument);
+            }
+
+            // Call AI service to analyze the CV
+            AnalysisResultDTO analysisResult = aiServiceClient.analyzeCv(extractedText, jobId);
+
+            // Save analysis result
+            saveAnalysisResult(analysisResult, cvId, jobId);
+
+            // Convert to response DTO
+            return convertToAnalysisResponseDTO(analysisResult, cvId);
+
+        } catch (Exception e) {
+            log.error("Error analyzing CV {}: {}", cvId, e.getMessage(), e);
+            throw new FileStorageException("Failed to analyze CV: " + e.getMessage(), e);
+        }
+    }
+
+    private String extractTextFromFile(String fileId) {
+        try {
+            // Get file from MinIO
+            GetObjectArgs getObjectArgs = GetObjectArgs.builder()
+                    .bucket("cvs")
+                    .object(fileId)
+                    .build();
+
+            // Read text content
+            StringBuilder textContent = new StringBuilder();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(minioClient.getObject(getObjectArgs)));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                textContent.append(line).append("\n");
+            }
+
+            return textContent.toString();
+
+        } catch (Exception e) {
+            log.error("Error extracting text from file {}: {}", fileId, e.getMessage(), e);
+            throw new FileStorageException("Failed to extract text from file: " + e.getMessage(), e);
+        }
+    }
+
+    private void saveAnalysisResult(AnalysisResultDTO analysisResult, String cvId, String jobId) {
+        // Check if analysis already exists
+        Optional<CVAnalysis> existingAnalysis = cvAnalysisRepository.findByCvIdAndJobId(cvId, jobId);
+
+        CVAnalysis analysis;
+        if (existingAnalysis.isPresent()) {
+            analysis = existingAnalysis.get();
+        } else {
+            analysis = new CVAnalysis();
+            analysis.setId(UUID.randomUUID().toString());
+            analysis.setCvId(cvId);
+            analysis.setJobId(jobId);
+            analysis.setCreatedAt(LocalDateTime.now());
+        }
+
+        // Update analysis fields
+        analysis.setScore(analysisResult.getScore());
+        analysis.setFirstName(analysisResult.getFirstName());
+        analysis.setLastName(analysisResult.getLastName());
+        analysis.setEmail(analysisResult.getEmail());
+        analysis.setPhone(analysisResult.getPhone());
+        analysis.setTitle(analysisResult.getTitle());
+        analysis.setLocation(analysisResult.getLocation());
+        analysis.setYearsOfExperience(analysisResult.getYearsOfExperience());
+        analysis.setSkills(analysisResult.getSkills());
+        analysis.setRequiredSkillsMatch(analysisResult.getRequiredSkillsMatch());
+        analysis.setRequiredSkillsTotal(analysisResult.getRequiredSkillsTotal());
+        analysis.setPreferredSkillsMatch(analysisResult.getPreferredSkillsMatch());
+        analysis.setPreferredSkillsTotal(analysisResult.getPreferredSkillsTotal());
+        analysis.setUpdatedAt(LocalDateTime.now());
+
+        // Save to repository
+        cvAnalysisRepository.save(analysis);
+    }
+
+    private CVAnalysisResponseDTO convertToAnalysisResponseDTO(AnalysisResultDTO analysisResult, String cvId) {
+        CVAnalysisResponseDTO responseDTO = new CVAnalysisResponseDTO();
+        responseDTO.setId(cvId);
+        responseDTO.setFirstName(analysisResult.getFirstName());
+        responseDTO.setLastName(analysisResult.getLastName());
+        responseDTO.setEmail(analysisResult.getEmail());
+        responseDTO.setPhone(analysisResult.getPhone());
+        responseDTO.setTitle(analysisResult.getTitle());
+        responseDTO.setScore(analysisResult.getScore());
+        responseDTO.setYearsOfExperience(analysisResult.getYearsOfExperience());
+        responseDTO.setSkills(analysisResult.getSkills());
+        responseDTO.setRequiredSkillsMatch(analysisResult.getRequiredSkillsMatch());
+        responseDTO.setRequiredSkillsTotal(analysisResult.getRequiredSkillsTotal());
+        responseDTO.setPreferredSkillsMatch(analysisResult.getPreferredSkillsMatch());
+        responseDTO.setPreferredSkillsTotal(analysisResult.getPreferredSkillsTotal());
+
+        return responseDTO;
+    }
+
+    public CVDetailResponseDTO getCVDetails(String id) {
+        // Get CV document
+        CVDocument cvDocument = cvDocumentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("CV not found with id: " + id));
+
+        // Get analysis if available
+        List<CVAnalysis> analyses = cvAnalysisRepository.findByCvId(id);
+        CVAnalysis analysis = analyses.isEmpty() ? null : analyses.get(0);
+
+        // Build response
+        CVDetailResponseDTO responseDTO = new CVDetailResponseDTO();
+        responseDTO.setId(id);
+
+        if (analysis != null) {
+            responseDTO.setFirstName(analysis.getFirstName());
+            responseDTO.setLastName(analysis.getLastName());
+            responseDTO.setEmail(analysis.getEmail());
+            responseDTO.setPhone(analysis.getPhone());
+            responseDTO.setTitle(analysis.getTitle());
+            responseDTO.setLocation(analysis.getLocation());
+            responseDTO.setScore(analysis.getScore());
+            responseDTO.setYearsOfExperience(analysis.getYearsOfExperience());
+            responseDTO.setSkills(analysis.getSkills());
+            responseDTO.setCreatedAt(analysis.getCreatedAt());
+            responseDTO.setUpdatedAt(analysis.getUpdatedAt());
+
+            // Add analysis details if available
+            if (analysis.getRequiredSkillsAnalysis() != null) {
+                List<SkillAnalysisDTO> requiredSkills = convertSkillAnalysis(analysis.getRequiredSkillsAnalysis());
+                responseDTO.setRequiredSkillsAnalysis(requiredSkills);
+            }
+
+            if (analysis.getPreferredSkillsAnalysis() != null) {
+                List<SkillAnalysisDTO> preferredSkills = convertSkillAnalysis(analysis.getPreferredSkillsAnalysis());
+                responseDTO.setPreferredSkillsAnalysis(preferredSkills);
+            }
+
+            responseDTO.setRequiredSkillsMatch(analysis.getRequiredSkillsMatch());
+            responseDTO.setRequiredSkillsTotal(analysis.getRequiredSkillsTotal());
+            responseDTO.setPreferredSkillsMatch(analysis.getPreferredSkillsMatch());
+            responseDTO.setPreferredSkillsTotal(analysis.getPreferredSkillsTotal());
+            responseDTO.setExperienceInsights(analysis.getExperienceInsights());
+            responseDTO.setEducationInsights(analysis.getEducationInsights());
+            responseDTO.setStrengths(analysis.getStrengths());
+            responseDTO.setAreasForImprovement(analysis.getAreasForImprovement());
+            responseDTO.setJobFitAnalysis(analysis.getJobFitAnalysis());
+            responseDTO.setCategoryScores(analysis.getCategoryScores());
+
+            // Convert experience and education
+            if (analysis.getExperience() != null) {
+                List<ExperienceDTO> experience = convertExperience(analysis.getExperience());
+                responseDTO.setExperience(experience);
+            }
+
+            if (analysis.getEducation() != null) {
+                List<EducationDTO> education = convertEducation(analysis.getEducation());
+                responseDTO.setEducation(education);
+            }
+
+            // Convert interview questions
+            if (analysis.getInterviewQuestions() != null) {
+                List<InterviewQuestionDTO> questions = convertInterviewQuestions(analysis.getInterviewQuestions());
+                responseDTO.setInterviewQuestions(questions);
+            }
+        }
+
+        // Set empty lists for null fields
+        if (responseDTO.getSkills() == null) {
+            responseDTO.setSkills(new ArrayList<>());
+        }
+
+        if (responseDTO.getExperience() == null) {
+            responseDTO.setExperience(new ArrayList<>());
+        }
+
+        if (responseDTO.getEducation() == null) {
+            responseDTO.setEducation(new ArrayList<>());
+        }
+
+        if (responseDTO.getNotes() == null) {
+            responseDTO.setNotes(new ArrayList<>());
+        }
+
+        return responseDTO;
+    }
+
+    private List<SkillAnalysisDTO> convertSkillAnalysis(List<Map<String, Object>> skillAnalysis) {
+        return skillAnalysis.stream()
+                .map(map -> {
+                    SkillAnalysisDTO dto = new SkillAnalysisDTO();
+                    dto.setName((String) map.get("name"));
+                    dto.setMatched((Boolean) map.get("matched"));
+                    if (map.get("confidence") instanceof Integer) {
+                        dto.setConfidence((Integer) map.get("confidence"));
+                    } else if (map.get("confidence") instanceof Double) {
+                        dto.setConfidence(((Double) map.get("confidence")).intValue());
+                    }
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
+
+    private List<ExperienceDTO> convertExperience(List<Map<String, Object>> experience) {
+        return experience.stream()
+                .map(map -> {
+                    ExperienceDTO dto = new ExperienceDTO();
+                    dto.setTitle((String) map.get("title"));
+                    dto.setCompany((String) map.get("company"));
+                    dto.setLocation((String) map.get("location"));
+                    dto.setStartDate((String) map.get("startDate"));
+                    dto.setEndDate((String) map.get("endDate"));
+                    dto.setPeriod((String) map.get("period"));
+                    dto.setDescription((String) map.get("description"));
+                    if (map.get("currentPosition") instanceof Boolean) {
+                        dto.setCurrentPosition((Boolean) map.get("currentPosition"));
+                    }
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
+
+    private List<EducationDTO> convertEducation(List<Map<String, Object>> education) {
+        return education.stream()
+                .map(map -> {
+                    EducationDTO dto = new EducationDTO();
+                    dto.setDegree((String) map.get("degree"));
+                    dto.setInstitution((String) map.get("institution"));
+                    dto.setLocation((String) map.get("location"));
+                    dto.setField((String) map.get("field"));
+                    dto.setStartYear((String) map.get("startYear"));
+                    dto.setEndYear((String) map.get("endYear"));
+                    dto.setPeriod((String) map.get("period"));
+                    dto.setDescription((String) map.get("description"));
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
+
+    private List<InterviewQuestionDTO> convertInterviewQuestions(List<Map<String, Object>> questions) {
+        return questions.stream()
+                .map(map -> {
+                    InterviewQuestionDTO dto = new InterviewQuestionDTO();
+                    dto.setQuestion((String) map.get("question"));
+                    dto.setRationale((String) map.get("rationale"));
+                    dto.setCategory((String) map.get("category"));
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\service\CVStorageService.java ===
+package com.recruitpme.cvservice.service;
+
+import com.recruitpme.cvservice.config.StorageProperties;
+import com.recruitpme.cvservice.entity.CVDocument;
+import com.recruitpme.cvservice.exception.FileStorageException;
+import com.recruitpme.cvservice.repository.CVDocumentRepository;
+import io.minio.GetObjectArgs;
+import io.minio.MinioClient;
+import io.minio.PutObjectArgs;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+@Service
+@Slf4j
+public class CVStorageService {
+
+    @Autowired
+    private MinioClient minioClient;
+
+    @Autowired
+    private StorageProperties storageProperties;
+
+    @Autowired
+    private CVDocumentRepository cvDocumentRepository;
+
+
+
+    public List<String> storeFiles(MultipartFile[] files) {
+        List<String> fileIds = new ArrayList<>();
+
+        for (MultipartFile file : files) {
+            try {
+                if (file.isEmpty()) {
+                    throw new FileStorageException("Failed to store empty file");
+                }
+
+                String fileId = UUID.randomUUID().toString();
+                String originalFilename = file.getOriginalFilename();
+                String contentType = file.getContentType();
+
+                // Store file in MinIO
+                minioClient.putObject(
+                        PutObjectArgs.builder()
+                                .bucket(storageProperties.getBucketName())
+                                .object(fileId)
+                                .stream(file.getInputStream(), file.getSize(), -1)
+                                .contentType(contentType)
+                                .build()
+                );
+
+                // Save document metadata in database
+                CVDocument document = new CVDocument();
+                document.setId(fileId);
+                document.setOriginalFilename(originalFilename);
+                document.setContentType(contentType);
+                document.setSize(file.getSize());
+                document.setUploadedAt(LocalDateTime.now());
+                document.setAnalyzed(false);
+
+                cvDocumentRepository.save(document);
+
+                fileIds.add(fileId);
+
+            } catch (Exception e) {
+                throw new FileStorageException("Failed to store file " + file.getOriginalFilename(), e);
+            }
+        }
+
+        return fileIds;
+    }
+
+    public Resource loadFileAsResource(String fileId) {
+        try {
+            // Check if file exists in database
+            if (!cvDocumentRepository.existsById(fileId)) {
+                throw new FileStorageException("File not found with id: " + fileId);
+            }
+
+            // Get file from MinIO
+            GetObjectArgs getObjectArgs = GetObjectArgs.builder()
+                    .bucket(storageProperties.getBucketName())
+                    .object(fileId)
+                    .build();
+
+            // Return as resource
+            Resource resource = new InputStreamResource(minioClient.getObject(getObjectArgs));
+
+            return resource;
+
+        } catch (Exception e) {
+            throw new FileStorageException("Failed to load file " + fileId, e);
+        }
+    }
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\service\DashboardService.java ===
+package com.recruitpme.cvservice.service;
+
+import com.recruitpme.cvservice.dto.DashboardStatsDTO;
+import com.recruitpme.cvservice.dto.RecruitmentSourceDTO;
+
+import java.util.List;
+
+public interface DashboardService {
+
+    DashboardStatsDTO getStats(String period);
+
+    List<RecruitmentSourceDTO> getRecruitmentSources();
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\java\com\recruitpme\cvservice\service\DashboardServiceImpl.java ===
+package com.recruitpme.cvservice.service;
+
+import com.recruitpme.cvservice.dto.DashboardStatsDTO;
+import com.recruitpme.cvservice.dto.RecruitmentSourceDTO;
+import com.recruitpme.cvservice.entity.CVAnalysis;
+import com.recruitpme.cvservice.repository.CVAnalysisRepository;
+import com.recruitpme.cvservice.repository.CVDocumentRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
+
+@Service
+public class DashboardServiceImpl implements DashboardService {
+
+    @Autowired
+    private CVAnalysisRepository cvAnalysisRepository;
+
+    @Autowired
+    private CVDocumentRepository cvDocumentRepository;
+
+    @Override
+    public DashboardStatsDTO getStats(String period) {
+        DashboardStatsDTO stats = new DashboardStatsDTO();
+
+        // Calculate period start date
+        LocalDateTime startDate;
+        LocalDateTime now = LocalDateTime.now();
+
+        switch (period) {
+            case "7days":
+                startDate = now.minus(7, ChronoUnit.DAYS);
+                break;
+            case "30days":
+                startDate = now.minus(30, ChronoUnit.DAYS);
+                break;
+            case "90days":
+                startDate = now.minus(90, ChronoUnit.DAYS);
+                break;
+            default:
+                startDate = now.minus(30, ChronoUnit.DAYS); // Default to 30 days
+        }
+
+        // Get all analyses
+        Iterable<CVAnalysis> allAnalyses = cvAnalysisRepository.findAll();
+        List<CVAnalysis> analyses = StreamSupport.stream(allAnalyses.spliterator(), false)
+                .collect(Collectors.toList());
+
+        // Filter by period if needed
+        List<CVAnalysis> periodAnalyses = analyses.stream()
+                .filter(a -> a.getCreatedAt() != null && a.getCreatedAt().isAfter(startDate))
+                .collect(Collectors.toList());
+
+        // Calculate metrics
+        stats.setTotalCandidates(analyses.size());
+
+        // Count recent candidates
+        long newCandidatesThisWeek = analyses.stream()
+                .filter(a -> a.getCreatedAt() != null && a.getCreatedAt().isAfter(now.minus(7, ChronoUnit.DAYS)))
+                .count();
+        stats.setNewCandidatesThisWeek((int) newCandidatesThisWeek);
+
+        // Calculate candidates by score
+        List<Map<String, Object>> candidatesByScore = new ArrayList<>();
+
+        Map<String, Object> excellent = new HashMap<>();
+        excellent.put("label", "Excellent (85+)");
+        excellent.put("count", analyses.stream().filter(a -> a.getScore() >= 85).count());
+        candidatesByScore.add(excellent);
+
+        Map<String, Object> good = new HashMap<>();
+        good.put("label", "Good (70-84)");
+        good.put("count", analyses.stream().filter(a -> a.getScore() >= 70 && a.getScore() < 85).count());
+        candidatesByScore.add(good);
+
+        Map<String, Object> average = new HashMap<>();
+        average.put("label", "Average (50-69)");
+        average.put("count", analyses.stream().filter(a -> a.getScore() >= 50 && a.getScore() < 70).count());
+        candidatesByScore.add(average);
+
+        Map<String, Object> poor = new HashMap<>();
+        poor.put("label", "Poor (<50)");
+        poor.put("count", analyses.stream().filter(a -> a.getScore() < 50).count());
+        candidatesByScore.add(poor);
+
+        stats.setCandidatesByScore(candidatesByScore);
+
+        // Other metrics would be calculated similarly
+        // These are placeholder values
+        stats.setTotalJobs(10);
+        stats.setActiveJobs(5);
+        stats.setInterviewsScheduledThisWeek(8);
+        stats.setAverageCandidatesPerJob(12);
+        stats.setAverageTimeToHire(21.5); // in days
+
+        // Placeholder for candidates by stage
+        List<Map<String, Object>> candidatesByStage = new ArrayList<>();
+        Map<String, Object> stage1 = new HashMap<>();
+        stage1.put("stage", "Applied");
+        stage1.put("count", 45);
+        candidatesByStage.add(stage1);
+
+        Map<String, Object> stage2 = new HashMap<>();
+        stage2.put("stage", "Screening");
+        stage2.put("count", 30);
+        candidatesByStage.add(stage2);
+
+        Map<String, Object> stage3 = new HashMap<>();
+        stage3.put("stage", "Interview");
+        stage3.put("count", 20);
+        candidatesByStage.add(stage3);
+
+        Map<String, Object> stage4 = new HashMap<>();
+        stage4.put("stage", "Offer");
+        stage4.put("count", 5);
+        candidatesByStage.add(stage4);
+
+        Map<String, Object> stage5 = new HashMap<>();
+        stage5.put("stage", "Hired");
+        stage5.put("count", 3);
+        candidatesByStage.add(stage5);
+
+        stats.setCandidatesByStage(candidatesByStage);
+
+        // Placeholder for hiring activity
+        List<Map<String, Object>> hiringActivity = new ArrayList<>();
+        for (int i = 0; i < 12; i++) {
+            Map<String, Object> month = new HashMap<>();
+            month.put("month", String.format("%02d", i + 1));
+            month.put("applications", new Random().nextInt(50) + 20);
+            month.put("interviews", new Random().nextInt(30) + 10);
+            month.put("offers", new Random().nextInt(10) + 2);
+            month.put("hires", new Random().nextInt(5) + 1);
+            hiringActivity.add(month);
+        }
+        stats.setHiringActivity(hiringActivity);
+
+        return stats;
+    }
+
+    @Override
+    public List<RecruitmentSourceDTO> getRecruitmentSources() {
+        // This would typically come from your database
+        // For now, returning mock data
+        List<RecruitmentSourceDTO> sources = new ArrayList<>();
+
+        RecruitmentSourceDTO source1 = new RecruitmentSourceDTO();
+        source1.setSource("LinkedIn");
+        source1.setCount(45);
+        source1.setPercentage(45.0);
+        sources.add(source1);
+
+        RecruitmentSourceDTO source2 = new RecruitmentSourceDTO();
+        source2.setSource("Job Board");
+        source2.setCount(25);
+        source2.setPercentage(25.0);
+        sources.add(source2);
+
+        RecruitmentSourceDTO source3 = new RecruitmentSourceDTO();
+        source3.setSource("Company Website");
+        source3.setCount(15);
+        source3.setPercentage(15.0);
+        sources.add(source3);
+
+        RecruitmentSourceDTO source4 = new RecruitmentSourceDTO();
+        source4.setSource("Referrals");
+        source4.setCount(10);
+        source4.setPercentage(10.0);
+        sources.add(source4);
+
+        RecruitmentSourceDTO source5 = new RecruitmentSourceDTO();
+        source5.setSource("Other");
+        source5.setCount(5);
+        source5.setPercentage(5.0);
+        sources.add(source5);
+
+        return sources;
+    }
+}
+=== FIN ===
+
+=== Contenu de backend\cv-service\src\main\resources\application.properties ===
+# Server configuration
+server.port=8082
+spring.application.name=cv-service
+
+# Database configuration
+spring.datasource.url=jdbc:postgresql://localhost:5432/cv_db
+spring.datasource.username=postgres
+spring.datasource.password=postgres
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+
+# JPA configuration
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+
+# Storage configuration for CV files
+storage.location=./uploads/cv-files
+
+# Elasticsearch configuration
+spring.elasticsearch.rest.uris=http://elasticsearch:9200
+
+# MinIO configuration
+minio.url=http://minio:9000
+minio.access-key=minioadmin
+minio.secret-key=minioadmin
+minio.bucket-name=cv-documents
+
+# Service URLs
+services.ai-service.url=http://ai-service:8000
+services.job-service.url=http://localhost:8083
+
+# Multipart file configuration
+spring.servlet.multipart.max-file-size=10MB
+spring.servlet.multipart.max-request-size=10MB
+
+# Redis caching
+spring.redis.host=redis
+spring.redis.port=6379
+spring.cache.type=redis
+spring.cache.redis.time-to-live=3600000
+
+# Logging
+logging.level.com.recruitpme.cvservice=DEBUG
+=== FIN ===
+

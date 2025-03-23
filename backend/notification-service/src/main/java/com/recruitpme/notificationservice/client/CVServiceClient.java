@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 @FeignClient(name = "cv-service", url = "${cv-service.url}")
 public interface CVServiceClient {
 
+
     @GetMapping("/api/candidates/{id}")
     CandidateDetailDTO getCandidateById(@PathVariable("id") String id);
 }

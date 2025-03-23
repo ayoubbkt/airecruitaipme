@@ -1,27 +1,29 @@
 package com.recruitpme.notificationservice.entity;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
-
 
 @Entity
 @Table(name = "notification_preferences")
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class NotificationPreference {
-
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    
+    private String id;
+
+    @Column(nullable = false)
     private String userId;
-    
-    private boolean emailNotifications;
-    
-    private boolean inAppNotifications;
-    
-    private boolean smsNotifications;
-    
-    @Column(columnDefinition = "TEXT")
-    private String disabledCategories; // comma separated
+
+    @Column(nullable = false)
+    private String notificationType;
+
+    private boolean emailEnabled;
+
+    private boolean pushEnabled;
+
+    private boolean inAppEnabled;
 }

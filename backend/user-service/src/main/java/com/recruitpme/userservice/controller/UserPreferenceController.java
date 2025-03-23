@@ -16,6 +16,7 @@ import javax.validation.Valid;
 @Slf4j
 public class UserPreferenceController {
 
+
     private final UserPreferenceService userPreferenceService;
 
     @GetMapping

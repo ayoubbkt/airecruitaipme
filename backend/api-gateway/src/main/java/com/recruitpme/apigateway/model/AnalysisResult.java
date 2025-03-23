@@ -8,3 +8,4 @@ public class AnalysisResult {
     private String experience;
     private int score;
 }
+

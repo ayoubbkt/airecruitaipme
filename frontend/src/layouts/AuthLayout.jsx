@@ -10,6 +10,7 @@ const AuthLayout = () => {
     return <LoadingSpinner />;
   }
 
+
   if (isAuthenticated) {
     return <Navigate to="/" />;
   }

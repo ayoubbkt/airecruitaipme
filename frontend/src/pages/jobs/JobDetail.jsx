@@ -11,7 +11,8 @@ const JobDetail = () => {
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
-  
+
+
   useEffect(() => {
     const fetchJobDetail = async () => {
       try {

@@ -1,14 +1,22 @@
 package com.recruitpme.jobservice.dto;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
-
+import lombok.NoArgsConstructor;
 
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class JobStatsDTO {
-    private int activeJobs;
-    private int filledJobs;
-    private int totalApplications;
-    private int newApplications;
-    private int candidatesInProcess;
-    private double averageTimeToFill;
+    private int inReview;
+    private int inProgress;
+    private int inInterview;
+    private int offered;
+    private int hired;
+    private int rejected;
+    private int total;
+    private int evaluation;
+    private int interview;
 }

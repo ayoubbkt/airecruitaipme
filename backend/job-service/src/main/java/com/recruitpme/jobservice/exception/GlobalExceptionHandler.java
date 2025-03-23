@@ -1,71 +1,105 @@
 package com.recruitpme.jobservice.exception;
 
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
-
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
-@RestControllerAdvice
-@Slf4j
-public class GlobalExceptionHandler {
+@ControllerAdvice
+public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<Map<String, String>> handleResourceNotFoundException(ResourceNotFoundException ex) {
-        log.error("Resource not found exception: {}", ex.getMessage());
-        
-        Map<String, String> response = new HashMap<>();
-        response.put("message", ex.getMessage());
-        response.put("status", "NOT_FOUND");
-        
-        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+    public ResponseEntity<ErrorDetails> handleResourceNotFoundException(
+            ResourceNotFoundException exception, WebRequest request) {
+
+        ErrorDetails errorDetails = new ErrorDetails(
+                LocalDateTime.now(),
+                exception.getMessage(),
+                request.getDescription(false));
+
+        return new ResponseEntity<>(errorDetails, HttpStatus.NOT_FOUND);
     }
-    
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, Object>> handleValidationExceptions(MethodArgumentNotValidException ex) {
-        log.error("Validation exception: {}", ex.getMessage());
-        
-        Map<String, Object> response = new HashMap<>();
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorDetails> handleGlobalException(
+            Exception exception, WebRequest request) {
+
+        ErrorDetails errorDetails = new ErrorDetails(
+                LocalDateTime.now(),
+                exception.getMessage(),
+                request.getDescription(false));
+
+        return new ResponseEntity<>(errorDetails, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(
+            MethodArgumentNotValidException ex,
+            HttpHeaders headers,
+            HttpStatus status,
+            WebRequest request) {
+
         Map<String, String> errors = new HashMap<>();
-        
-        ex.getBindingResult().getAllErrors().forEach(error -> {
+        ex.getBindingResult().getAllErrors().forEach((error) -> {
             String fieldName = ((FieldError) error).getField();
             String errorMessage = error.getDefaultMessage();
             errors.put(fieldName, errorMessage);
         });
-        
-        response.put("message", "Validation failed");
-        response.put("status", "BAD_REQUEST");
-        response.put("errors", errors);
-        
-        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+
+        ValidationErrorDetails errorDetails = new ValidationErrorDetails(
+                LocalDateTime.now(),
+                "Validation Error",
+                request.getDescription(false),
+                errors);
+
+        return new ResponseEntity<>(errorDetails, HttpStatus.BAD_REQUEST);
     }
-    
-    @ExceptionHandler(IllegalStateException.class)
-    public ResponseEntity<Map<String, String>> handleIllegalStateException(IllegalStateException ex) {
-        log.error("Illegal state exception: {}", ex.getMessage());
-        
-        Map<String, String> response = new HashMap<>();
-        response.put("message", ex.getMessage());
-        response.put("status", "BAD_REQUEST");
-        
-        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+
+    // Inner classes for error responses
+    private static class ErrorDetails {
+        private LocalDateTime timestamp;
+        private String message;
+        private String details;
+
+        public ErrorDetails(LocalDateTime timestamp, String message, String details) {
+            this.timestamp = timestamp;
+            this.message = message;
+            this.details = details;
+        }
+
+        public LocalDateTime getTimestamp() {
+            return timestamp;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+
+        public String getDetails() {
+            return details;
+        }
     }
-    
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, String>> handleGlobalException(Exception ex) {
-        log.error("Unexpected exception: {}", ex.getMessage(), ex);
-        
-        Map<String, String> response = new HashMap<>();
-        response.put("message", "An unexpected error occurred");
-        response.put("status", "INTERNAL_SERVER_ERROR");
-        
-        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+
+    private static class ValidationErrorDetails extends ErrorDetails {
+        private Map<String, String> validationErrors;
+
+        public ValidationErrorDetails(LocalDateTime timestamp, String message, String details,
+                                      Map<String, String> validationErrors) {
+            super(timestamp, message, details);
+            this.validationErrors = validationErrors;
+        }
+
+        public Map<String, String> getValidationErrors() {
+            return validationErrors;
+        }
     }
 }

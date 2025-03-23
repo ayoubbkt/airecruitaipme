@@ -3,6 +3,7 @@ import spacy
 from sentence_transformers import SentenceTransformer
 from datetime import datetime
 
+
 import re
 from pypdf import PdfReader  # Pour les PDF
 from docx import Document  # Pour les fichiers Word

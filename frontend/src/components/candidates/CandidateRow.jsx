@@ -5,7 +5,8 @@ import { Eye, Mail } from 'lucide-react';
 const CandidateRow = ({ candidate }) => {
   // Determine color based on score
   let scoreColor = "bg-red-100 text-red-800";
-  
+
+
   if (candidate.score >= 85) {
     scoreColor = "bg-green-100 text-green-800";
   } else if (candidate.score >= 70) {

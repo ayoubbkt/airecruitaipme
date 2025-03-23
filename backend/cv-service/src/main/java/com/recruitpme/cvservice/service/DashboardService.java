@@ -1,13 +1,13 @@
 package com.recruitpme.cvservice.service;
 
 import com.recruitpme.cvservice.dto.DashboardStatsDTO;
-
+import com.recruitpme.cvservice.dto.RecruitmentSourceDTO;
 
 import java.util.List;
-import java.util.Map;
 
 public interface DashboardService {
-    DashboardStatsDTO getDashboardStats(String period);
-    
-    List<Map<String, Object>> getRecruitmentSources();
+
+    DashboardStatsDTO getStats(String period);
+
+    List<RecruitmentSourceDTO> getRecruitmentSources();
 }

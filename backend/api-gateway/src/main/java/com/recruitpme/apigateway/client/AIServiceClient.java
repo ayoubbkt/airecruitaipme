@@ -6,6 +6,7 @@ import java.util.List;
 @Component
 public class AIServiceClient {
 
+
     public static class AnalysisRequest {
         private String text;
         private String jobId;

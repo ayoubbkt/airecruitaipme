@@ -15,7 +15,8 @@ public interface InterviewRepository extends JpaRepository<Interview, Long> {
     List<Interview> findByScheduledTimeBetween(LocalDateTime start, LocalDateTime end);
     
     List<Interview> findByStatusAndScheduledTimeBetween(String status, LocalDateTime start, LocalDateTime end);
-    
+
+
     long countByStatusAndScheduledTimeAfter(String status, LocalDateTime date);
     
     long countByStatusAndCompletedAtAfter(String status, LocalDateTime date);

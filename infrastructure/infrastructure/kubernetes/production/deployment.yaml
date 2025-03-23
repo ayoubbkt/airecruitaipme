@@ -3,6 +3,7 @@ kind: Deployment
 metadata:
   name: ai-service
 spec:
+
   replicas: 3
   strategy:
     rollingUpdate:

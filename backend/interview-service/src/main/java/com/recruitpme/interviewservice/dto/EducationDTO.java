@@ -3,6 +3,7 @@ package com.recruitpme.interviewservice.dto;
 import lombok.Data;
 
 
+
 @Data
 public class EducationDTO {
     private String degree;

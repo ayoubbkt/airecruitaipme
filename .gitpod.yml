@@ -2,6 +2,7 @@ image:
   file: .gitpod.Dockerfile
 
 
+
 tasks:
   - name: Install Java 17
     command: |

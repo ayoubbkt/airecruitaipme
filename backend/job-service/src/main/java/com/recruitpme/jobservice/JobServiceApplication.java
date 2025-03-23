@@ -11,6 +11,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 @EnableFeignClients
 public class JobServiceApplication {
 
+
     public static void main(String[] args) {
         SpringApplication.run(JobServiceApplication.class, args);
     }

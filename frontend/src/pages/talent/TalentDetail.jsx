@@ -13,7 +13,8 @@ const TalentDetail = () => {
   const [activeTab, setActiveTab] = useState('profile');
   const [jobs, setJobs] = useState([]);
   const [activities, setActivities] = useState([]);
-  
+
+
   useEffect(() => {
     const fetchCandidateData = async () => {
       try {

@@ -1,4 +1,4 @@
-package com.recruitpme.apigateway;
+package com.recruitpme.apigateway.config;
 
 import com.recruitpme.apigateway.config.AuthenticationFilter;
 import com.recruitpme.apigateway.config.RouteValidator;

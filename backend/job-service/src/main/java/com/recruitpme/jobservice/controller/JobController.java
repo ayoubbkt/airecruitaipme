@@ -1,92 +1,106 @@
 package com.recruitpme.jobservice.controller;
 
-import com.recruitpme.jobservice.dto.JobCreateDTO;
-import com.recruitpme.jobservice.dto.JobDetailDTO;
-import com.recruitpme.jobservice.dto.JobListingDTO;
-import com.recruitpme.jobservice.dto.JobSearchCriteriaDTO;
-import com.recruitpme.jobservice.dto.JobStatsDTO;
+import com.recruitpme.jobservice.dto.*;
+import com.recruitpme.jobservice.entity.Job.JobStatus;
 import com.recruitpme.jobservice.service.JobService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
+import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.*;
-
 
 import javax.validation.Valid;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/jobs")
 @RequiredArgsConstructor
-@Slf4j
 public class JobController {
 
     private final JobService jobService;
 
-    @GetMapping
-    public ResponseEntity<List<JobListingDTO>> getJobs(
-            @RequestParam(value = "status", required = false) String status,
-            @RequestParam(value = "page", defaultValue = "0") int page,
-            @RequestParam(value = "size", defaultValue = "10") int size) {
-        
-        log.info("Fetching jobs with status: {}, page: {}, size: {}", status, page, size);
-        List<JobListingDTO> jobs = jobService.getJobs(status, page, size);
-        return ResponseEntity.ok(jobs);
+//    @PostMapping
+//    public ResponseEntity<JobDetailDTO> createJob(@Valid @RequestBody JobCreateDTO jobCreateDTO) {
+//        return ResponseEntity.status(HttpStatus.CREATED).body(jobService.createJob(jobCreateDTO));
+//    }
+
+    @PostMapping
+    public ResponseEntity<?> createJob(@Valid @RequestBody JobCreateDTO jobCreateDTO, BindingResult result) {
+        if (result.hasErrors()) {
+            // Log les erreurs de validation
+            for (FieldError error : result.getFieldErrors()) {
+                System.err.println("Field: " + error.getField() + ", Message: " + error.getDefaultMessage());
+            }
+            return ResponseEntity.badRequest().body("Validation errors");
+        }
+
+        try {
+            JobDetailDTO job = jobService.createJob(jobCreateDTO);
+            return ResponseEntity.status(HttpStatus.CREATED).body(job);
+        } catch (Exception e) {
+            // Log l'exception
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
+        }
     }
 
-    @GetMapping("/active")
-    public ResponseEntity<List<JobListingDTO>> getActiveJobs() {
-        log.info("Fetching active jobs");
-        List<JobListingDTO> jobs = jobService.getActiveJobs();
-        return ResponseEntity.ok(jobs);
+
+
+    @GetMapping
+    public ResponseEntity<List<JobListingDTO>> getJobs(@RequestParam(required = false) String status,
+                                                       @PageableDefault(page = 0, size = 20) Pageable pageable) {
+        JobStatus jobStatus = status != null ? JobStatus.valueOf(status.toUpperCase()) : null;
+        return ResponseEntity.ok(jobService.getJobs(jobStatus, pageable));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<JobDetailDTO> getJobDetail(@PathVariable Long id) {
-        log.info("Fetching job details for ID: {}", id);
-        JobDetailDTO job = jobService.getJobDetail(id);
-        return ResponseEntity.ok(job);
-    }
-
-    @PostMapping
-    public ResponseEntity<JobDetailDTO> createJob(@Valid @RequestBody JobCreateDTO jobDto) {
-        log.info("Creating new job: {}", jobDto.getTitle());
-        JobDetailDTO createdJob = jobService.createJob(jobDto);
-        return ResponseEntity.ok(createdJob);
+    public ResponseEntity<JobDetailDTO> getJobById(@PathVariable Long id) {
+        return ResponseEntity.ok(jobService.getJobById(id));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<JobDetailDTO> updateJob(
-            @PathVariable Long id,
-            @Valid @RequestBody JobCreateDTO jobDto) {
-        
-        log.info("Updating job with ID: {}", id);
-        JobDetailDTO updatedJob = jobService.updateJob(id, jobDto);
-        return ResponseEntity.ok(updatedJob);
+    public ResponseEntity<JobDetailDTO> updateJob(@PathVariable Long id, @Valid @RequestBody JobCreateDTO jobUpdateDTO) {
+        return ResponseEntity.ok(jobService.updateJob(id, jobUpdateDTO));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteJob(@PathVariable Long id) {
-        log.info("Deleting job with ID: {}", id);
         jobService.deleteJob(id);
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/generate-description")
-    public ResponseEntity<String> generateJobDescription(
-            @RequestParam String title,
-            @RequestParam List<String> requirements) {
-        
-        log.info("Generating job description for title: {}", title);
-        String description = jobService.generateJobDescription(title, requirements);
-        return ResponseEntity.ok(description);
+    @GetMapping("/search")
+    public ResponseEntity<Page<JobListingDTO>> searchJobs(@ModelAttribute JobSearchCriteriaDTO criteria,
+                                                          @PageableDefault(page = 0, size = 20) Pageable pageable) {
+        return ResponseEntity.ok(jobService.searchJobs(criteria, pageable));
     }
-    
-    @PostMapping("/search")
-    public ResponseEntity<List<JobDetailDTO>> searchJobs(@RequestBody JobSearchCriteriaDTO criteria) {
-        log.info("Searching jobs with criteria: {}", criteria);
-        List<JobDetailDTO> jobs = jobService.searchJobs(criteria);
-        return ResponseEntity.ok(jobs);
 
+    @PostMapping("/generate-description")
+    public ResponseEntity<String> generateJobDescription(@RequestBody JobDescriptionRequestDTO request) {
+        return ResponseEntity.ok(jobService.generateJobDescription(request));
+    }
+
+    @GetMapping("/departments")
+    public ResponseEntity<List<DepartmentDTO>> getDepartments() {
+        return ResponseEntity.ok(jobService.getDepartments());
+    }
+
+    @GetMapping("/skills")
+    public ResponseEntity<List<JobSkillDTO>> getJobSkills(@RequestParam(required = false) String category) {
+        if (category != null) {
+            return ResponseEntity.ok(jobService.getJobSkillsByCategory(category));
+        }
+        return ResponseEntity.ok(jobService.getMostCommonJobSkills(20));
+    }
+
+    @GetMapping("/skills/categories")
+    public ResponseEntity<List<String>> getSkillCategories() {
+        return ResponseEntity.ok(jobService.getSkillCategories());
     }
 }

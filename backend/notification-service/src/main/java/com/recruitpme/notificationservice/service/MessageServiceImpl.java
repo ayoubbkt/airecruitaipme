@@ -1,21 +1,18 @@
 package com.recruitpme.notificationservice.service;
 
-import com.recruitpme.notificationservice.dto.ConversationDTO;
-import com.recruitpme.notificationservice.dto.MessageCreateDTO;
-import com.recruitpme.notificationservice.dto.MessageDTO;
+import com.recruitpme.notificationservice.client.CVServiceClient;
+import com.recruitpme.notificationservice.dto.*;
 import com.recruitpme.notificationservice.entity.Conversation;
 import com.recruitpme.notificationservice.entity.Message;
-import com.recruitpme.notificationservice.entity.Participant;
 import com.recruitpme.notificationservice.exception.ResourceNotFoundException;
 import com.recruitpme.notificationservice.repository.ConversationRepository;
 import com.recruitpme.notificationservice.repository.MessageRepository;
-import com.recruitpme.notificationservice.repository.ParticipantRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -23,115 +20,127 @@ import java.util.stream.Collectors;
 public class MessageServiceImpl implements MessageService {
 
     @Autowired
-    private ConversationRepository conversationRepository;
-
-    @Autowired
     private MessageRepository messageRepository;
 
     @Autowired
-    private ParticipantRepository participantRepository;
+    private ConversationRepository conversationRepository;
+
+    @Autowired
+    private CVServiceClient cvServiceClient;
 
     @Override
-    public List<ConversationDTO> getConversations(String filter, String userId) {
-        List<Conversation> conversations;
+    public List<ConversationDTO> getConversations(String filter) {
+        List<Conversation> conversations = conversationRepository.findAllByOrderByUpdatedAtDesc();
 
-        if ("your-conversations".equals(filter) && userId != null) {
-            // Get conversations where the user is a participant
-            List<String> conversationIds = participantRepository.findByUserId(userId)
-                    .stream()
-                    .map(Participant::getConversationId)
-                    .collect(Collectors.toList());
-
-            conversations = conversationRepository.findAllById(conversationIds);
-        } else if ("all-conversations".equals(filter)) {
-            // Get all conversations
-            conversations = conversationRepository.findAll();
-        } else {
-            // Default to user's conversations if no specific filter
-            List<String> conversationIds = participantRepository.findByUserId(userId)
-                    .stream()
-                    .map(Participant::getConversationId)
-                    .collect(Collectors.toList());
-
-            conversations = conversationRepository.findAllById(conversationIds);
+        // Apply filter if provided
+        if (filter != null && !filter.isEmpty()) {
+            if ("your-conversations".equals(filter)) {
+                // Filter logic would go here
+            } else if ("all-conversations".equals(filter)) {
+                // No filter needed, return all
+            }
         }
 
         return conversations.stream()
-                .map(this::convertToDTO)
+                .map(this::convertToConversationDTO)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<MessageDTO> getMessagesInConversation(String conversationId) {
+    public List<MessageDTO> getMessages(String conversationId) {
         if (!conversationRepository.existsById(conversationId)) {
             throw new ResourceNotFoundException("Conversation not found with id: " + conversationId);
         }
 
         List<Message> messages = messageRepository.findByConversationIdOrderByCreatedAtAsc(conversationId);
-
         return messages.stream()
                 .map(this::convertToMessageDTO)
                 .collect(Collectors.toList());
     }
 
     @Override
-    @Transactional
-    public MessageDTO sendMessage(String conversationId, MessageCreateDTO messageDTO) {
-        Conversation conversation = conversationRepository.findById(conversationId)
-                .orElseThrow(() -> new ResourceNotFoundException("Conversation not found with id: " + conversationId));
+    public ConversationDTO createConversation(ConversationCreateDTO conversationDTO) {
+        // Check if a conversation already exists with these participants and type
+        Optional<Conversation> existingConversation = conversationRepository.findByParticipantsAndType(
+                conversationDTO.getCandidateId(),
+                conversationDTO.getRelatedEntityId(),
+                conversationDTO.getConversationType()
+        );
 
-        // Create and save message
-        Message message = new Message();
-        message.setId(UUID.randomUUID().toString());
-        message.setConversationId(conversationId);
-        message.setSenderId(messageDTO.getSenderId());
-        message.setContent(messageDTO.getContent());
-        message.setContentType(messageDTO.getContentType());
-        message.setCreatedAt(LocalDateTime.now());
+        if (existingConversation.isPresent()) {
+            // If conversation exists and has initial message, send it
+            if (conversationDTO.getInitialMessage() != null && !conversationDTO.getInitialMessage().isEmpty()) {
+                MessageCreateDTO messageDTO = new MessageCreateDTO();
+                messageDTO.setSenderId(conversationDTO.getInitiatorId());
+                messageDTO.setContent(conversationDTO.getInitialMessage());
 
-        Message savedMessage = messageRepository.save(message);
-
-        // Update conversation with last message
-        conversation.setLastMessageId(savedMessage.getId());
-        conversation.setUpdatedAt(LocalDateTime.now());
-        conversationRepository.save(conversation);
-
-        // Mark as unread for all participants except sender
-        List<Participant> participants = participantRepository.findByConversationId(conversationId);
-        for (Participant participant : participants) {
-            if (!participant.getUserId().equals(messageDTO.getSenderId())) {
-                participant.setLastReadMessageId(null);  // Mark as having unread messages
-                participantRepository.save(participant);
+                sendMessage(existingConversation.get().getId(), messageDTO);
             }
+
+            return convertToConversationDTO(existingConversation.get());
         }
 
-        return convertToMessageDTO(savedMessage);
-    }
+        // Get candidate details from CV service
+        CandidateDetailDTO candidateDetail = cvServiceClient.getCandidateById(conversationDTO.getCandidateId());
 
-    @Override
-    @Transactional
-    public ConversationDTO startConversation(ConversationDTO conversationDTO) {
-        // Create conversation
+        // Create new conversation
         Conversation conversation = new Conversation();
         conversation.setId(UUID.randomUUID().toString());
-        conversation.setTitle(conversationDTO.getTitle());
-        conversation.setType(conversationDTO.getType());
+        conversation.setCandidateId(conversationDTO.getCandidateId());
+        conversation.setCandidateName(candidateDetail.getFirstName() + " " + candidateDetail.getLastName());
+        conversation.setCandidatePosition(candidateDetail.getTitle());
+        conversation.setCandidateEmail(candidateDetail.getEmail());
+        conversation.setConversationType(conversationDTO.getConversationType());
+        conversation.setRelatedEntityId(conversationDTO.getRelatedEntityId());
         conversation.setCreatedAt(LocalDateTime.now());
         conversation.setUpdatedAt(LocalDateTime.now());
 
         Conversation savedConversation = conversationRepository.save(conversation);
 
-        // Add participants
-        for (String userId : conversationDTO.getParticipantIds()) {
-            Participant participant = new Participant();
-            participant.setId(UUID.randomUUID().toString());
-            participant.setConversationId(savedConversation.getId());
-            participant.setUserId(userId);
-            participant.setJoinedAt(LocalDateTime.now());
-            participantRepository.save(participant);
+        // If there's an initial message, send it
+        if (conversationDTO.getInitialMessage() != null && !conversationDTO.getInitialMessage().isEmpty()) {
+            MessageCreateDTO messageDTO = new MessageCreateDTO();
+            messageDTO.setSenderId(conversationDTO.getInitiatorId());
+            messageDTO.setContent(conversationDTO.getInitialMessage());
+
+            sendMessage(savedConversation.getId(), messageDTO);
+
+            // Refresh conversation after sending message to get updated data
+            savedConversation = conversationRepository.findById(savedConversation.getId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Conversation not found after creation"));
         }
 
-        return convertToDTO(savedConversation);
+        return convertToConversationDTO(savedConversation);
+    }
+
+    @Override
+    public MessageDTO sendMessage(String conversationId, MessageCreateDTO messageDTO) {
+        Conversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Conversation not found with id: " + conversationId));
+
+        // Create and save the message
+        Message message = new Message();
+        message.setId(UUID.randomUUID().toString());
+        message.setConversationId(conversationId);
+        message.setSenderId(messageDTO.getSenderId());
+        message.setContent(messageDTO.getContent());
+        message.setRead(false);
+        message.setCreatedAt(LocalDateTime.now());
+
+        // Get sender details if needed
+        // Could make a call to user service to get sender name
+        message.setSenderName("User " + messageDTO.getSenderId());
+
+        Message savedMessage = messageRepository.save(message);
+
+        // Update conversation with last message details
+        conversation.setLastMessageId(savedMessage.getId());
+        conversation.setLastMessageTime(savedMessage.getCreatedAt());
+        conversation.setUpdatedAt(LocalDateTime.now());
+
+        conversationRepository.save(conversation);
+
+        return convertToMessageDTO(savedMessage);
     }
 
     @Override
@@ -146,45 +155,40 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
-    @Transactional
-    public void markConversationAsRead(String conversationId, String userId) {
-        Conversation conversation = conversationRepository.findById(conversationId)
-                .orElseThrow(() -> new ResourceNotFoundException("Conversation not found with id: " + conversationId));
+    public UnreadCountDTO getUnreadCount(String userId) {
+        int unreadMessages = messageRepository.countTotalUnreadMessages(userId);
+        int totalConversations = conversationRepository.findAll().size();
 
-        // Find participant
-        Participant participant = participantRepository.findByConversationIdAndUserId(conversationId, userId)
-                .orElseThrow(() -> new IllegalArgumentException("User is not a participant in this conversation"));
-
-        // Update last read message id to the last message in the conversation
-        participant.setLastReadMessageId(conversation.getLastMessageId());
-        participantRepository.save(participant);
+        return new UnreadCountDTO(unreadMessages, totalConversations);
     }
 
-    private ConversationDTO convertToDTO(Conversation conversation) {
+    private ConversationDTO convertToConversationDTO(Conversation conversation) {
         ConversationDTO dto = new ConversationDTO();
         dto.setId(conversation.getId());
-        dto.setTitle(conversation.getTitle());
-        dto.setType(conversation.getType());
 
-        // Get participants
-        List<Participant> participants = participantRepository.findByConversationId(conversation.getId());
-        List<String> participantIds = participants.stream()
-                .map(Participant::getUserId)
-                .collect(Collectors.toList());
+        // Set candidate info
+        CandidateInfoDTO candidateInfo = new CandidateInfoDTO(
+                conversation.getCandidateId(),
+                conversation.getCandidateName(),
+                conversation.getCandidatePosition(),
+                conversation.getCandidateEmail()
+        );
+        dto.setCandidate(candidateInfo);
 
-        dto.setParticipantIds(participantIds);
-
-        // Get last message if available
+        // Try to get last message if exists
         if (conversation.getLastMessageId() != null) {
             messageRepository.findById(conversation.getLastMessageId())
-                    .ifPresent(lastMessage -> {
-                        dto.setLastMessage(lastMessage.getContent());
-                        dto.setLastMessageTime(lastMessage.getCreatedAt().toString());
-                    });
+                    .ifPresent(lastMessage -> dto.setLastMessage(lastMessage.getContent()));
         }
 
-        dto.setCreatedAt(conversation.getCreatedAt());
-        dto.setUpdatedAt(conversation.getUpdatedAt());
+        dto.setLastMessageTime(conversation.getLastMessageTime());
+
+        // Count unread messages for this user in this conversation
+        // This could be a placeholder, actual implementation would need the user ID
+        dto.setUnreadCount(0);
+
+        dto.setConversationType(conversation.getConversationType());
+        dto.setRelatedEntityId(conversation.getRelatedEntityId());
 
         return dto;
     }
@@ -194,10 +198,11 @@ public class MessageServiceImpl implements MessageService {
         dto.setId(message.getId());
         dto.setConversationId(message.getConversationId());
         dto.setSenderId(message.getSenderId());
+        dto.setSenderName(message.getSenderName());
         dto.setContent(message.getContent());
-        dto.setContentType(message.getContentType());
         dto.setRead(message.isRead());
         dto.setCreatedAt(message.getCreatedAt());
+
         return dto;
     }
 }

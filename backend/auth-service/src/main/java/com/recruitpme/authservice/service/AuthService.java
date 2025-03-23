@@ -18,4 +18,6 @@ public interface AuthService {
     UserDTO getCurrentUser();
     
     void logout();
+
+    boolean validateToken(String token);
 }

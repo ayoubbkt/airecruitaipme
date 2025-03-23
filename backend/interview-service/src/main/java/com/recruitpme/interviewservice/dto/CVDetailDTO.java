@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 
+
 @Data
 public class CVDetailDTO {
     private String id;

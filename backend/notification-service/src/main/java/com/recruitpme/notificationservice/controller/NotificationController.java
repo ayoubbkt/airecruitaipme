@@ -4,93 +4,80 @@ import com.recruitpme.notificationservice.dto.NotificationCountDTO;
 import com.recruitpme.notificationservice.dto.NotificationCreateDTO;
 import com.recruitpme.notificationservice.dto.NotificationDTO;
 import com.recruitpme.notificationservice.service.NotificationService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-
 import javax.validation.Valid;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/notifications")
-@RequiredArgsConstructor
-@Slf4j
 public class NotificationController {
 
-    private final NotificationService notificationService;
+    @Autowired
+    private NotificationService notificationService;
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<NotificationDTO>> getUserNotifications(
-            @PathVariable String userId,
-            @RequestParam(value = "read", required = false) Boolean read) {
-        
-        log.info("Fetching notifications for user: {}, read status: {}", userId, read);
-        List<NotificationDTO> notifications = notificationService.getUserNotifications(userId, read);
+    public ResponseEntity<List<NotificationDTO>> getUserNotifications(@PathVariable String userId) {
+        List<NotificationDTO> notifications = notificationService.getUserNotifications(userId);
         return ResponseEntity.ok(notifications);
     }
 
-    @GetMapping("/count/{userId}")
-    public ResponseEntity<NotificationCountDTO> getNotificationCount(@PathVariable String userId) {
-        log.info("Fetching notification count for user: {}", userId);
-        NotificationCountDTO count = notificationService.getNotificationCount(userId);
-        return ResponseEntity.ok(count);
+    @GetMapping("/user/{userId}/paged")
+    public ResponseEntity<Page<NotificationDTO>> getUserNotificationsPaged(
+            @PathVariable String userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Pageable pageable = PageRequest.of(page, size);
+        Page<NotificationDTO> notifications = notificationService.getUserNotificationsPaged(userId, pageable);
+
+        return ResponseEntity.ok(notifications);
+    }
+
+    @GetMapping("/user/{userId}/unread")
+    public ResponseEntity<List<NotificationDTO>> getUnreadNotifications(@PathVariable String userId) {
+        List<NotificationDTO> notifications = notificationService.getUnreadNotifications(userId);
+        return ResponseEntity.ok(notifications);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<NotificationDTO> getNotificationById(@PathVariable Long id) {
-        log.info("Fetching notification with ID: {}", id);
+    public ResponseEntity<NotificationDTO> getNotificationById(@PathVariable String id) {
         NotificationDTO notification = notificationService.getNotificationById(id);
         return ResponseEntity.ok(notification);
     }
 
     @PostMapping
-    public ResponseEntity<NotificationDTO> createNotification(@Valid @RequestBody NotificationCreateDTO notificationDto) {
-        log.info("Creating notification for user: {}", notificationDto.getUserId());
-        NotificationDTO createdNotification = notificationService.createNotification(notificationDto);
-        
-        if (createdNotification == null) {
-            return ResponseEntity.noContent().build();
-        }
-        
+    public ResponseEntity<NotificationDTO> createNotification(@Valid @RequestBody NotificationCreateDTO notificationDTO) {
+        NotificationDTO createdNotification = notificationService.createNotification(notificationDTO);
         return ResponseEntity.ok(createdNotification);
     }
 
     @PutMapping("/{id}/read")
-    public ResponseEntity<NotificationDTO> markAsRead(@PathVariable Long id) {
-        log.info("Marking notification as read: {}", id);
-        NotificationDTO updatedNotification = notificationService.markAsRead(id);
-        return ResponseEntity.ok(updatedNotification);
+    public ResponseEntity<NotificationDTO> markAsRead(@PathVariable String id) {
+        NotificationDTO notification = notificationService.markAsRead(id);
+        return ResponseEntity.ok(notification);
     }
 
     @PutMapping("/user/{userId}/read-all")
-    public ResponseEntity<Void> markAllAsRead(@PathVariable String userId) {
-        log.info("Marking all notifications as read for user: {}", userId);
-        notificationService.markAllAsRead(userId);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<List<NotificationDTO>> markAllAsRead(@PathVariable String userId) {
+        List<NotificationDTO> notifications = notificationService.markAllAsRead(userId);
+        return ResponseEntity.ok(notifications);
     }
 
-    @PostMapping("/email")
-    public ResponseEntity<Void> sendEmail(
-            @RequestParam String to,
-            @RequestParam String subject,
-            @RequestParam String content) {
-        
-        log.info("Sending email to: {}, subject: {}", to, subject);
-        notificationService.sendEmail(to, subject, content);
-        return ResponseEntity.ok().build();
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteNotification(@PathVariable String id) {
+        notificationService.deleteNotification(id);
+        return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/email/template")
-    public ResponseEntity<Void> sendTemplatedEmail(
-            @RequestParam String to,
-            @RequestParam String templateCode,
-            @RequestBody Map<String, Object> data) {
-        
-        log.info("Sending templated email to: {}, template: {}", to, templateCode);
-        notificationService.sendTemplatedEmail(to, templateCode, data);
-        return ResponseEntity.ok().build();
+    @GetMapping("/user/{userId}/count")
+    public ResponseEntity<NotificationCountDTO> getNotificationCount(@PathVariable String userId) {
+        NotificationCountDTO countDTO = notificationService.getNotificationCount(userId);
+        return ResponseEntity.ok(countDTO);
     }
 }

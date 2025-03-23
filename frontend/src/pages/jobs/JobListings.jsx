@@ -9,7 +9,8 @@ const JobListings = () => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('ACTIVE');
-  
+
+
   useEffect(() => {
     const fetchJobs = async () => {
       try {

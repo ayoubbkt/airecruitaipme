@@ -10,6 +10,7 @@ import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.util.List;
 
+
 @Data
 public class InterviewCreateDTO {
     @NotBlank(message = "L'ID du candidat est obligatoire")

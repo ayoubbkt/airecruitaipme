@@ -12,6 +12,7 @@ import java.util.List;
 @FeignClient(name = "ai-service", url = "${services.ai-service.url}")
 public interface AIServiceClient {
 
+
     @PostMapping("/api/generate-interview-questions")
     List<InterviewQuestionDTO> generateInterviewQuestions(@RequestBody InterviewQuestionsRequestDTO request);
 }

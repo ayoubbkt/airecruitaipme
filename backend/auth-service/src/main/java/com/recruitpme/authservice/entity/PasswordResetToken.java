@@ -13,6 +13,7 @@ import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import java.time.LocalDateTime;
 
+
 @Entity
 @Table(name = "password_reset_tokens")
 @Data

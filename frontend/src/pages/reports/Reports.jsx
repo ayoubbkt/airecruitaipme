@@ -14,7 +14,8 @@ const Reports = () => {
     timeToHire: [],
     skillDistribution: []
   });
-  
+
+
   useEffect(() => {
     fetchReportData();
   }, [selectedPeriod]);

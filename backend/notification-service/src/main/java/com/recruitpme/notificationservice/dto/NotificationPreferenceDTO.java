@@ -1,16 +1,17 @@
 package com.recruitpme.notificationservice.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
-
-import java.util.List;
-
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class NotificationPreferenceDTO {
-    private Long id;
+    private String id;
     private String userId;
-    private boolean emailNotifications;
-    private boolean inAppNotifications;
-    private boolean smsNotifications;
-    private List<String> disabledCategories;
+    private String notificationType;
+    private boolean emailEnabled;
+    private boolean pushEnabled;
+    private boolean inAppEnabled;
 }

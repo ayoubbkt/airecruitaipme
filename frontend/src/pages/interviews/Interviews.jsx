@@ -14,7 +14,8 @@ const Interviews = () => {
   useEffect(() => {
     fetchInterviews();
   }, [selectedStatus, selectedDateRange]);
-  
+
+
   const fetchInterviews = async () => {
     try {
       setLoading(true);

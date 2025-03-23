@@ -10,6 +10,7 @@ const StatCard = ({ title, value, trend, trendUp, icon, color }) => {
     purple: 'bg-purple-50 text-purple-600',
     red: 'bg-red-50 text-red-600',
   };
+
   
   const iconClass = colorMap[color] || 'bg-blue-50 text-blue-600';
   

@@ -5,7 +5,6 @@ import com.recruitpme.authservice.dto.RegistrationRequest;
 import com.recruitpme.authservice.dto.UserDTO;
 import com.recruitpme.authservice.entity.PasswordResetToken;
 import com.recruitpme.authservice.entity.Role;
-
 import com.recruitpme.authservice.entity.User;
 import com.recruitpme.authservice.exception.AuthenticationException;
 import com.recruitpme.authservice.exception.ResourceNotFoundException;
@@ -24,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
@@ -40,20 +40,38 @@ public class AuthServiceImpl implements AuthService {
     private final JwtTokenProvider tokenProvider;
     private final EmailService emailService;
 
+//    public LoginResponse login(String email, String password) {
+//        try {
+//            log.info("Attempting authentication for email: {}, password: [PROTECTED]", email);
+//            Authentication authentication = authenticationManager.authenticate(
+//                    new UsernamePasswordAuthenticationToken(email, password)
+//            );
+//            SecurityContextHolder.getContext().setAuthentication(authentication);
+//            User user = userRepository.findByEmail(email)
+//                    .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+//            String token = tokenProvider.generateToken(authentication);
+//            log.info("Login successful for email: {}", email);
+//            return new LoginResponse(token, convertToDTO(user));
+//        } catch (Exception e) {
+//            log.error("Login failed for user: {}, error: {}, stack trace: {}", email, e.getMessage(), e.getStackTrace());
+//            throw new AuthenticationException("Invalid email or password");
+//        }
+//    }
+
     @Override
     public LoginResponse login(String email, String password) {
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(email, password)
             );
-            
+
             SecurityContextHolder.getContext().setAuthentication(authentication);
-            
+
             User user = userRepository.findByEmail(email)
                     .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
-            
+
             String token = tokenProvider.generateToken(authentication);
-            
+
             return new LoginResponse(token, convertToDTO(user));
         } catch (Exception e) {
             log.error("Login failed for user: {}, error: {}", email, e.getMessage());
@@ -68,7 +86,7 @@ public class AuthServiceImpl implements AuthService {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new AuthenticationException("Email already in use: " + request.getEmail());
         }
-        
+
         // Create new user
         User user = new User();
         user.setEmail(request.getEmail());
@@ -79,17 +97,24 @@ public class AuthServiceImpl implements AuthService {
         user.setPhoneNumber(request.getPhoneNumber());
         user.setEnabled(true);
         user.setCreatedAt(LocalDateTime.now());
-        
+
         // Assign default role (ROLE_USER)
         Role userRole = roleRepository.findByName("ROLE_USER")
-                .orElseThrow(() -> new ResourceNotFoundException("Default role not found"));
-        user.setRoles(Set.of(userRole));
-        
+                .orElseGet(() -> {
+                    Role newRole = new Role();
+                    newRole.setName("ROLE_USER");
+                    return roleRepository.save(newRole);
+                });
+        // Create a set and add the role
+        Set<Role> roleSet = new HashSet<>();
+        roleSet.add(userRole);
+        user.setRoles(roleSet);
+
         User savedUser = userRepository.save(user);
-        
+
         // Send welcome email
         emailService.sendWelcomeEmail(user.getEmail(), user.getFirstName());
-        
+
         return convertToDTO(savedUser);
     }
 
@@ -99,15 +124,15 @@ public class AuthServiceImpl implements AuthService {
         userRepository.findByEmail(email).ifPresent(user -> {
             // Generate reset token
             String token = UUID.randomUUID().toString();
-            
+
             // Save token
             PasswordResetToken passwordResetToken = new PasswordResetToken();
             passwordResetToken.setToken(token);
             passwordResetToken.setUser(user);
             passwordResetToken.setExpiryDate(LocalDateTime.now().plusHours(24));
-            
+
             tokenRepository.save(passwordResetToken);
-            
+
             // Send email with reset link
             emailService.sendPasswordResetEmail(user.getEmail(), user.getFirstName(), token);
         });
@@ -118,20 +143,20 @@ public class AuthServiceImpl implements AuthService {
     public void resetPassword(String token, String newPassword) {
         PasswordResetToken resetToken = tokenRepository.findByToken(token)
                 .orElseThrow(() -> new AuthenticationException("Invalid or expired password reset token"));
-        
+
         // Check if token is expired
         if (resetToken.getExpiryDate().isBefore(LocalDateTime.now())) {
             tokenRepository.delete(resetToken);
             throw new AuthenticationException("Password reset token has expired");
         }
-        
+
         // Update password
         User user = resetToken.getUser();
         user.setPassword(passwordEncoder.encode(newPassword));
         user.setUpdatedAt(LocalDateTime.now());
-        
+
         userRepository.save(user);
-        
+
         // Delete used token
         tokenRepository.delete(resetToken);
     }
@@ -140,10 +165,10 @@ public class AuthServiceImpl implements AuthService {
     public UserDTO getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
-        
+
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
-        
+
         return convertToDTO(user);
     }
 
@@ -153,7 +178,7 @@ public class AuthServiceImpl implements AuthService {
         // Client-side token removal is handled by the frontend
         SecurityContextHolder.clearContext();
     }
-    
+
     private UserDTO convertToDTO(User user) {
         UserDTO dto = new UserDTO();
         dto.setId(user.getId());
@@ -165,7 +190,12 @@ public class AuthServiceImpl implements AuthService {
         dto.setRole(user.getRoles().iterator().next().getName());
         dto.setEnabled(user.isEnabled());
         dto.setCreatedAt(user.getCreatedAt());
-        
+
         return dto;
+    }
+
+    @Override
+    public boolean validateToken(String token) {
+        return tokenProvider.validateToken(token);
     }
 }

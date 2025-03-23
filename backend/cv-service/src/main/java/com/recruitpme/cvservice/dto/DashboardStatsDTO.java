@@ -2,15 +2,19 @@ package com.recruitpme.cvservice.dto;
 
 import lombok.Data;
 
+import java.util.List;
+import java.util.Map;
 
 @Data
 public class DashboardStatsDTO {
-    private int analyzedCVs;
-    private int analyzedCVsPercentChange;
-    private int qualifiedCandidates;
-    private int qualifiedCandidatesPercentChange;
-    private int scheduledInterviews;
-    private int scheduledInterviewsPercentChange;
-    private int timeToHire;
-    private int timeToHireChange;
+    private int totalCandidates;
+    private int totalJobs;
+    private int activeJobs;
+    private int newCandidatesThisWeek;
+    private int interviewsScheduledThisWeek;
+    private int averageCandidatesPerJob;
+    private double averageTimeToHire;
+    private List<Map<String, Object>> candidatesByStage;
+    private List<Map<String, Object>> candidatesByScore;
+    private List<Map<String, Object>> hiringActivity;
 }

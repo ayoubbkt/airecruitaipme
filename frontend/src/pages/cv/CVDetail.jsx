@@ -6,6 +6,7 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import SkillMatch from '../../components/analysis/SkillMatch';
 import { cvService } from '../../services/api';
 
+
 const CVDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();

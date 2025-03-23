@@ -1,29 +1,32 @@
 package com.recruitpme.notificationservice.entity;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
-
 
 @Entity
 @Table(name = "email_templates")
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class EmailTemplate {
-
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    
-    @Column(unique = true)
-    private String code;
-    
+    private String id;
+
+    @Column(nullable = false)
     private String name;
-    
+
+    @Column(nullable = false)
     private String subject;
-    
-    @Column(columnDefinition = "TEXT")
+
+    @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
-    
-    @Column(columnDefinition = "TEXT")
+
     private String description;
+
+    private boolean isDefault;
+
+    private String category;
 }

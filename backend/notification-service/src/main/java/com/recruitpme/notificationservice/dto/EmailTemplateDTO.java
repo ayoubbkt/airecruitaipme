@@ -1,25 +1,18 @@
 package com.recruitpme.notificationservice.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
-
-import javax.validation.constraints.NotBlank;
-
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class EmailTemplateDTO {
-    private Long id;
-    
-    @NotBlank(message = "Template code is required")
-    private String code;
-    
-    @NotBlank(message = "Template name is required")
+    private String id;
     private String name;
-    
-    @NotBlank(message = "Subject is required")
     private String subject;
-    
-    @NotBlank(message = "Content is required")
     private String content;
-    
     private String description;
+    private boolean isDefault;
+    private String category;
 }

@@ -10,6 +10,7 @@ const ATSIntegration = () => {
     { id: 4, name: 'SmartRecruiters', status: 'connected', lastSync: '2023-02-10T09:15:00' },
   ]);
 
+
   const [showModal, setShowModal] = useState(false);
   const [selectedAts, setSelectedAts] = useState(null);
   const [apiKey, setApiKey] = useState('');

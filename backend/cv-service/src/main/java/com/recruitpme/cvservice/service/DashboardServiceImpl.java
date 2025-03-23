@@ -1,123 +1,183 @@
 package com.recruitpme.cvservice.service;
 
 import com.recruitpme.cvservice.dto.DashboardStatsDTO;
-import com.recruitpme.cvservice.entity.CVDocument;
+import com.recruitpme.cvservice.dto.RecruitmentSourceDTO;
+import com.recruitpme.cvservice.entity.CVAnalysis;
 import com.recruitpme.cvservice.repository.CVAnalysisRepository;
 import com.recruitpme.cvservice.repository.CVDocumentRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 @Service
-@RequiredArgsConstructor
-@Slf4j
 public class DashboardServiceImpl implements DashboardService {
 
-    private final CVDocumentRepository cvDocumentRepository;
-    private final CVAnalysisRepository cvAnalysisRepository;
+    @Autowired
+    private CVAnalysisRepository cvAnalysisRepository;
+
+    @Autowired
+    private CVDocumentRepository cvDocumentRepository;
 
     @Override
-    @Transactional(readOnly = true)
-    public DashboardStatsDTO getDashboardStats(String period) {
-        LocalDateTime startDate = calculateStartDate(period);
-        
-        // Get counts for each metric
-        long analyzedCVs = cvDocumentRepository.countByUploadedAtAfter(startDate);
-        
-        // For previous period
-        LocalDateTime previousPeriodStart = getStartDateForPreviousPeriod(period, startDate);
-        long previousAnalyzedCVs = cvDocumentRepository.countByUploadedAtBetween(
-                previousPeriodStart, startDate);
-        
-        // Calculate percentage changes
-        int analyzedCVsPercentChange = calculatePercentChange(analyzedCVs, previousAnalyzedCVs);
-        
-        // Qualified candidates (score >= 80)
-        long qualifiedCandidates = cvAnalysisRepository.countByScoreGreaterThanEqualAndCreatedAtAfter(80, startDate);
-        long previousQualifiedCandidates = cvAnalysisRepository.countByScoreGreaterThanEqualAndCreatedAtBetween(
-                80, previousPeriodStart, startDate);
-        int qualifiedCandidatesPercentChange = calculatePercentChange(qualifiedCandidates, previousQualifiedCandidates);
-        
-        // Mocked data for demonstration
-        int scheduledInterviews = 15;
-        int scheduledInterviewsPercentChange = 25;
-        int timeToHire = 21;
-        int timeToHireChange = -2;
-        
+    public DashboardStatsDTO getStats(String period) {
         DashboardStatsDTO stats = new DashboardStatsDTO();
-        stats.setAnalyzedCVs((int) analyzedCVs);
-        stats.setAnalyzedCVsPercentChange(analyzedCVsPercentChange);
-        stats.setQualifiedCandidates((int) qualifiedCandidates);
-        stats.setQualifiedCandidatesPercentChange(qualifiedCandidatesPercentChange);
-        stats.setScheduledInterviews(scheduledInterviews);
-        stats.setScheduledInterviewsPercentChange(scheduledInterviewsPercentChange);
-        stats.setTimeToHire(timeToHire);
-        stats.setTimeToHireChange(timeToHireChange);
-        
+
+        // Calculate period start date
+        LocalDateTime startDate;
+        LocalDateTime now = LocalDateTime.now();
+
+        switch (period) {
+            case "7days":
+                startDate = now.minus(7, ChronoUnit.DAYS);
+                break;
+            case "30days":
+                startDate = now.minus(30, ChronoUnit.DAYS);
+                break;
+            case "90days":
+                startDate = now.minus(90, ChronoUnit.DAYS);
+                break;
+            default:
+                startDate = now.minus(30, ChronoUnit.DAYS); // Default to 30 days
+        }
+
+        // Get all analyses
+        Iterable<CVAnalysis> allAnalyses = cvAnalysisRepository.findAll();
+        List<CVAnalysis> analyses = StreamSupport.stream(allAnalyses.spliterator(), false)
+                .collect(Collectors.toList());
+
+        // Filter by period if needed
+        List<CVAnalysis> periodAnalyses = analyses.stream()
+                .filter(a -> a.getCreatedAt() != null && a.getCreatedAt().isAfter(startDate))
+                .collect(Collectors.toList());
+
+        // Calculate metrics
+        stats.setTotalCandidates(analyses.size());
+
+        // Count recent candidates
+        long newCandidatesThisWeek = analyses.stream()
+                .filter(a -> a.getCreatedAt() != null && a.getCreatedAt().isAfter(now.minus(7, ChronoUnit.DAYS)))
+                .count();
+        stats.setNewCandidatesThisWeek((int) newCandidatesThisWeek);
+
+        // Calculate candidates by score
+        List<Map<String, Object>> candidatesByScore = new ArrayList<>();
+
+        Map<String, Object> excellent = new HashMap<>();
+        excellent.put("label", "Excellent (85+)");
+        excellent.put("count", analyses.stream().filter(a -> a.getScore() >= 85).count());
+        candidatesByScore.add(excellent);
+
+        Map<String, Object> good = new HashMap<>();
+        good.put("label", "Good (70-84)");
+        good.put("count", analyses.stream().filter(a -> a.getScore() >= 70 && a.getScore() < 85).count());
+        candidatesByScore.add(good);
+
+        Map<String, Object> average = new HashMap<>();
+        average.put("label", "Average (50-69)");
+        average.put("count", analyses.stream().filter(a -> a.getScore() >= 50 && a.getScore() < 70).count());
+        candidatesByScore.add(average);
+
+        Map<String, Object> poor = new HashMap<>();
+        poor.put("label", "Poor (<50)");
+        poor.put("count", analyses.stream().filter(a -> a.getScore() < 50).count());
+        candidatesByScore.add(poor);
+
+        stats.setCandidatesByScore(candidatesByScore);
+
+        // Other metrics would be calculated similarly
+        // These are placeholder values
+        stats.setTotalJobs(10);
+        stats.setActiveJobs(5);
+        stats.setInterviewsScheduledThisWeek(8);
+        stats.setAverageCandidatesPerJob(12);
+        stats.setAverageTimeToHire(21.5); // in days
+
+        // Placeholder for candidates by stage
+        List<Map<String, Object>> candidatesByStage = new ArrayList<>();
+        Map<String, Object> stage1 = new HashMap<>();
+        stage1.put("stage", "Applied");
+        stage1.put("count", 45);
+        candidatesByStage.add(stage1);
+
+        Map<String, Object> stage2 = new HashMap<>();
+        stage2.put("stage", "Screening");
+        stage2.put("count", 30);
+        candidatesByStage.add(stage2);
+
+        Map<String, Object> stage3 = new HashMap<>();
+        stage3.put("stage", "Interview");
+        stage3.put("count", 20);
+        candidatesByStage.add(stage3);
+
+        Map<String, Object> stage4 = new HashMap<>();
+        stage4.put("stage", "Offer");
+        stage4.put("count", 5);
+        candidatesByStage.add(stage4);
+
+        Map<String, Object> stage5 = new HashMap<>();
+        stage5.put("stage", "Hired");
+        stage5.put("count", 3);
+        candidatesByStage.add(stage5);
+
+        stats.setCandidatesByStage(candidatesByStage);
+
+        // Placeholder for hiring activity
+        List<Map<String, Object>> hiringActivity = new ArrayList<>();
+        for (int i = 0; i < 12; i++) {
+            Map<String, Object> month = new HashMap<>();
+            month.put("month", String.format("%02d", i + 1));
+            month.put("applications", new Random().nextInt(50) + 20);
+            month.put("interviews", new Random().nextInt(30) + 10);
+            month.put("offers", new Random().nextInt(10) + 2);
+            month.put("hires", new Random().nextInt(5) + 1);
+            hiringActivity.add(month);
+        }
+        stats.setHiringActivity(hiringActivity);
+
         return stats;
     }
 
     @Override
-    public List<Map<String, Object>> getRecruitmentSources() {
-        // Mock data for recruitment sources
-        List<Map<String, Object>> sources = new ArrayList<>();
-        
-        sources.add(createSourceData("LinkedIn", 45, "#4A6FDC"));
-        sources.add(createSourceData("Indeed", 25, "#2164F3"));
-        sources.add(createSourceData("Website", 15, "#12B7B3"));
-        sources.add(createSourceData("Referrals", 10, "#7A56CF"));
-        sources.add(createSourceData("Other", 5, "#F8C12C"));
-        
+    public List<RecruitmentSourceDTO> getRecruitmentSources() {
+        // This would typically come from your database
+        // For now, returning mock data
+        List<RecruitmentSourceDTO> sources = new ArrayList<>();
+
+        RecruitmentSourceDTO source1 = new RecruitmentSourceDTO();
+        source1.setSource("LinkedIn");
+        source1.setCount(45);
+        source1.setPercentage(45.0);
+        sources.add(source1);
+
+        RecruitmentSourceDTO source2 = new RecruitmentSourceDTO();
+        source2.setSource("Job Board");
+        source2.setCount(25);
+        source2.setPercentage(25.0);
+        sources.add(source2);
+
+        RecruitmentSourceDTO source3 = new RecruitmentSourceDTO();
+        source3.setSource("Company Website");
+        source3.setCount(15);
+        source3.setPercentage(15.0);
+        sources.add(source3);
+
+        RecruitmentSourceDTO source4 = new RecruitmentSourceDTO();
+        source4.setSource("Referrals");
+        source4.setCount(10);
+        source4.setPercentage(10.0);
+        sources.add(source4);
+
+        RecruitmentSourceDTO source5 = new RecruitmentSourceDTO();
+        source5.setSource("Other");
+        source5.setCount(5);
+        source5.setPercentage(5.0);
+        sources.add(source5);
+
         return sources;
-    }
-    
-    private Map<String, Object> createSourceData(String name, int percentage, String color) {
-        Map<String, Object> source = new HashMap<>();
-        source.put("id", UUID.randomUUID().toString());
-        source.put("name", name);
-        source.put("percentage", percentage);
-        source.put("color", color);
-        return source;
-    }
-    
-    private LocalDateTime calculateStartDate(String period) {
-        LocalDateTime now = LocalDateTime.now();
-        
-        return switch (period) {
-            case "7days" -> now.minusDays(7);
-            case "14days" -> now.minusDays(14);
-            case "30days" -> now.minusDays(30);
-            case "90days" -> now.minusDays(90);
-            case "6months" -> now.minusMonths(6);
-            case "1year" -> now.minusYears(1);
-            default -> now.minusDays(30);
-        };
-    }
-    
-    private LocalDateTime getStartDateForPreviousPeriod(String period, LocalDateTime currentPeriodStart) {
-        LocalDateTime now = LocalDateTime.now();
-        
-        return switch (period) {
-            case "7days" -> currentPeriodStart.minusDays(7);
-            case "14days" -> currentPeriodStart.minusDays(14);
-            case "30days" -> currentPeriodStart.minusDays(30);
-            case "90days" -> currentPeriodStart.minusDays(90);
-            case "6months" -> currentPeriodStart.minusMonths(6);
-            case "1year" -> currentPeriodStart.minusYears(1);
-            default -> currentPeriodStart.minusDays(30);
-        };
-    }
-    
-    private int calculatePercentChange(long current, long previous) {
-        if (previous == 0) {
-            return current > 0 ? 100 : 0;
-        }
-        
-        return (int) ((current - previous) * 100 / previous);
     }
 }

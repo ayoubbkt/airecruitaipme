@@ -1,30 +1,38 @@
 package com.recruitpme.cvservice.entity;
 
 import lombok.Data;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.elasticsearch.annotations.Document;
+import org.springframework.data.elasticsearch.annotations.Field;
+import org.springframework.data.elasticsearch.annotations.FieldType;
 
-
-import javax.persistence.*;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "cv_documents")
 @Data
+@Document(indexName = "cv_documents")
 public class CVDocument {
 
     @Id
     private String id;
-    
-    private String filename;
-    
+
+    @Field(type = FieldType.Text)
+    private String originalFilename;
+
+    @Field(type = FieldType.Text)
     private String contentType;
-    
-    private Long size;
-    
-    private Long jobId;
-    
-    @Lob
-    @Column(columnDefinition = "TEXT")
-    private String content;
-    
+
+    @Field(type = FieldType.Long)
+    private long size;
+
+    @Field(type = FieldType.Text)
+    private String extractedText;
+
+    @Field(type = FieldType.Keyword)
+    private String candidateId;
+
+    @Field(type = FieldType.Date)
     private LocalDateTime uploadedAt;
+
+    @Field(type = FieldType.Boolean)
+    private boolean analyzed;
 }

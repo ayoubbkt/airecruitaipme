@@ -11,7 +11,8 @@ const Sidebar = ({ collapsed }) => {
   const isActive = (path) => {
     return location.pathname === path || location.pathname.startsWith(`${path}/`);
   };
-  
+
+
   const navItems = [
     { path: '/', label: 'Tableau de bord', icon: <Home size={20} /> },
     { path: '/cv-analysis', label: 'Analyse des CV', icon: <Brain size={20} /> },
