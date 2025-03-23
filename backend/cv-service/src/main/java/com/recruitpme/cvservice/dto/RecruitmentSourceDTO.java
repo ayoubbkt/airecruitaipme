@@ -1,4 +1,4 @@
 package com.recruitpme.cvservice.dto;
 
-public class CVDetailDTO {
+public class RecruitmentSourceDTO {
 }
