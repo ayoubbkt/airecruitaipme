@@ -41,12 +41,13 @@ export const AuthProvider = ({ children }) => {
     try {
       setError(null);
       const { token, user } = await authService.login(email, password);
-      
+      console.log('Login response:', { token, user }); // Vérifie la réponse
       // Store token and configure axios
       localStorage.setItem('token', token);
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
       setUser(user);
+      console.log('User state after login:', user);
       return user;
     } catch (err) {
       const errorMessage = err.response?.data?.message || 'Erreur lors de la connexion';

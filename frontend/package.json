@@ -16,11 +16,13 @@
     "react-scripts": "5.0.1",
     "react-toastify": "^10.0.4",
     "recharts": "^2.10.4",
-    "web-vitals": "^2.1.4"
+    "web-vitals": "^2.1.4",
+     "nodemon": "^3.1.10"
   },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "dev": "nodemon src/app.js",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

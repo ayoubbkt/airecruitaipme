@@ -2,8 +2,10 @@ import axios from '../utils/axios';
 
 export const authService = {
   login: async (email, password) => {
-    const response = await axios.post('/api/auth/login', { email, password });
-    return response.data;
+    const response = await axios.post('/auth/login', { email, password });
+    const { data } = response.data; // Déstructure data
+    const { user, token } = data; // Déstructure user et token
+    return { user, token }; // Retourne l'objet attendu
   },
   
   register: async (data) => {
@@ -758,152 +760,195 @@ function getMockRatingCards() {
 
 
 // Service pour les paramètres d'entreprise
+// export const companyService = {
+
+//   getDepartments: async () => {
+//     try {
+//       const response = await axios.get('/companies');
+      
+//       return response.data;
+//     } catch (error) {
+//       console.error('Erreur lors de la récupération des départements:', error);
+
+//       // Pour le développement, retourner des données simulées
+//       if (process.env.NODE_ENV === 'development') {
+//         return [
+//           { id: '1', name: 'Support Client (CS)' },
+//           { id: '2', name: 'Finance' },
+//           { id: '3', name: 'Ressources Humaines (RH)' },
+//           { id: '4', name: 'Informatique (IT)' },
+//           { id: '5', name: 'Juridique' },
+//           { id: '6', name: 'Marketing' },
+//           { id: '7', name: 'Produit' },
+//           { id: '8', name: 'Ventes' },
+//           { id: '9', name: 'Ingénierie Logicielle' }
+//         ];
+//       }
+
+//       throw error;
+//     }
+//   },
+
+//   createDepartment: async (data) => {
+//     try {
+//       const response = await axios.post('/api/company/departments', data);
+//       return response.data;
+//     } catch (error) {
+//       console.error('Erreur lors de la création du département:', error);
+
+//       // Pour le développement
+//       if (process.env.NODE_ENV === 'development') {
+//         return {
+//           id: Date.now().toString(),
+//           name: data.name
+//         };
+//       }
+
+//       throw error;
+//     }
+//   },
+
+//   updateDepartment: async (id, data) => {
+//     try {
+//       const response = await axios.put(`/api/company/departments/${id}`, data);
+//       return response.data;
+//     } catch (error) {
+//       console.error('Erreur lors de la mise à jour du département:', error);
+//       throw error;
+//     }
+//   },
+
+//   deleteDepartment: async (id) => {
+//     try {
+//       const response = await axios.delete(`/api/company/departments/${id}`);
+//       return response.data;
+//     } catch (error) {
+//       console.error('Erreur lors de la suppression du département:', error);
+//       throw error;
+//     }
+//   },
+//   getCompanyProfile: async () => {
+//     try {
+//       const response = await axios.get('/api/company/profile');
+//       return response.data;
+//     } catch (error) {
+//       console.error('Erreur lors de la récupération du profil d\'entreprise:', error);
+//       // Pour le développement, retourner des données simulées
+//       if (process.env.NODE_ENV === 'development') {
+//         return {
+//           name: 'RecrutPME',
+//           website: 'https://www.recruitpme.fr',
+//           phone: '01 23 45 67 89'
+//         };
+//       }
+//       throw error;
+//     }
+//   },
+
+//   updateCompanyProfile: async (data) => {
+//     try {
+//       const response = await axios.put('/api/company/profile', data);
+//       return response.data;
+//     } catch (error) {
+//       console.error('Erreur lors de la mise à jour du profil d\'entreprise:', error);
+//       throw error;
+//     }
+//   },
+
+//    createCompany: async (companyData)  => {
+//     try {
+//       const response = await axios.post('/companies', companyData);
+//       console.log('Données de l\'entreprise à créer:', response.data);
+
+//       return response.data;
+      
+
+//     } catch (error) {
+//       console.error('Erreur lors de la creatione d\'entreprise:', error);
+//       throw error;
+//     }
+     
+//   },
+
+//   getCompanyLocations: async () => {
+//     try {
+//       const response = await axios.get('/api/company/locations');
+//       return response.data;
+//     } catch (error) {
+//       console.error('Erreur lors de la récupération des emplacements:', error);
+//       // Pour le développement, retourner des données simulées
+//       if (process.env.NODE_ENV === 'development') {
+//         return [
+//           {
+//             id: '1',
+//             address: '123 Avenue des Champs-Élysées',
+//             country: 'France',
+//             city: 'Paris',
+//             postalCode: '75008'
+//           }
+//         ];
+//       }
+//       throw error;
+//     }
+//   },
+
+//   addCompanyLocation: async (data) => {
+//     try {
+//       const response = await axios.post('/api/company/locations', data);
+//       return response.data;
+//     } catch (error) {
+//       console.error('Erreur lors de l\'ajout d\'un emplacement:', error);
+//       throw error;
+//     }
+//   },
+
+//   updateCompanyLocation: async (id, data) => {
+//     try {
+//       const response = await axios.put(`/api/company/locations/${id}`, data);
+//       return response.data;
+//     } catch (error) {
+//       console.error('Erreur lors de la mise à jour d\'un emplacement:', error);
+//       throw error;
+//     }
+//   },
+
+//   deleteCompanyLocation: async (id) => {
+//     try {
+//       const response = await axios.delete(`/api/company/locations/${id}`);
+//       return response.data;
+//     } catch (error) {
+//       console.error('Erreur lors de la suppression d\'un emplacement:', error);
+//       throw error;
+//     }
+//   }
+// };
 export const companyService = {
-  getDepartments: async () => {
+  createCompany: async (companyData) => {
     try {
-      const response = await axios.get('/api/company/departments');
+      const response = await axios.post('/companies', companyData);
       return response.data;
     } catch (error) {
-      console.error('Erreur lors de la récupération des départements:', error);
-
-      // Pour le développement, retourner des données simulées
-      if (process.env.NODE_ENV === 'development') {
-        return [
-          { id: '1', name: 'Support Client (CS)' },
-          { id: '2', name: 'Finance' },
-          { id: '3', name: 'Ressources Humaines (RH)' },
-          { id: '4', name: 'Informatique (IT)' },
-          { id: '5', name: 'Juridique' },
-          { id: '6', name: 'Marketing' },
-          { id: '7', name: 'Produit' },
-          { id: '8', name: 'Ventes' },
-          { id: '9', name: 'Ingénierie Logicielle' }
-        ];
-      }
-
-      throw error;
-    }
-  },
-
-  createDepartment: async (data) => {
-    try {
-      const response = await axios.post('/api/company/departments', data);
-      return response.data;
-    } catch (error) {
-      console.error('Erreur lors de la création du département:', error);
-
-      // Pour le développement
-      if (process.env.NODE_ENV === 'development') {
-        return {
-          id: Date.now().toString(),
-          name: data.name
-        };
-      }
-
-      throw error;
-    }
-  },
-
-  updateDepartment: async (id, data) => {
-    try {
-      const response = await axios.put(`/api/company/departments/${id}`, data);
-      return response.data;
-    } catch (error) {
-      console.error('Erreur lors de la mise à jour du département:', error);
-      throw error;
-    }
-  },
-
-  deleteDepartment: async (id) => {
-    try {
-      const response = await axios.delete(`/api/company/departments/${id}`);
-      return response.data;
-    } catch (error) {
-      console.error('Erreur lors de la suppression du département:', error);
-      throw error;
+      const errorMessage = error.response?.data?.message || 'Erreur lors de la création de l\'entreprise';
+      const validationErrors = error.response?.data?.errors || [];
+      throw new Error(`${errorMessage}: ${validationErrors.map(e => e.message).join(', ')}`);
     }
   },
   getCompanyProfile: async () => {
     try {
-      const response = await axios.get('/api/company/profile');
-      return response.data;
+      const response = await axios.get('/my-companies'); // Doit correspondre à /api/v1/my-companies
+      console.log('Réponse de /my-companies:', response.data);
+      return response.data.data[0] || null;
     } catch (error) {
-      console.error('Erreur lors de la récupération du profil d\'entreprise:', error);
-      // Pour le développement, retourner des données simulées
-      if (process.env.NODE_ENV === 'development') {
-        return {
-          name: 'RecrutPME',
-          website: 'https://www.recruitpme.fr',
-          phone: '01 23 45 67 89'
-        };
-      }
-      throw error;
+      console.error('Erreur lors de getCompanyProfile:', error);
+      throw error.response?.data?.message || 'Erreur lors de la récupération du profil';
     }
   },
-
-  updateCompanyProfile: async (data) => {
+  updateCompany: async (companyId, companyData) => {
     try {
-      const response = await axios.put('/api/company/profile', data);
+      const response = await axios.put(`/companies/${companyId}`, companyData);
       return response.data;
     } catch (error) {
-      console.error('Erreur lors de la mise à jour du profil d\'entreprise:', error);
-      throw error;
-    }
-  },
-
-  getCompanyLocations: async () => {
-    try {
-      const response = await axios.get('/api/company/locations');
-      return response.data;
-    } catch (error) {
-      console.error('Erreur lors de la récupération des emplacements:', error);
-      // Pour le développement, retourner des données simulées
-      if (process.env.NODE_ENV === 'development') {
-        return [
-          {
-            id: '1',
-            address: '123 Avenue des Champs-Élysées',
-            country: 'France',
-            city: 'Paris',
-            postalCode: '75008'
-          }
-        ];
-      }
-      throw error;
-    }
-  },
-
-  addCompanyLocation: async (data) => {
-    try {
-      const response = await axios.post('/api/company/locations', data);
-      return response.data;
-    } catch (error) {
-      console.error('Erreur lors de l\'ajout d\'un emplacement:', error);
-      throw error;
-    }
-  },
-
-  updateCompanyLocation: async (id, data) => {
-    try {
-      const response = await axios.put(`/api/company/locations/${id}`, data);
-      return response.data;
-    } catch (error) {
-      console.error('Erreur lors de la mise à jour d\'un emplacement:', error);
-      throw error;
-    }
-  },
-
-  deleteCompanyLocation: async (id) => {
-    try {
-      const response = await axios.delete(`/api/company/locations/${id}`);
-      return response.data;
-    } catch (error) {
-      console.error('Erreur lors de la suppression d\'un emplacement:', error);
-      throw error;
+      throw error.response?.data?.message || 'Erreur lors de la mise à jour de l\'entreprise';
     }
   }
 };
-
-
-
-

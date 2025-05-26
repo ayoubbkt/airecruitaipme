@@ -1,0 +1,808 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  password       String
+  firstName      String?
+  lastName       String?
+  jobTitle       String? // User's job title within their own company
+  departmentName String? // User's department within their own company
+  role           UserRole @default(STANDARD) // Role within the MegaHR platform
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  profile              UserProfile?
+  notifications        Notification[]
+  sentMessages         Message[]             @relation("SentMessages")
+  meetingsOwned        Meeting[]             @relation("MeetingOrganizer")
+  meetingAttendees     MeetingAttendee[]
+  candidateRatings     CandidateRating[]     @relation("Rater")
+  companiesOwned       Company[]             @relation("Owner")
+  companyMemberships   CompanyMember[]
+  calendarIntegrations CalendarIntegration[]
+  aiInteractionLogs    AIInteractionLog[]
+  jobHiringMembers     JobHiringMember[]
+
+  @@map("users")
+}
+
+model UserProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Add other profile fields from "Customize User Settings"
+  // profilePicture String? // Store as URL or use a service
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user_profiles")
+}
+
+enum UserRole {
+  STANDARD
+  ADMIN // Admin for their company on MegaHR
+  MEGA_ADMIN // Super admin for the MegaHR platform
+  EXTERNAL_RECRUITER
+}
+
+model Company {
+  id          String   @id @default(cuid())
+  name        String
+  website     String?
+  phoneNumber String?
+  description String? // From "Customize Careers Page > Branding"
+  ownerId     String
+  owner       User     @relation("Owner", fields: [ownerId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members              CompanyMember[]
+  jobs                 Job[]
+  departments          Department[]
+  locations            JobLocation[]
+  workflowTemplates    WorkflowTemplate[]
+  ratingCardTemplates  RatingCardTemplate[]
+  careersPageSettings  CareersPageSetting?
+  jobBoardIntegrations JobBoardIntegration[]
+
+  @@map("companies")
+}
+
+// To manage user roles within a specific company
+model CompanyMember {
+  id        String            @id @default(cuid())
+  companyId String
+  company   Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      CompanyMemberRole // Role specific to this company (e.g., Hiring Manager for Job X)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  @@unique([companyId, userId])
+  @@map("company_members")
+}
+
+enum CompanyMemberRole {
+  RECRUITING_ADMIN
+  HIRING_MANAGER
+  REVIEWER
+  // Add other roles as needed from "Inviting Your Team > Job Level"
+}
+
+model Job {
+  id             String         @id @default(cuid())
+  title          String
+  description    String         @db.Text
+  employmentType EmploymentType
+  workType       WorkType
+  salaryMin      Float?
+  salaryMax      Float?
+  currency       String?
+  payPeriod      String? // e.g., "Per Year", "Per Hour"
+  displaySalary  Boolean        @default(true)
+  status         JobStatus      @default(DRAFT)
+  jobCode        String?        @unique // Optional job code
+  companyId      String
+  company        Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  departmentId   String?
+  department     Department?    @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  locationId     String?
+  location       JobLocation?   @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  applicationForm    ApplicationFormField[]
+  hiringTeam         JobHiringMember[]
+  jobWorkflow        JobWorkflow? // Each job has one active workflow instance
+  applications       Application[] // Candidates who applied
+  aiScreeningConfig  AIScreeningConfig?
+  aiSchedulingConfig AISchedulingConfig?
+
+  @@map("jobs")
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERNSHIP_PAID
+  INTERNSHIP_UNPAID
+  TEMPORARY
+  OTHER
+}
+
+enum WorkType {
+  ON_SITE
+  REMOTE
+  HYBRID
+}
+
+enum JobStatus {
+  DRAFT
+  PUBLISHED // Live on career site and job boards
+  INTERNAL_ONLY // Visible only within the company
+  CONFIDENTIAL // Visible only to hiring team and Mega Admins
+  ARCHIVED
+  CLOSED
+}
+
+model Department {
+  id        String   @id @default(cuid())
+  name      String
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  jobs      Job[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, name])
+  @@map("departments")
+}
+
+model JobLocation {
+  id          String   @id @default(cuid())
+  address     String?
+  country     String
+  city        String
+  stateRegion String? // State/Region/Territory
+  zipPostal   String?
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  jobs        Job[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("job_locations")
+}
+
+// Defines fields for a job's application form
+model ApplicationFormField {
+  id               String          @id @default(cuid())
+  jobId            String
+  job              Job             @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  fieldName        String // e.g., "phoneNumber", "resume", "coverLetter", or custom question ID
+  label            String // Display label for the field
+  fieldType        FieldType // TEXT, FILE, CUSTOM_QUESTION_REFERENCE
+  isRequired       Boolean         @default(false)
+  isOptional       Boolean         @default(false) // if not required, is it optional or disabled?
+  isDisabled       Boolean         @default(false)
+  customQuestionId String? // Link to a CustomQuestion if fieldType is CUSTOM_QUESTION_REFERENCE
+  customQuestion   CustomQuestion? @relation(fields: [customQuestionId], references: [id], onDelete: SetNull)
+  order            Int
+
+  @@map("application_form_fields")
+}
+
+enum FieldType {
+  TEXT
+  TEXTAREA
+  EMAIL
+  PHONE
+  FILE // For resume, cover letter
+  YES_NO
+  DROPDOWN
+  MULTIPLE_CHOICE
+  NUMBER
+  CUSTOM_QUESTION_REFERENCE // Indicates this field is a custom question
+}
+
+// For custom screening questions library
+model CustomQuestion {
+  id           String             @id @default(cuid())
+  companyId    String // Questions are company-specific
+  // company    Company @relation(fields: [companyId], references: [id]) // If you want to link back
+  questionText String
+  responseType ResponseType // From "Candidate Questions > Different Types of Questions"
+  options      Json? // For DROPDOWN, MULTIPLE_CHOICE
+  visibility   ResponseVisibility @default(HIRING_TEAM)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  applicationFormFields ApplicationFormField[]
+  candidateAnswers      CandidateAnswer[]
+
+  @@map("custom_questions")
+}
+
+enum ResponseType {
+  SHORT_TEXT
+  PARAGRAPH_TEXT
+  YES_NO
+  DROPDOWN_LIST
+  MULTIPLE_CHOICE
+  NUMBER
+  FILE_UPLOAD
+}
+
+enum ResponseVisibility {
+  HIRING_TEAM
+  HIRING_MANAGERS_AND_ABOVE
+}
+
+// Represents a candidate entity. Could be distinct from User or linked.
+model Candidate {
+  id              String   @id @default(cuid())
+  firstName       String
+  lastName        String
+  email           String   @unique
+  phoneNumber     String?
+  resumeUrl       String?
+  coverLetterText String?  @db.Text
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  applications     Application[]
+  candidateAnswers CandidateAnswer[] @relation("CandidateToCandidateAnswers")
+
+  @@map("candidates")
+}
+
+model Application {
+  id                     String            @id @default(cuid())
+  jobId                  String
+  job                    Job               @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  candidateId            String
+  candidate              Candidate         @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  appliedAt              DateTime          @default(now())
+  currentStageId         String? // ID of the JobWorkflowStage the candidate is currently in
+  // currentStage JobWorkflowStage? @relation("CurrentApplicationsInStage", fields: [currentStageId], references: [id], onDelete:SetNull) // Prisma limitation with multiple relations
+  status                 ApplicationStatus @default(ACTIVE) // Overall status
+  disqualificationReason String?
+  archivedAt             DateTime?
+  hiredAt                DateTime?
+  source                 String? // How the candidate applied (e.g., "Job Board X", "Careers Page", "Sourced")
+
+  candidateAnswers CandidateAnswer[]
+  candidateRatings CandidateRating[]
+  messages         MessageThread[] // Communication for this application
+
+  @@unique([jobId, candidateId]) // A candidate can apply to a job only once
+  @@map("applications")
+}
+
+enum ApplicationStatus {
+  ACTIVE
+  DISQUALIFIED
+  ARCHIVED
+  HIRED
+  WITHDRAWN
+}
+
+// Stores answers to custom questions for an application
+model CandidateAnswer {
+  id               String         @id @default(cuid())
+  applicationId    String
+  application      Application    @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  customQuestionId String
+  customQuestion   CustomQuestion @relation(fields: [customQuestionId], references: [id], onDelete: Restrict)
+  answerText       String?        @db.Text
+  answerFileUrl    String?
+  answeredAt       DateTime       @default(now())
+  candidateId      String
+  candidate        Candidate      @relation("CandidateToCandidateAnswers", fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@map("candidate_answers")
+}
+
+// Workflow Templates (Company-level)
+model WorkflowTemplate {
+  id        String   @id @default(cuid())
+  name      String
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  stages       WorkflowStageTemplate[]
+  jobWorkflows JobWorkflow[] // Jobs using this template
+
+  @@unique([companyId, name])
+  @@map("workflow_templates")
+}
+
+model WorkflowStageTemplate {
+  id                    String           @id @default(cuid())
+  workflowTemplateId    String
+  workflowTemplate      WorkflowTemplate @relation(fields: [workflowTemplateId], references: [id], onDelete: Cascade)
+  name                  String
+  type                  StageType // LEADS, APPLIED, REVIEW, INTERVIEW, etc.
+  order                 Int // Order of the stage in the workflow
+  isDefault             Boolean          @default(false) // e.g. Applied, Hired are default stages
+  canBeDeleted          Boolean          @default(true) // Some stages like Hired cannot be deleted
+  settings              Json? // Default settings for this stage type (e.g. email template ID)
+  visibilityToReviewers Boolean          @default(false) // If reviewers can see candidates in this stage
+
+  @@unique([workflowTemplateId, order])
+  @@unique([workflowTemplateId, name])
+  @@map("workflow_stage_templates")
+}
+
+// Job-specific Workflow Instance (derived from a WorkflowTemplate)
+model JobWorkflow {
+  id                 String            @id @default(cuid())
+  jobId              String            @unique
+  job                Job               @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  workflowTemplateId String? // Optional: link to the template it was created from
+  workflowTemplate   WorkflowTemplate? @relation(fields: [workflowTemplateId], references: [id], onDelete: SetNull)
+  name               String // Can be "Workflow for [Job Title]"
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  stages JobWorkflowStage[]
+
+  @@map("job_workflows")
+}
+
+model JobWorkflowStage {
+  id            String      @id @default(cuid())
+  jobWorkflowId String
+  jobWorkflow   JobWorkflow @relation(fields: [jobWorkflowId], references: [id], onDelete: Cascade)
+  name          String
+  type          StageType
+  order         Int
+  settings      Json? // Job-specific overrides: AI screening, automated emails, rating cards, due dates
+  // e.g., { "aiScreeningEnabled": true, "confirmationEmailTemplateId": "xyz", "dueDateDays": 5 }
+  // applicationsInStage Application[] @relation("CurrentApplicationsInStage") // Candidates currently in this stage for this job
+
+  @@unique([jobWorkflowId, order])
+  @@unique([jobWorkflowId, name])
+  @@map("job_workflow_stages")
+}
+
+enum StageType {
+  LEADS
+  APPLIED
+  AI_SCREENING // Could be a sub-status of APPLIED or its own stage
+  REVIEW
+  INTERVIEW
+  BACKGROUND_CHECK
+  OFFER
+  HIRED
+  DISQUALIFIED
+  ARCHIVED
+  OTHER // Custom stage
+}
+
+// Hiring Team members for a specific job
+model JobHiringMember {
+  id                  String            @id @default(cuid())
+  jobId               String
+  job                 Job               @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  userId              String
+  user                User              @relation(fields: [userId], references: [id]) // User from the platform
+  role                CompanyMemberRole // RECRUITING_ADMIN, HIRING_MANAGER, REVIEWER for THIS job
+  isExternalRecruiter Boolean           @default(false) // If true, limited visibility
+  createdAt           DateTime          @default(now())
+
+  @@unique([jobId, userId])
+  @@map("job_hiring_members")
+}
+
+// Rating Card Templates (Company-level)
+model RatingCardTemplate {
+  id          String         @id @default(cuid())
+  name        String
+  description String?
+  companyId   String
+  company     Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  type        RatingCardType @default(BASIC) // BASIC or CATEGORIZED
+  isDefault   Boolean        @default(false) // Fallback if no specific card is assigned
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  categories       RatingCategory[]
+  candidateRatings CandidateRating[]
+
+  @@unique([companyId, name])
+  @@map("rating_card_templates")
+}
+
+enum RatingCardType {
+  BASIC // Simple 5-star + comments
+  CATEGORIZED // Multiple categories, each with 5-star + comments
+}
+
+model RatingCategory {
+  id                   String             @id @default(cuid())
+  ratingCardTemplateId String
+  ratingCardTemplate   RatingCardTemplate @relation(fields: [ratingCardTemplateId], references: [id], onDelete: Cascade)
+  name                 String // e.g., "Technical Skills", "Culture Fit", "Communication"
+  description          String?
+  order                Int
+
+  categoryScores CategoryScore[]
+
+  @@unique([ratingCardTemplateId, name])
+  @@map("rating_categories")
+}
+
+model CandidateRating {
+  id                   String             @id @default(cuid())
+  applicationId        String
+  application          Application        @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  jobWorkflowStageId   String // Stage at which this rating was given
+  // jobWorkflowStage JobWorkflowStage @relation(fields: [jobWorkflowStageId], references: [id])
+  raterId              String
+  rater                User               @relation("Rater", fields: [raterId], references: [id])
+  ratingCardTemplateId String
+  ratingCardTemplate   RatingCardTemplate @relation(fields: [ratingCardTemplateId], references: [id])
+  overallScore         Int // 1-5 stars
+  comments             String?            @db.Text
+  submittedAt          DateTime           @default(now())
+
+  categoryScores CategoryScore[]
+
+  @@map("candidate_ratings")
+}
+
+model CategoryScore {
+  id                String          @id @default(cuid())
+  candidateRatingId String
+  candidateRating   CandidateRating @relation(fields: [candidateRatingId], references: [id], onDelete: Cascade)
+  ratingCategoryId  String
+  ratingCategory    RatingCategory  @relation(fields: [ratingCategoryId], references: [id])
+  score             Int // 1-5 stars for this specific category
+  comments          String?
+
+  @@unique([candidateRatingId, ratingCategoryId])
+  @@map("category_scores")
+}
+
+// Messaging
+model MessageThread {
+  id            String      @id @default(cuid())
+  applicationId String      @unique // One thread per application (job + candidate)
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  messages Message[]
+
+  @@map("message_threads")
+}
+
+model Message {
+  id             String             @id @default(cuid())
+  threadId       String
+  thread         MessageThread      @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  senderId       String // User ID of the sender (hiring team member)
+  sender         User               @relation("SentMessages", fields: [senderId], references: [id])
+  // recipientType Candidate or TeamMember? For simplicity, assume messages are from team to candidate context or internal notes
+  content        String             @db.Text
+  sentAt         DateTime           @default(now())
+  isInternalNote Boolean            @default(false) // If true, not visible to candidate
+  visibility     CommentVisibility? // For internal notes: PUBLIC, PRIVATE, CONFIDENTIAL
+  attachments    Json? // Array of { fileName: string, url: string }
+
+  @@map("messages")
+}
+
+enum CommentVisibility {
+  PUBLIC // Everyone involved in the job
+  PRIVATE // Hiring Manager and above
+  CONFIDENTIAL // Only creator and Company Admins
+}
+
+// Scheduling & Meetings
+model Meeting {
+  id            String      @id @default(cuid())
+  title         String
+  description   String?     @db.Text
+  startTime     DateTime
+  endTime       DateTime
+  type          MeetingType // PHONE_CALL, VIDEO_CALL, IN_PERSON, OTHER
+  location      String? // For IN_PERSON or details for OTHER
+  videoCallLink String? // For VIDEO_CALL
+  jobId         String? // Associated job
+  // job        Job?        @relation(fields: [jobId], references: [id])
+  applicationId String? // Associated application (candidate)
+  // application Application? @relation(fields: [applicationId], references: [id])
+  organizerId   String // User who created the meeting
+  organizer     User        @relation("MeetingOrganizer", fields: [organizerId], references: [id])
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  attendees          MeetingAttendee[]
+  meetingTemplateId  String?
+  meetingTemplate    MeetingTemplate?    @relation(fields: [meetingTemplateId], references: [id], onDelete: SetNull)
+  aiNoteTakingConfig AINoteTakingConfig?
+
+  @@map("meetings")
+}
+
+enum MeetingType {
+  PHONE_CALL
+  VIDEO_CALL
+  IN_PERSON
+  OTHER
+}
+
+model MeetingAttendee {
+  id          String         @id @default(cuid())
+  meetingId   String
+  meeting     Meeting        @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  userId      String? // If attendee is a platform User
+  user        User?          @relation(fields: [userId], references: [id])
+  candidateId String? // If attendee is a Candidate
+  // candidate  Candidate? @relation(fields: [candidateId], references: [id])
+  email       String // Email of the attendee (can be external)
+  name        String? // Name of the external attendee
+  status      AttendeeStatus @default(PENDING) // PENDING, ACCEPTED, DECLINED
+  isCandidate Boolean        @default(false)
+
+  @@unique([meetingId, email]) // Ensure one entry per email for a meeting
+  @@map("meeting_attendees")
+}
+
+enum AttendeeStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  TENTATIVE
+}
+
+model MeetingTemplate {
+  id          String      @id @default(cuid())
+  companyId   String
+  // company  Company  @relation(fields: [companyId], references: [id])
+  name        String // Internal name, e.g., "30-min Screening Call"
+  title       String // Title for calendar invite, e.g., "Interview with {{companyName}}"
+  duration    Int // Duration in minutes
+  meetingType MeetingType
+  description String?     @db.Text // Default description for the meeting invite
+  // defaultRatingCardId String? // Optional: default rating card for this meeting type
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  meetings Meeting[]
+
+  @@unique([companyId, name])
+  @@map("meeting_templates")
+}
+
+// Careers Page Customization
+model CareersPageSetting {
+  id                String   @id @default(cuid())
+  companyId         String   @unique
+  company           Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  logoUrl           String?
+  // companyDescription is in Company model
+  primaryColor      String?  @default("#007bff")
+  focusColor        String?  @default("#007bff")
+  hyperlinkColor    String?  @default("#007bff")
+  googleAnalyticsId String? // G-XXXXXXXXXX
+  trackingPixelUrl  String? // Image pixel URL
+  // Design Team access - managed via CompanyMember roles?
+  embedJobsCode     String?  @db.Text // Snippet for embedding jobs
+  customCSS         String?  @db.Text // CSS for embedded jobs
+  updatedAt         DateTime @updatedAt
+
+  @@map("careers_page_settings")
+}
+
+// Notifications
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String // User to notify
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  message   String
+  link      String? // Link to relevant page (e.g., candidate profile, job)
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@map("notifications")
+}
+
+enum NotificationType {
+  NEW_CANDIDATE
+  CANDIDATE_STAGE_CHANGED
+  INTERVIEW_SCHEDULED
+  INTERVIEW_REMINDER
+  RATING_CARD_DUE
+  TASK_ASSIGNED
+  COMMENT_MENTION
+  REPORT_READY
+  JOB_STATUS_UPDATED
+  SLA_WARNING // Due date approaching
+  SLA_EXPIRED // Due date passed
+}
+
+// AI "Megan" Configuration and Interaction
+model AIScreeningConfig {
+  id        String   @id @default(cuid())
+  jobId     String   @unique
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  isEnabled Boolean  @default(false)
+  guidance  String?  @db.Text // "Focus on candidates with 5+ years of experience."
+  updatedAt DateTime @updatedAt
+
+  @@map("ai_screening_configs")
+}
+
+model AISchedulingConfig {
+  id        String   @id @default(cuid())
+  jobId     String   @unique // Or could be at JobWorkflowStage level for interview stages
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  isEnabled Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+
+  @@map("ai_scheduling_configs")
+}
+
+model AINoteTakingConfig {
+  id          String   @id @default(cuid())
+  meetingId   String   @unique
+  meeting     Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  isEnabled   Boolean  @default(false)
+  transcript  String?  @db.Text
+  summary     String?  @db.Text
+  actionItems Json? // Array of strings or objects
+  updatedAt   DateTime @updatedAt
+
+  @@map("ai_note_taking_configs")
+}
+
+model AIInteractionLog {
+  id        String   @id @default(cuid())
+  userId    String? // User interacting with Megan
+  user      User?    @relation(fields: [userId], references: [id])
+  // contextJobId String?
+  // contextCandidateId String?
+  inputType String // "TEXT_COMMAND", "VOICE_COMMAND", "WORKFLOW_TRIGGER"
+  input     String   @db.Text
+  output    String?  @db.Text
+  timestamp DateTime @default(now())
+  // success  Boolean
+
+  @@map("ai_interaction_logs")
+}
+
+model AIBusinessPreference {
+  id               String   @id @default(cuid())
+  companyId        String   @unique
+  // company        Company   @relation(fields: [companyId], references: [id])
+  businessOverview String?  @db.Text
+  businessCulture  String?  @db.Text
+  businessValues   String?  @db.Text
+  businessMission  String?  @db.Text
+  updatedAt        DateTime @updatedAt
+
+  @@map("ai_business_preferences")
+}
+
+model AICommunicationPreference {
+  id                     String   @id @default(cuid())
+  companyId              String   @unique
+  // company        Company   @relation(fields: [companyId], references: [id])
+  tone                   AITone   @default(PROFESSIONAL_FORMAL)
+  blockedTeamTopics      Json? // Array of strings: "RELIGION", "POLITICS", etc.
+  blockedCandidateTopics Json? // Array of strings
+  updatedAt              DateTime @updatedAt
+
+  @@map("ai_communication_preferences")
+}
+
+enum AITone {
+  CASUAL_LAID_BACK
+  PROFESSIONAL_FORMAL
+  GAMESHOW_LAID_BACK // This is a fun one from the doc
+  ROBOTIC_AI
+}
+
+// Integrations Tierces
+model CalendarIntegration {
+  id           String           @id @default(cuid())
+  userId       String           @unique // Assuming per-user calendar integration
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider     CalendarProvider // GOOGLE_WORKSPACE, MS_365_OUTLOOK
+  accessToken  String           @db.Text // Encrypt this
+  refreshToken String?          @db.Text // Encrypt this
+  expiresAt    DateTime?
+  scopes       String? // Comma-separated scopes
+  calendarId   String? // Primary calendar ID used by MegaHR
+  connectedAt  DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@map("calendar_integrations")
+}
+
+enum CalendarProvider {
+  GOOGLE_WORKSPACE
+  MS_365_OUTLOOK
+}
+
+model JobBoardIntegration {
+  id        String   @id @default(cuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  boardName String // e.g., "LinkedIn", "IndeedFree", "IndeedPremium"
+  apiKey    String? // Encrypt this
+  config    Json? // Specific config for this board
+  isEnabled Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, boardName])
+  @@map("job_board_integrations")
+}
+
+// Message Templates (Company-level)
+model MessageTemplate {
+  id           String       @id @default(cuid())
+  companyId    String
+  // company  Company  @relation(fields: [companyId], references: [id])
+  name         String // Internal name, e.g., "Application Confirmation"
+  subject      String? // For email templates
+  body         String       @db.Text // Template body with variables like [[candidateFirstName]]
+  type         TemplateType @default(EMAIL) // EMAIL, IN_APP_MESSAGE
+  stageTrigger StageType? // Optional: stage that might auto-trigger this (e.g., APPLIED for confirmation)
+  isDefault    Boolean      @default(false) // e.g. default disqualification email
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@unique([companyId, name])
+  @@map("message_templates")
+}
+
+enum TemplateType {
+  EMAIL
+  IN_APP_MESSAGE // For internal MegaHR messages or candidate portal messages
+  SMS // Future
+}
+
+enum TriggerType {
+  STAGE_ENTER
+  STAGE_EXIT
+  SCORE_ABOVE
+  SCORE_BELOW
+  TIME_ELAPSED
+  MANUAL
+}
+
+enum ActionType {
+  SEND_NOTIFICATION
+  SEND_EMAIL
+  UPDATE_STATUS
+  ASSIGN_RECRUITER
+  SCHEDULE_INTERVIEW
+  AUTO_PROGRESS
+  SEND_SURVEY
+}
