@@ -1,504 +1,779 @@
 import React, { useState, useEffect } from 'react';
-import {
-    ChevronDown,
-    Filter,
-    Star,
-    Edit2,
-    Download,
-    Mail,
-    Phone,
-    MapPin,
-    Calendar,
-    Eye,
-    Archive,
-    ExternalLink,
-    MoreHorizontal,
-    Search
-} from 'lucide-react';
-import { cvService } from '../../services/api';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { Search, ChevronDown, X, Plus, Upload, Star, Calendar } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { getCandidates, createCandidate, jobService 
+  ,companyService,cvService
 
-const CandidateManagement = () => {
-    const [selectedCandidate, setSelectedCandidate] = useState(null);
-    const [candidates, setCandidates] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [filters, setFilters] = useState({
-        status: {
-            leads: true,
-            applicants: true,
-            shortlist: true,
-            archived: false
-        },
-        positions: {
-            dataScientist: true,
-            developer: true,
-            designer: true
-        },
-        scores: {
-            high: true,
-            medium: true,
-            low: false
+} from '../../services/api.js';
+import { useAuth } from '../../contexts/AuthContext'; // Import AuthContext
+import axios from 'axios';
+import { toast } from 'react-toastify';
+ 
+
+const AddCandidateModal = ({ isOpen, onClose, companyId, onCandidateAdded }) => {
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    jobId: '',
+    comment: '',
+  });
+  const [resumeFile, setResumeFile] = useState(null);
+  const [jobs, setJobs] = useState([]);
+  const [loadingJobs, setLoadingJobs] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+
+  useEffect(() => {
+    if (isOpen && companyId) {
+      const fetchJobs = async () => {
+        try {
+          setLoadingJobs(true);
+          const activeJobs = await jobService.getJobs(companyId, { status: 'PUBLISHED' });
+          setJobs(activeJobs || []);
+        } catch (error) {
+          toast.error("Erreur lors du chargement des offres d'emploi.");
+        } finally {
+          setLoadingJobs(false);
         }
-    });
+      };
+      fetchJobs();
+    }
+  }, [isOpen, companyId]);
 
-    useEffect(() => {
-        const fetchCandidates = async () => {
-            try {
-                setLoading(true);
-                const response = await cvService.getCandidates();
-                setCandidates(response);
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
 
-                if (response.length > 0) {
-                    setSelectedCandidate(response[0]);
-                }
-            } catch (error) {
-                console.error('Error fetching candidates:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    console.log("Nom du fichier :", file);
+    setResumeFile(file);
+    console.log("resumeFile",resumeFile);
+  };
 
-        fetchCandidates();
-    }, []);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
 
-    // Function to handle candidate selection for preview
-    const handleCandidateClick = (candidate) => {
-        setSelectedCandidate(candidate);
-    };
-
-    // Function to get initials from name
-    const getInitials = (firstName, lastName) => {
-        return firstName.charAt(0) + lastName.charAt(0);
-    };
-
-    // Function to determine score color
-    const getScoreColor = (score) => {
-        if (score >= 85) return 'bg-green-100 text-green-800';
-        if (score >= 70) return 'bg-yellow-100 text-yellow-800';
-        return 'bg-red-100 text-red-800';
-    };
-
-    // Function to handle filter changes
-    const handleFilterChange = (category, key) => {
-        setFilters(prev => ({
-            ...prev,
-            [category]: {
-                ...prev[category],
-                [key]: !prev[category][key]
-            }
-        }));
-    };
-
-    // Filter candidates based on filters
-    const filteredCandidates = candidates.filter(candidate => {
-        // Status filter
-        if (candidate.status === 'lead' && !filters.status.leads) return false;
-        if (candidate.status === 'applicant' && !filters.status.applicants) return false;
-        if (candidate.status === 'shortlist' && !filters.status.shortlist) return false;
-        if (candidate.status === 'archived' && !filters.status.archived) return false;
-
-        // Position filter
-        const position = candidate.title.toLowerCase();
-        if (position.includes('data scientist') && !filters.positions.dataScientist) return false;
-        if (position.includes('developer') || position.includes('développeur') && !filters.positions.developer) return false;
-        if (position.includes('design') && !filters.positions.designer) return false;
-
-        // Score filter
-        if (candidate.score >= 85 && !filters.scores.high) return false;
-        if (candidate.score >= 70 && candidate.score < 85 && !filters.scores.medium) return false;
-        if (candidate.score < 70 && !filters.scores.low) return false;
-
-        return true;
-    });
-
-    if (loading) {
-        return <LoadingSpinner />;
+    const submissionData = new FormData();
+    submissionData.append('firstName', formData.firstName);
+    submissionData.append('lastName', formData.lastName);
+    submissionData.append('email', formData.email);
+    submissionData.append('phone', formData.phone);
+    submissionData.append('job', formData.jobId); // Change jobId to job
+    if (formData.comment) {
+      submissionData.append('comment', formData.comment);
+    }
+    if (resumeFile) {
+      submissionData.append('resume', resumeFile);
     }
 
-    return (
-        <div className="flex h-screen bg-slate-50">
-            {/* Sidebar */}
-            <div className="w-64 bg-white shadow-md flex flex-col">
-                <div className="flex items-center justify-between p-4">
-                    <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">RecrutPME</h1>
-                </div>
+    console.log('FormData:', Array.from(submissionData.entries()));
 
-                <div className="p-4 border-b">
-                    <h2 className="text-lg font-semibold text-slate-800">Filtres</h2>
-                    <div className="mt-4 space-y-4">
-                        <div>
-                            <h3 className="text-sm font-medium text-slate-700 mb-2">Statut</h3>
-                            <div className="space-y-2">
-                                <div className="flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        id="leads"
-                                        className="h-4 w-4 text-blue-600 rounded"
-                                        checked={filters.status.leads}
-                                        onChange={() => handleFilterChange('status', 'leads')}
-                                    />
-                                    <label htmlFor="leads" className="ml-2 text-sm text-slate-600">Leads</label>
-                                </div>
-                                <div className="flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        id="applicants"
-                                        className="h-4 w-4 text-blue-600 rounded"
-                                        checked={filters.status.applicants}
-                                        onChange={() => handleFilterChange('status', 'applicants')}
-                                    />
-                                    <label htmlFor="applicants" className="ml-2 text-sm text-slate-600">Candidats</label>
-                                </div>
-                                <div className="flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        id="shortlist"
-                                        className="h-4 w-4 text-blue-600 rounded"
-                                        checked={filters.status.shortlist}
-                                        onChange={() => handleFilterChange('status', 'shortlist')}
-                                    />
-                                    <label htmlFor="shortlist" className="ml-2 text-sm text-slate-600">Présélectionnés</label>
-                                </div>
-                                <div className="flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        id="archived"
-                                        className="h-4 w-4 text-blue-600 rounded"
-                                        checked={filters.status.archived}
-                                        onChange={() => handleFilterChange('status', 'archived')}
-                                    />
-                                    <label htmlFor="archived" className="ml-2 text-sm text-slate-600">Archivés</label>
-                                </div>
-                            </div>
-                        </div>
+    try {
+      await createCandidate(companyId, submissionData);
+      toast.success('Candidat ajouté avec succès !');
+      onCandidateAdded(); // Rafraîchir la liste des candidats
+      onClose(); // Fermer le modal
+      // Reset form
+      setFormData({ 
+        firstName: '', 
+        lastName: '', 
+        email: '', 
+        phone: '', 
+        jobId: '', 
+        comment: '' 
+      });
+      setResumeFile(null);
+    } catch (error) {
+      console.error("Erreur lors de l'ajout du candidat", error);
+      console.error("Détails des erreurs de l'API:", error.response?.data);          
+      toast.error("Erreur lors de l'ajout du candidat.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-                        <div>
-                            <h3 className="text-sm font-medium text-slate-700 mb-2">Postes</h3>
-                            <div className="space-y-2">
-                                <div className="flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        id="data-scientist"
-                                        className="h-4 w-4 text-blue-600 rounded"
-                                        checked={filters.positions.dataScientist}
-                                        onChange={() => handleFilterChange('positions', 'dataScientist')}
-                                    />
-                                    <label htmlFor="data-scientist" className="ml-2 text-sm text-slate-600">Data Scientist</label>
-                                </div>
-                                <div className="flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        id="developer"
-                                        className="h-4 w-4 text-blue-600 rounded"
-                                        checked={filters.positions.developer}
-                                        onChange={() => handleFilterChange('positions', 'developer')}
-                                    />
-                                    <label htmlFor="developer" className="ml-2 text-sm text-slate-600">Développeur</label>
-                                </div>
-                                <div className="flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        id="designer"
-                                        className="h-4 w-4 text-blue-600 rounded"
-                                        checked={filters.positions.designer}
-                                        onChange={() => handleFilterChange('positions', 'designer')}
-                                    />
-                                    <label htmlFor="designer" className="ml-2 text-sm text-slate-600">Designer</label>
-                                </div>
-                            </div>
-                        </div>
+  if (!isOpen) return null;
 
-                        <div>
-                            <h3 className="text-sm font-medium text-slate-700 mb-2">Score IA</h3>
-                            <div className="space-y-2">
-                                <div className="flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        id="high-score"
-                                        className="h-4 w-4 text-blue-600 rounded"
-                                        checked={filters.scores.high}
-                                        onChange={() => handleFilterChange('scores', 'high')}
-                                    />
-                                    <label htmlFor="high-score" className="ml-2 text-sm text-slate-600">Excellent (85+)</label>
-                                </div>
-                                <div className="flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        id="medium-score"
-                                        className="h-4 w-4 text-blue-600 rounded"
-                                        checked={filters.scores.medium}
-                                        onChange={() => handleFilterChange('scores', 'medium')}
-                                    />
-                                    <label htmlFor="medium-score" className="ml-2 text-sm text-slate-600">Bon (70-84)</label>
-                                </div>
-                                <div className="flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        id="low-score"
-                                        className="h-4 w-4 text-blue-600 rounded"
-                                        checked={filters.scores.low}
-                                        onChange={() => handleFilterChange('scores', 'low')}
-                                    />
-                                    <label htmlFor="low-score" className="ml-2 text-sm text-slate-600">Insuffisant (&lt;70)</label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Main content */}
-            <div className="flex-1 flex">
-                {/* Candidates list */}
-                <div className="w-1/2 overflow-auto">
-                    <div className="p-6">
-                        <div className="flex justify-between items-center mb-6">
-                            <h1 className="text-2xl font-bold text-slate-800">Candidats</h1>
-                            <div className="flex space-x-2">
-                                <div className="relative">
-                                    <input
-                                        type="text"
-                                        placeholder="Rechercher un candidat..."
-                                        className="pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
-                                    />
-                                    <div className="absolute left-3 top-2.5 text-slate-400">
-                                        <Search className="h-5 w-5" />
-                                    </div>
-                                </div>
-                                <button className="flex items-center px-4 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200">
-                                    <Filter className="h-4 w-4 mr-2" />
-                                    <span className="text-sm">Filtres</span>
-                                </button>
-                                <button className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg shadow-sm hover:from-blue-700 hover:to-indigo-700">
-                                    <span className="text-sm">+ Ajouter</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-                            {filteredCandidates.length === 0 ? (
-                                <div className="p-8 text-center text-slate-500">
-                                    <p>Aucun candidat ne correspond aux critères de filtre.</p>
-                                </div>
-                            ) : (
-                                filteredCandidates.map((candidate) => (
-                                    <div
-                                        key={candidate.id}
-                                        className={`border-b border-slate-100 p-4 hover:bg-slate-50 cursor-pointer ${selectedCandidate?.id === candidate.id ? 'bg-blue-50' : ''}`}
-                                        onClick={() => handleCandidateClick(candidate)}
-                                    >
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center">
-                                                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-medium ${candidate.id % 2 === 0 ? 'bg-gradient-to-r from-blue-500 to-indigo-600' : 'bg-gradient-to-r from-purple-500 to-pink-500'}`}>
-                                                    {getInitials(candidate.firstName, candidate.lastName)}
-                                                </div>
-                                                <div className="ml-3">
-                                                    <div className="flex items-center">
-                                                        <h3 className="text-sm font-medium text-slate-900">{candidate.firstName} {candidate.lastName}</h3>
-                                                        <span className={`ml-2 text-xs px-2 py-1 rounded-full ${getScoreColor(candidate.score)}`}>
-                              {candidate.score}%
-                            </span>
-                                                    </div>
-                                                    <p className="text-xs text-slate-500">{candidate.title}</p>
-                                                    <div className="flex items-center mt-1 text-xs text-slate-400">
-                                                        <div className="flex items-center mr-3">
-                                                            <Calendar className="h-3 w-3 mr-1" />
-                                                            <span>Dans cette étape depuis {candidate.stageDays || 0} jours</span>
-                                                        </div>
-                                                        <div className="flex items-center">
-                                                            <MapPin className="h-3 w-3 mr-1" />
-                                                            <span>{candidate.location || 'Non spécifié'}</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="flex space-x-2">
-                                                <button className="p-1 text-slate-400 hover:text-blue-600 rounded-full hover:bg-slate-100">
-                                                    <Star className="h-4 w-4" />
-                                                </button>
-                                                <button className="p-1 text-slate-400 hover:text-blue-600 rounded-full hover:bg-slate-100">
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        <div className="mt-3 flex flex-wrap gap-1">
-                                            {candidate.skills && candidate.skills.slice(0, 3).map((skill, idx) => (
-                                                <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
-                          {skill}
-                        </span>
-                                            ))}
-                                            {candidate.skills && candidate.skills.length > 3 && (
-                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
-                          +{candidate.skills.length - 3}
-                        </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Candidate preview */}
-                <div className="w-1/2 bg-white border-l border-slate-200 overflow-auto">
-                    {selectedCandidate ? (
-                        <div className="h-full">
-                            <div className="p-6 border-b border-slate-200">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className="flex items-center">
-                                        <div className={`w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-medium ${selectedCandidate.id % 2 === 0 ? 'bg-gradient-to-r from-blue-500 to-indigo-600' : 'bg-gradient-to-r from-purple-500 to-pink-500'}`}>
-                                            {getInitials(selectedCandidate.firstName, selectedCandidate.lastName)}
-                                        </div>
-                                        <div className="ml-4">
-                                            <div className="flex items-center">
-                                                <h2 className="text-xl font-bold text-slate-800">{selectedCandidate.firstName} {selectedCandidate.lastName}</h2>
-                                                <span className={`ml-3 px-2.5 py-0.5 rounded-full text-xs font-medium ${getScoreColor(selectedCandidate.score)}`}>
-                          {selectedCandidate.score}%
-                        </span>
-                                            </div>
-                                            <p className="text-slate-600">{selectedCandidate.title}</p>
-                                            <div className="flex mt-2">
-                                                <div className="flex items-center mr-4 text-sm text-slate-500">
-                                                    <Mail className="h-4 w-4 mr-1.5" />
-                                                    <span>{selectedCandidate.email}</span>
-                                                </div>
-                                                <div className="flex items-center text-sm text-slate-500">
-                                                    <Phone className="h-4 w-4 mr-1.5" />
-                                                    <span>{selectedCandidate.phone || 'Non spécifié'}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="flex space-x-2">
-                                        <button className="p-2 text-slate-400 hover:text-blue-600 rounded-full hover:bg-slate-100">
-                                            <Edit2 className="h-5 w-5" />
-                                        </button>
-                                        <button
-                                            className="p-2 text-slate-400 hover:text-blue-600 rounded-full hover:bg-slate-100"
-                                            onClick={() => cvService.downloadCV(selectedCandidate.id)}
-                                        >
-                                            <Download className="h-5 w-5" />
-                                        </button>
-                                        <button className="p-2 text-slate-400 hover:text-blue-600 rounded-full hover:bg-slate-100">
-                                            <Archive className="h-5 w-5" />
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="flex space-x-3 mt-4">
-                                    <button
-                                        className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg shadow-sm hover:from-blue-700 hover:to-indigo-700"
-                                        onClick={() => window.open(`mailto:${selectedCandidate.email}`)}
-                                    >
-                                        Contacter
-                                    </button>
-                                    <button className="px-4 py-2 border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50">
-                                        Planifier un entretien
-                                    </button>
-                                    <button
-                                        className="px-4 py-2 border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50"
-                                        onClick={() => window.open(`/cv/${selectedCandidate.id}`)}
-                                    >
-                                        Voir le CV
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="p-6">
-                                <div className="mb-8">
-                                    <h3 className="text-lg font-semibold text-slate-800 mb-3">Compétences</h3>
-                                    <div className="flex flex-wrap gap-2">
-                                        {selectedCandidate.skills && selectedCandidate.skills.map((skill, idx) => (
-                                            <span key={idx} className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-50 text-blue-700">
-                        {skill}
-                      </span>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div className="mb-8">
-                                    <h3 className="text-lg font-semibold text-slate-800 mb-3">Expérience professionnelle</h3>
-                                    <div className="space-y-4">
-                                        {selectedCandidate.experience && selectedCandidate.experience.length > 0 ? (
-                                            selectedCandidate.experience.map((exp, idx) => (
-                                                <div key={idx} className="border-l-2 border-blue-200 pl-4 pb-4">
-                                                    <div className="flex justify-between">
-                                                        <div>
-                                                            <h4 className="font-medium text-slate-800">{exp.title}</h4>
-                                                            <p className="text-sm text-slate-600">{exp.company}, {exp.location}</p>
-                                                        </div>
-                                                        <span className="text-sm text-slate-500">{exp.period}</span>
-                                                    </div>
-                                                    <p className="mt-2 text-sm text-slate-600">{exp.description}</p>
-                                                </div>
-                                            ))
-                                        ) : (
-                                            <p className="text-slate-500 italic">Aucune expérience professionnelle renseignée</p>
-                                        )}
-                                    </div>
-                                </div>
-                                <div className="mb-8">
-                                    <h3 className="text-lg font-semibold text-slate-800 mb-3">Formation</h3>
-                                    <div className="space-y-4">
-                                        {selectedCandidate.education && selectedCandidate.education.length > 0 ? (
-                                            selectedCandidate.education.map((edu, idx) => (
-                                                <div key={idx} className="border-l-2 border-indigo-200 pl-4 pb-4">
-                                                    <div className="flex justify-between">
-                                                        <div>
-                                                            <h4 className="font-medium text-slate-800">{edu.degree}</h4>
-                                                            <p className="text-sm text-slate-600">{edu.institution}</p>
-                                                        </div>
-                                                        <span className="text-sm text-slate-500">{edu.period}</span>
-                                                    </div>
-                                                </div>
-                                            ))
-                                        ) : (
-                                            <p className="text-slate-500 italic">Aucune formation renseignée</p>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <h3 className="text-lg font-semibold text-slate-800 mb-3">Analyse IA</h3>
-                                    <div className="bg-blue-50 rounded-lg p-4">
-                                        <p className="text-sm text-slate-700">
-                                            {selectedCandidate.score >= 85 ? (
-                                                <>Ce candidat présente une <strong>excellente adéquation</strong> avec le poste. Son profil technique correspond parfaitement aux exigences et son expérience est très pertinente.</>
-                                            ) : selectedCandidate.score >= 70 ? (
-                                                <>Ce candidat présente une <strong>bonne adéquation</strong> avec le poste. Il possède la plupart des compétences requises et une expérience satisfaisante.</>
-                                            ) : (
-                                                <>Ce candidat présente une <strong>adéquation moyenne</strong> avec le poste. Certaines compétences clés sont manquantes ou son expérience est limitée dans le domaine.</>
-                                            )}
-                                        </p>
-                                        <div className="mt-3 pt-3 border-t border-blue-100">
-                                            <div className="flex items-center justify-between mb-1">
-                                                <span className="text-xs font-medium text-slate-700">Score global</span>
-                                                <span className="text-xs font-medium text-slate-700">{selectedCandidate.score}%</span>
-                                            </div>
-                                            <div className="w-full bg-slate-200 rounded-full h-1.5">
-                                                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 h-1.5 rounded-full" style={{ width: `${selectedCandidate.score}%` }}></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="h-full flex items-center justify-center">
-                            <div className="text-center p-8">
-                                <div className="text-slate-400 mb-2">
-                                    <Eye className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                                    <p className="text-lg font-medium text-slate-500">Sélectionnez un candidat pour afficher ses détails</p>
-                                </div>
-                                <p className="text-slate-400 mt-2">Cliquez sur un candidat dans la liste pour voir son profil complet</p>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </div>
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-2xl transform transition-all">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold text-gray-900">Ajouter un Candidat</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-800 p-1 rounded-full hover:bg-gray-100">
+            <X size={20} />
+          </button>
         </div>
-    );
+        
+        <form onSubmit={handleSubmit}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Prénom <span className="text-red-500">*</span>
+              </label>
+              <input 
+                type="text" 
+                name="firstName" 
+                value={formData.firstName}
+                onChange={handleChange} 
+                className="w-full border border-gray-300 rounded-lg shadow-sm p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                required 
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Nom <span className="text-red-500">*</span>
+              </label>
+              <input 
+                type="text" 
+                name="lastName" 
+                value={formData.lastName}
+                onChange={handleChange} 
+                className="w-full border border-gray-300 rounded-lg shadow-sm p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                required 
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+              <input 
+                type="email" 
+                name="email" 
+                value={formData.email}
+                onChange={handleChange} 
+                className="w-full border border-gray-300 rounded-lg shadow-sm p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Téléphone</label>
+              <input 
+                type="tel" 
+                name="phone" 
+                value={formData.phone}
+                onChange={handleChange} 
+                className="w-full border border-gray-300 rounded-lg shadow-sm p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+              />
+            </div>
+          </div>
+
+          {/* Upload CV */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">CV</label>
+            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-blue-400 transition-colors">
+              <div className="space-y-1 text-center">
+                <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                <div className="flex text-sm text-gray-600">
+                  <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none">
+                    <span>Téléverser un fichier</span>
+                    <input id="file-upload" name="resume" type="file" className="sr-only" onChange={handleFileChange} />
+                  </label>
+                  <p className="pl-1">ou glissez-déposez</p>
+                </div>
+                {resumeFile ? (
+                  <p className="text-sm text-green-600 mt-2 font-medium">{resumeFile.name}</p>
+                ) : (
+                  <p className="text-xs text-gray-500">PDF, DOC, DOCX, RTF, TXT (max 5MB)</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Sélection du job */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Associer à une offre <span className="text-red-500">*</span>
+            </label>
+            <select 
+              name="jobId" 
+              value={formData.jobId}
+              onChange={handleChange} 
+              className="w-full border border-gray-300 rounded-lg shadow-sm p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+              required
+            >
+              <option value="">Sélectionner une offre</option>
+              {loadingJobs ? (
+                <option>Chargement...</option>
+              ) : (
+                jobs.map(job => (
+                  <option key={job.id} value={job.id}>{job.title}</option>
+                ))
+              )
+            }
+            </select>
+          </div>
+
+          {/* Commentaire optionnel */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Commentaire optionnel sur le candidat
+            </label>
+            <textarea 
+              name="comment" 
+              value={formData.comment}
+              rows="3" 
+              onChange={handleChange} 
+              className="w-full border border-gray-300 rounded-lg shadow-sm p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Ajouter des notes sur ce candidat..."
+            />
+          </div>
+
+          {/* Actions */}
+          <div className="flex justify-end space-x-3">
+            <button 
+              type="button" 
+              onClick={onClose} 
+              className="px-6 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Annuler
+            </button>
+            <button 
+              type="submit" 
+              disabled={isSubmitting} 
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-colors shadow-sm"
+            >
+              <Plus className="w-5 h-5 mr-2" /> 
+              {isSubmitting ? 'Ajout en cours...' : 'Ajouter le Candidat'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
 };
+
+const CandidateManagement = () => {
+
+
+  const [candidates, setCandidates] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedFilters, setSelectedFilters] = useState({
+    leads: false,
+    applicants: false,
+    inProgress: false,
+    hired: false,
+    disqualified: false
+  });
+  const navigate = useNavigate();
+  const { companyId } = useAuth(); // Récupérer companyId depuis AuthContext
+
+  const [jobs, setJobs] = useState([]);
+  const [locations, setLocations] = useState([]);
+  const [departments, setDepartments] = useState([]);
+const [selectedJobs, setSelectedJobs] = useState([]);  
+const [selectedLocations, setSelectedLocations] = useState([]);
+const [selectedDepartments, setSelectedDepartments] = useState([]);
+  
+ 
+  const [sortField, setSortField] = useState('updatedAt');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [openAdvanceDropdown, setOpenAdvanceDropdown] = useState(null);
+
+
+
+
+
+  const fetchCandidates = async () => {
+    setLoading(true);
+    try {
+      if (!companyId) {
+        console.error("No companyId found in AuthContext");
+        return;
+      }
+      const data = await getCandidates(companyId);
+      setCandidates(data);
+      const datajob = await jobService.getJobs(companyId);
+      setJobs(datajob);
+      const datalocation = await companyService.getCompanyLocations(companyId);
+      setLocations(datalocation);
+      const datadepart = await companyService.getDepartments(companyId);
+      setDepartments(datadepart);
+    } catch (error) {
+      console.error("Erreur lors de la récupération des candidats:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCandidates();
+     
+
+  }, [companyId, isModalOpen]);
+
+  const getInitials = (firstName, lastName) => {
+    return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase();
+  };
+
+  const timeSince = (date) => {
+    const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+    let interval = seconds / 31536000;
+    if (interval > 1) return Math.floor(interval) + " years ago";
+    interval = seconds / 2592000;
+    if (interval > 1) return Math.floor(interval) + " months ago";
+    interval = seconds / 86400;
+    if (interval > 1) return Math.floor(interval) + " days ago";
+    interval = seconds / 3600;
+    if (interval > 1) return Math.floor(interval) + " hours ago";
+    interval = seconds / 60;
+    if (interval > 1) return Math.floor(interval) + " minutes ago";
+    return "Added just now";
+  };
+
+  const getStageColor = (stage) => {
+    const colors = {
+      'Leads': 'bg-gray-100 text-gray-800',
+      'NEW': 'bg-blue-100 text-blue-800',
+      'SCREENING': 'bg-orange-100 text-orange-800',
+      'INTERVIEW': 'bg-purple-100 text-purple-800',
+      'OFFER': 'bg-yellow-100 text-yellow-800',
+      'HIRED': 'bg-green-100 text-green-800',
+      'REJECTED': 'bg-red-100 text-red-800'
+    };
+    return colors[stage] || 'bg-gray-100 text-gray-800';
+  };
+
+  const handleCandidateClick = (candidateId) => {
+    navigate(`/candidates/${candidateId}`);
+  };
+
+  // Calculer les counts pour les filtres
+  const filterCounts = {
+    leads: candidates.filter(c => !c.applications[0]?.status || c.applications[0]?.status === 'NEW').length,
+    applicants: candidates.filter(c => c.applications[0]?.status === 'NEW').length,
+    inProgress: candidates.filter(c => ['SCREENING', 'INTERVIEW'].includes(c.applications[0]?.status)).length,
+    hired: candidates.filter(c => c.applications[0]?.status === 'HIRED').length,
+    disqualified: candidates.filter(c => c.applications[0]?.status === 'REJECTED').length
+  };
+
+// ...autres hooks...
+
+const filteredCandidates = candidates.filter(candidate => {
+  // Recherche
+  const matchesSearch = `${candidate.firstName} ${candidate.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    candidate.email?.toLowerCase().includes(searchTerm.toLowerCase());
+
+  // Phase
+  const status = candidate.applications[0]?.status || 'NEW';
+    const phaseMap = {
+      leads: !status || status === 'NEW',
+      applicants: status === 'NEW',
+      inProgress: ['SCREENING', 'INTERVIEW'].includes(status),
+      hired: status === 'HIRED',
+      disqualified: status === 'REJECTED'
+    };
+  
+  const matchesPhase = Object.entries(selectedFilters)
+  .filter(([_, val]) => val)
+  .length === 0 // si rien de coché, on affiche tout
+  || Object.entries(selectedFilters).some(([key, val]) => val && phaseMap[key]);
+
+  // Job
+  const matchesJob = selectedJobs.length === 0 || candidate.applications.some(app => selectedJobs.includes(app.jobId));
+  // Locations
+  const matchesLocation = selectedLocations.length === 0 || candidate.applications.some(app => selectedLocations.includes(app.job?.locationId));
+  // Departments
+  const matchesDepartment = selectedDepartments.length === 0 || candidate.applications.some(app => selectedDepartments.includes(app.job?.departmentId));
+
+  return matchesSearch && matchesPhase && matchesJob && matchesLocation && matchesDepartment;
+});
+
+const [currentPage, setCurrentPage] = useState(1);
+const candidatesPerPage = 10;
+const sortedCandidates = [...filteredCandidates].sort((a, b) => {
+  if (sortField === 'updatedAt') {
+    return sortOrder === 'desc'
+      ? new Date(b.updatedAt) - new Date(a.updatedAt)
+      : new Date(a.updatedAt) - new Date(b.updatedAt);
+  }
+  return 0;
+});
+
+ 
+
+const paginatedCandidates = sortedCandidates.slice(
+  (currentPage - 1) * candidatesPerPage,
+  currentPage * candidatesPerPage
+);
+
+const totalPages = Math.ceil(filteredCandidates.length / candidatesPerPage);
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-6 py-6">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-gray-900">Candidats</h1>
+            <div className="flex items-center space-x-4">
+              <button
+  className={`flex items-center text-gray-600 hover:text-gray-900 transition-colors ${sortField === 'updatedAt' ? 'font-bold underline' : ''}`}
+  onClick={() => setSortField('updatedAt')}
+>
+  Updated date
+  {sortField === 'updatedAt' && (
+    sortOrder === 'desc'
+      ? <i className="fa-solid fa-arrow-down ml-1"></i>
+      : <i className="fa-solid fa-arrow-up ml-1"></i>
+  )}
+</button>
+<button
+  className={`flex items-center text-gray-600 hover:text-gray-900 transition-colors ${sortOrder === 'desc' ? 'font-bold underline' : ''}`}
+  onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
+>
+  {sortOrder === 'desc' ? 'Descending' : 'Ascending'}
+  {sortOrder === 'desc'
+    ? <i className="fa-solid fa-arrow-down ml-1"></i>
+    : <i className="fa-solid fa-arrow-up ml-1"></i>
+  }
+</button>
+              <button 
+                onClick={() => setIsModalOpen(true)} 
+                className="bg-blue-600 text-white px-6 py-2 rounded-lg flex items-center hover:bg-blue-700 transition-colors shadow-sm"
+              >
+                <Plus className="w-5 h-5 mr-2" /> Ajouter un Candidat
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Sidebar - Filtres */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-xl shadow-sm border p-6 space-y-8">
+              <div className="mb-4">
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+        <input 
+          type="text" 
+          placeholder="Rechercher des candidats..." 
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+        />
+      </div>
+    </div>
+              {/* Hiring Phase */}
+              
+<div>
+  
+<div className="flex justify-between items-center mb-4">
+  <div className="flex items-center gap-2">
+    <span className="text-lg"><i className="fa-solid fa-table-cells-large"></i></span>
+    <h3 className="font-semibold text-gray-900">Hiring Phase</h3>
+  </div>
+  {Object.values(selectedFilters).some(v => !v) && (
+    <button
+      onClick={() => setSelectedFilters({
+        leads: true,
+        applicants: true,
+        inProgress: true,
+        hired: true,
+        disqualified: true
+      })}
+      className="text-sm text-blue-600 hover:text-blue-700"
+    >
+      Clear
+    </button>
+  )}
+</div>
+  <div className="space-y-3">
+    {[
+      { key: 'leads', label: 'Leads', count: filterCounts.leads, icon: <i className="fa-regular fa-user"></i> },
+      { key: 'applicants', label: 'New Applicants', count: filterCounts.applicants, icon: <i className="fa-regular fa-user-plus"></i> },
+      { key: 'inProgress', label: 'In-Progress', count: filterCounts.inProgress, icon: <i className="fa-regular fa-spinner"></i> },
+      { key: 'hired', label: 'Hired', count: filterCounts.hired, icon: <i className="fa-regular fa-check"></i> },
+      { key: 'disqualified', label: 'Disqualified', count: filterCounts.disqualified, icon: <i className="fa-regular fa-xmark"></i> }
+    ].map(phase => (
+      <div key={phase.key} className="flex items-center justify-between">
+        <div className="flex items-center">
+          <input 
+            type="checkbox" 
+            checked={selectedFilters[phase.key]}
+            onChange={(e) => setSelectedFilters(prev => ({
+              ...prev,
+              [phase.key]: e.target.checked
+            }))}
+            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" 
+          />
+          <span className="ml-3 text-sm text-gray-700 flex items-center gap-1">{phase.icon}{phase.label}</span>
+        </div>
+        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+          {phase.count}
+        </span>
+      </div>
+    ))}
+  </div>
+</div>
+              {/* Jobs */}
+              <div>
+   
+<div className="flex justify-between items-center mb-2">
+  <div className="flex items-center gap-2">
+    <span className="text-lg"><i className="fa-solid fa-briefcase"></i></span>
+    <h3 className="font-semibold text-gray-900">Jobs</h3>
+  </div>
+  {selectedJobs.length > 0 && (
+    <button onClick={() => setSelectedJobs([])} className="text-sm text-blue-600 hover:text-blue-700">Clear</button>
+  )}
+</div>
+<div className="space-y-2">
+  {jobs.map(job => (
+    <div
+      key={job.id}
+      className={`flex items-center gap-2 text-sm px-2 py-1 rounded cursor-pointer ${selectedJobs.includes(job.id) ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-700 hover:bg-blue-50'}`}
+      onClick={() => {
+        setSelectedJobs(selectedJobs.includes(job.id)
+          ? selectedJobs.filter(j => j !== job.id)
+          : [...selectedJobs, job.id]);
+      }}
+    >
+      <input
+        type="checkbox"
+        checked={selectedJobs.includes(job.id)}
+        readOnly
+      />
+      {job.title}
+    </div>
+  ))}
+</div>
+</div>
+              {/* Office Locations */}
+              <div>
+  <div className="flex justify-between items-center mb-2">
+    <div className="flex items-center gap-2">
+      <span className="text-lg"><i className="fa-solid fa-building"></i></span>
+      <h3 className="font-semibold text-gray-900">Office Locations</h3>
+    </div>
+    {selectedLocations.length > 0 && (
+      <button onClick={() => setSelectedLocations([])} className="text-sm text-blue-600 hover:text-blue-700">Clear</button>
+    )}
+  </div>
+  <div className="space-y-2">
+    {locations.length === 0 ? (
+      <span className="text-xs text-gray-400">No locations</span>
+    ) : (
+      locations.map(loc => (
+        <div
+          key={loc.id}
+          className={`flex items-center gap-2 text-sm px-2 py-1 rounded cursor-pointer ${selectedLocations.includes(loc.id) ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-700 hover:bg-blue-50'}`}
+          onClick={() => {
+            setSelectedLocations(selectedLocations.includes(loc.id)
+              ? selectedLocations.filter(l => l !== loc.id)
+              : [...selectedLocations, loc.id]);
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={selectedLocations.includes(loc.id)}
+            readOnly
+          />
+          {loc.city}, {loc.country}
+        </div>
+      ))
+    )}
+  </div>
+</div>
+
+{/* Departments */}
+<div>
+  <div className="flex justify-between items-center mb-2">
+    <div className="flex items-center gap-2">
+      <span className="text-lg"><i className="fa-solid fa-layer-group"></i></span>
+      <h3 className="font-semibold text-gray-900">Departments</h3>
+    </div>
+    {selectedDepartments.length > 0 && (
+      <button onClick={() => setSelectedDepartments([])} className="text-sm text-blue-600 hover:text-blue-700">Clear</button>
+    )}
+  </div>
+  <div className="space-y-2 max-h-32 overflow-y-auto">
+    {departments.length === 0 ? (
+      <span className="text-xs text-gray-400">No departments</span>
+    ) : (
+      departments.map(dep => (
+        <div
+          key={dep.id}
+          className={`flex items-center gap-2 text-sm px-2 py-1 rounded cursor-pointer ${selectedDepartments.includes(dep.id) ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-700 hover:bg-blue-50'}`}
+          onClick={() => {
+            setSelectedDepartments(selectedDepartments.includes(dep.id)
+              ? selectedDepartments.filter(d => d !== dep.id)
+              : [...selectedDepartments, dep.id]);
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={selectedDepartments.includes(dep.id)}
+            readOnly
+          />
+          {dep.name}
+        </div>
+      ))
+    )}
+  </div>
+</div>
+            </div>
+          </div>
+
+          {/* Contenu principal */}
+          <div className="lg:col-span-3">
+            <div className="bg-white rounded-xl shadow-sm border">
+               
+
+              {/* Liste des candidats */}
+              <div className="p-6">
+                {loading ? (
+                  <div className="text-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-4 text-gray-500">Chargement...</p>
+                  </div>
+                ) : filteredCandidates.length === 0 ? (
+                  <div className="text-center py-20">
+                    <div className="mx-auto bg-blue-50 rounded-full h-24 w-24 flex items-center justify-center mb-4">
+                      <Search className="h-12 w-12 text-blue-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Aucun candidat trouvé</h3>
+                    <p className="text-gray-500 mb-6">Aucun candidat ne correspond à vos critères de recherche.</p>
+                    <button 
+                      onClick={() => setIsModalOpen(true)} 
+                      className="bg-blue-600 text-white px-6 py-3 rounded-lg flex items-center mx-auto hover:bg-blue-700 transition-colors"
+                    >
+                      <Plus className="w-5 h-5 mr-2" /> Ajouter un Candidat
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {paginatedCandidates.map(candidate => (
+                      <div 
+                        key={candidate.id} 
+                        onClick={() => handleCandidateClick(candidate.id)} 
+                        className="border rounded-lg p-4 hover:shadow-md transition-all cursor-pointer hover:border-blue-200"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-4">
+                            <input 
+                              type="checkbox" 
+                              className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" 
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <div className="flex items-center space-x-4">
+                              <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-lg">
+                                {getInitials(candidate.firstName, candidate.lastName)}
+                              </div>
+                              <div>
+                                <div className="font-semibold text-gray-900">
+                                  {candidate.firstName} {candidate.lastName}
+                                </div>
+                                <div className="text-sm text-gray-600">
+                                  {candidate.applications[0]?.jobTitle || 'No Job'}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {timeSince(candidate.createdAt)}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center space-x-4">
+                            <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getStageColor(candidate.applications[0]?.status || 'NEW')}`}>
+                              {candidate.applications[0]?.status || 'Leads'}
+                            </span>
+                            <div className="flex items-center space-x-2">
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  console.log('Disqualify:', candidate.id);
+                                }}
+                                className="text-gray-500 hover:text-red-600 text-sm transition-colors"
+                              >
+                                Disqualify
+                              </button>
+                              <div className="relative">
+  <button
+    onClick={e => {
+      e.stopPropagation();
+      setOpenAdvanceDropdown(openAdvanceDropdown === candidate.id ? null : candidate.id);
+    }}
+    className="border border-blue-600 text-blue-600 px-4 py-1 rounded-lg text-sm hover:bg-blue-50 transition-colors"
+  >
+    Advance <ChevronDown className="inline w-4 h-4 ml-1" />
+  </button>
+  {openAdvanceDropdown === candidate.id && (
+    <div className="absolute right-0 mt-2 w-48 bg-white border rounded shadow-lg z-10">
+      <div className="p-2 text-xs text-gray-500">Move to:</div>
+      {[
+        { key: 'Leads', label: 'Leads', icon: <i className="fa-regular fa-table-cells"></i> },
+        { key: 'Applicants', label: 'Applicants', icon: <i className="fa-regular fa-user-plus"></i> },
+        { key: 'Short List', label: 'Short List', icon: <i className="fa-regular fa-list"></i> },
+        { key: 'Screening Call', label: 'Screening Call', icon: <i className="fa-regular fa-phone"></i> },
+        { key: 'Interview', label: 'Interview', icon: <i className="fa-regular fa-comments"></i> },
+        { key: 'Final review', label: 'Final review', icon: <i className="fa-regular fa-star"></i> },
+        { key: 'Offer', label: 'Offer', icon: <i className="fa-regular fa-gift"></i> },
+        { key: 'Hired', label: 'Hired', icon: <i className="fa-regular fa-check"></i> },
+        { key: 'Disqualified', label: 'Disqualified', icon: <i className="fa-regular fa-xmark"></i> },
+        { key: 'Archived', label: 'Archived', icon: <i className="fa-regular fa-archive"></i> }
+      ].map(stage => (
+        <div
+          key={stage.key}
+          className="flex items-center gap-2 px-4 py-2 hover:bg-blue-50 cursor-pointer"
+          onClick={async e => {
+            e.stopPropagation();
+            setOpenAdvanceDropdown(null);
+            // Appelle ton backend ici pour changer le statut
+            await cvService.updateCandidateStage(candidate.id, stage.key);
+            fetchCandidates();
+          }}
+        >
+          {stage.icon}
+          <span>{stage.label}</span>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Pagination */}
+              <div className="flex justify-center mt-6 space-x-2">
+                {Array.from({ length: totalPages }, (_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setCurrentPage(i + 1)}
+                    className={`px-3 py-1 rounded ${currentPage === i + 1 ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Modal d'ajout de candidat */}
+      <AddCandidateModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        companyId={companyId}
+        onCandidateAdded={() => {
+          fetchCandidates();  
+          setIsModalOpen(false);
+        }} 
+      />
+    </div>
+  );
+};
+
 export default CandidateManagement;

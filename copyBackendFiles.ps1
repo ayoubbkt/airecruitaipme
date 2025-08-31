@@ -1,9 +1,9 @@
 # Chemin du dossier frontend
-$frontendPath = ".\backend\cv-service\src\main"
+$frontendPath = ".\frontend\src"
 
 
 # Fichier de sortie
-$outputFile = "jobservice.txt"
+$outputFile = "frontend.txt"
 
 # Vider le fichier de sortie s'il existe déjà
 if (Test-Path $outputFile) { Clear-Content $outputFile }
@@ -16,8 +16,8 @@ function Copy-FileContents {
     $files = Get-ChildItem -Path $Path -Recurse -File
     foreach ($file in $files) {
         # Ignorer les dossiers/fichiers non pertinents
-        if ($file.DirectoryName -notmatch "node_modules|dist|build" -and
-            $file.Extension -notin ".log", ".lock", ".json", ".md") {
+        if ($file.DirectoryName -notmatch "node_modules|dist|public|build|migrations|tests|components|assets|mock" -and
+            $file.Extension -notin ".log", ".lock", ".json", ".md",".css") {
             $relativePath = $file.FullName.Substring((Get-Location).Path.Length + 1)
             Add-Content -Path $outputFile -Value "=== Contenu de $relativePath ==="
             $content = Get-Content -Path $file.FullName -Raw

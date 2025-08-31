@@ -22,5 +22,6 @@ router.patch('/me/change-password', protect, validate(changePasswordSchema), Use
 router.get('/', protect, authorize(UserRole.MEGA_ADMIN), validate(getAllUsersSchema), UserController.getAllUsers);
 router.get('/:id', protect, authorize(UserRole.MEGA_ADMIN), validate(getUserByIdSchema), UserController.getUserById);
 // Add PUT /:id, DELETE /:id for admin user management if needed
+router.get('/email/:email', UserController.getUserByEmail);
 
 export default router;

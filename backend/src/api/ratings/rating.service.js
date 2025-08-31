@@ -59,10 +59,24 @@ class RatingService {
     if (type === RatingCardType.CATEGORIZED && (!categories || categories.length === 0)) {
       throw new Error('Categorized rating cards must have at least one category.');
     }
-    if (categories) {
-        categories.forEach(cat => {
-            if(!cat.name || cat.order === undefined) throw new Error('Each category must have a name and order.');
-        });
+    if (type === 'CATEGORIZED') {
+      if (!categories || !Array.isArray(categories) || categories.length === 0) {
+        const error = new Error('Au moins une catégorie est requise pour une fiche catégorisée');
+        error.statusCode = 400;
+        throw error;
+      }
+      for (const category of categories) {
+        if (!category.name || category.name.trim() === '') {
+          const error = new Error('Chaque catégorie doit avoir un nom non vide');
+          error.statusCode = 400;
+          throw error;
+        }
+        if (category.order == null || typeof category.order !== 'number') {
+          const error = new Error('Chaque catégorie doit avoir un ordre valide');
+          error.statusCode = 400;
+          throw error;
+        }
+      }
     }
 
     return prisma.ratingCardTemplate.create({

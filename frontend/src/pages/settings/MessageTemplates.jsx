@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Edit2, Trash2, Plus, Link as LinkIcon, Bold, Italic, List, AlignLeft } from 'lucide-react';
 import { messageTemplateService } from '../../services/api';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { useAuth } from '../../contexts/AuthContext';
 
 const MessageTemplates = () => {
+    const { companyId } = useAuth();
     const [templates, setTemplates] = useState({
         required: [],
         custom: []
@@ -19,22 +21,24 @@ const MessageTemplates = () => {
         subject: '',
         content: ''
     });
+    const [error, setError] = useState(null);
 
     useEffect(() => {
         fetchTemplates();
-    }, []);
+      }, [companyId]);
 
-    const fetchTemplates = async () => {
+      const fetchTemplates = async () => {
         try {
-            setLoading(true);
-            const data = await messageTemplateService.getMessageTemplates();
-            setTemplates(data);
+          setLoading(true);
+          const data = await messageTemplateService.getMessageTemplates(companyId);
+          setTemplates(data);
         } catch (error) {
-            console.error('Erreur lors du chargement des templates:', error);
+          console.error('Erreur lors du chargement des templates:', error);
+          setError('Erreur lors du chargement des templates.');
         } finally {
-            setLoading(false);
+          setLoading(false);
         }
-    };
+      };
 
     const handleAddTemplate = () => {
         setTemplateForm({
@@ -64,16 +68,17 @@ const MessageTemplates = () => {
 
     const confirmDeleteTemplate = async () => {
         if (!currentTemplate) return;
-
+    
         try {
-            await messageTemplateService.deleteMessageTemplate(currentTemplate.id);
-            await fetchTemplates();
-            setShowDeleteConfirmation(false);
-            setCurrentTemplate(null);
+          await messageTemplateService.deleteMessageTemplate(companyId, currentTemplate.id);
+          await fetchTemplates();
+          setShowDeleteConfirmation(false);
+          setCurrentTemplate(null);
         } catch (error) {
-            console.error("Erreur lors de la suppression du template:", error);
+          console.error("Erreur lors de la suppression du template:", error);
+          setError('Erreur lors de la suppression du template.');
         }
-    };
+      };
 
     const handleFormChange = (e) => {
         const { name, value } = e.target;
@@ -85,19 +90,26 @@ const MessageTemplates = () => {
 
     const handleSaveTemplate = async () => {
         try {
-            if (showAddTemplate) {
-                await messageTemplateService.createMessageTemplate(templateForm);
-            } else if (showEditTemplate) {
-                await messageTemplateService.updateMessageTemplate(templateForm.id, templateForm);
-            }
-
-            await fetchTemplates();
-            setShowAddTemplate(false);
-            setShowEditTemplate(false);
+          if (!templateForm.name || !templateForm.subject || !templateForm.content) {
+            setError('Tous les champs (nom, sujet, contenu) sont requis.');
+            return;
+          }
+    
+          if (showAddTemplate) {
+            await messageTemplateService.createMessageTemplate(companyId, templateForm);
+          } else if (showEditTemplate) {
+            await messageTemplateService.updateMessageTemplate(companyId, templateForm.id, templateForm);
+          }
+    
+          await fetchTemplates();
+          setShowAddTemplate(false);
+          setShowEditTemplate(false);
+          setError(null);
         } catch (error) {
-            console.error("Erreur lors de l'enregistrement du template:", error);
+          console.error("Erreur lors de l'enregistrement du template:", error);
+          setError("Erreur lors de l'enregistrement du template.");
         }
-    };
+      };
 
     const closeModal = () => {
         setShowAddTemplate(false);

@@ -10,7 +10,7 @@ const CompanyProfile = () => {
     name: '',
     website: '',
     phoneNumber: '',
-    description: ''
+    description: '',
   });
   const [companyId, setCompanyId] = useState(null);
   const [errors, setErrors] = useState({});
@@ -23,18 +23,19 @@ const CompanyProfile = () => {
     try {
       setLoading(true);
       const data = await companyService.getCompanyProfile();
+      console.log("data",data);
       if (data) {
         setCompanyData({
           name: data.name || '',
           website: data.website || '',
           phoneNumber: data.phoneNumber || '',
-          description: data.description || ''
+          description: data.description || '',
         });
         setCompanyId(data.id);
       }
     } catch (error) {
       console.error('Erreur lors du chargement du profil de l\'entreprise:', error);
-      toast.error('Impossible de charger les informations de l\'entreprise');
+      toast.error(error.message || 'Impossible de charger les informations de l\'entreprise');
     } finally {
       setLoading(false);
     }
@@ -42,13 +43,11 @@ const CompanyProfile = () => {
 
   const validateForm = () => {
     const newErrors = {};
-    // Valider le nom : lettres, chiffres, espaces, tirets (pas d'accents pour l'instant)
     if (!companyData.name.trim()) {
       newErrors.name = 'Le nom de l\'entreprise est requis';
-    } else if (!/^[a-zA-Z0-9\s-]+$/.test(companyData.name)) {
+    } else if (!/^[a-zA-Z0-9\s&-_.]+$/.test(companyData.name)) {
       newErrors.name = 'Le nom ne doit contenir que des lettres, chiffres, espaces ou tirets';
     }
-    // Valider le site web : URL valide ou vide
     if (companyData.website) {
       try {
         new URL(companyData.website);
@@ -59,11 +58,9 @@ const CompanyProfile = () => {
         newErrors.website = 'URL invalide';
       }
     }
-    // Valider la description : au moins 10 caractères si non vide
     if (companyData.description && companyData.description.length < 10) {
       newErrors.description = 'La description doit contenir au moins 10 caractères';
     }
-    // Valider le numéro de téléphone : format simple (optionnel)
     if (companyData.phoneNumber && !/^\+?\d{10,15}$/.test(companyData.phoneNumber)) {
       newErrors.phoneNumber = 'Numéro de téléphone invalide (10-15 chiffres)';
     }
@@ -75,7 +72,7 @@ const CompanyProfile = () => {
     const { name, value } = e.target;
     setCompanyData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
     setErrors((prev) => ({ ...prev, [name]: '' }));
   };
@@ -89,18 +86,18 @@ const CompanyProfile = () => {
 
     try {
       setSaving(true);
-      console.log('Données envoyées:', companyData);
       if (companyId) {
         await companyService.updateCompany(companyId, companyData);
         toast.success('Profil de l\'entreprise mis à jour avec succès');
       } else {
         const response = await companyService.createCompany(companyData);
+        console.log("response",response.data);
         setCompanyId(response.data.id);
         toast.success('Entreprise créée avec succès');
       }
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error);
-      const errorMessage = error.message || 'Échec de la sauvegarde du profil de l\'entreprise';
+      const errorMessage = error.response?.data?.message || 'Échec de la sauvegarde du profil de l\'entreprise';
       toast.error(errorMessage);
     } finally {
       setSaving(false);

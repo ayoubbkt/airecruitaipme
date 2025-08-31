@@ -7,7 +7,7 @@ const LocationFormModal = ({ isOpen, onClose, onSave, location, title }) => {
         address: '',
         country: '',
         city: '',
-        postalCode: ''
+        zipPostal: ''
     });
 
     const [showCountryDropdown, setShowCountryDropdown] = useState(false);
@@ -18,14 +18,14 @@ const LocationFormModal = ({ isOpen, onClose, onSave, location, title }) => {
                 address: location.address || '',
                 country: location.country || '',
                 city: location.city || '',
-                postalCode: location.postalCode || ''
+                zipPostal: location.zipPostal || '' // Corrigé : utilise location.zipPostal
             });
         } else {
             setFormData({
                 address: '',
                 country: '',
                 city: '',
-                postalCode: ''
+                zipPostal: ''
             });
         }
     }, [location, isOpen]);
@@ -141,14 +141,14 @@ const LocationFormModal = ({ isOpen, onClose, onSave, location, title }) => {
                         </div>
 
                         <div>
-                            <label htmlFor="postalCode" className="block text-sm font-medium text-slate-700 mb-1">
+                            <label htmlFor="zipPostal" className="block text-sm font-medium text-slate-700 mb-1">
                                 Code postal
                             </label>
                             <input
                                 type="text"
-                                id="postalCode"
-                                name="postalCode"
-                                value={formData.postalCode}
+                                id="zipPostal"
+                                name="zipPostal" // Corrigé : utilise zipPostal
+                                value={formData.zipPostal}
                                 onChange={handleChange}
                                 className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 placeholder="ex: 75001"

@@ -35,34 +35,43 @@ class CompanyService {
   }
 
   async getCompanyById(companyId, userId, userRole) {
-    // Check if user is a member of the company or a MEGA_ADMIN
+    if (!companyId) {
+      const error = new Error('Company ID is required');
+      error.statusCode = 400;
+      throw error;
+    }
+  
     const company = await prisma.company.findUnique({
       where: { id: companyId },
       include: {
-        owner: { select: { id: true, email: true, firstName: true, lastName: true } },
+        owner: {
+          select: { id: true, email: true, firstName: true, lastName: true },
+        },
         departments: true,
         locations: true,
-        members: { 
-          include: { 
-            user: { select: { id: true, email: true, firstName: true, lastName: true } } 
-          }
+        members: {
+          include: {
+            user: {
+              select: { id: true, email: true, firstName: true, lastName: true },
+            },
+          },
         },
-        // Include other relations as needed
-      }
+      },
     });
-
+  
     if (!company) {
-      const error = new Error('Company not found.');
+      const error = new Error('Company not found');
       error.statusCode = 404;
       throw error;
     }
-
-    const isMember = company.members.some(member => member.userId === userId);
-    if (!isMember && userRole !== UserRole.MEGA_ADMIN) {
-        const error = new Error('Forbidden: You are not authorized to view this company.');
-        error.statusCode = 403;
-        throw error;
+  
+    // Vérification des permissions (exemple)
+    if (userRole !== 'MEGA_ADMIN' && company.ownerId !== userId) {
+      const error = new Error('Unauthorized access to this company');
+      error.statusCode = 403;
+      throw error;
     }
+  
     return company;
   }
 
@@ -85,30 +94,48 @@ class CompanyService {
     return companies;
   }
 
-  async updateCompany(companyId, userId, companyData, userRole) {
-    const { name, website, phoneNumber, description } = companyData;
-    // TODO: Validate companyData
-
-    const company = await this.getCompanyById(companyId, userId, userRole); // This also handles auth check
-
-    // Further check: only owner or specific company admin role can update
-    const member = company.members.find(m => m.userId === userId);
-    if (company.ownerId !== userId && userRole !== UserRole.MEGA_ADMIN && (!member || member.role !== CompanyMemberRole.RECRUITING_ADMIN)) {
-        const error = new Error('Forbidden: You do not have permission to update this company.');
-        error.statusCode = 403;
-        throw error;
+  async updateCompany(companyId, userId, userRole, data) {
+    try {
+      console.log('Début de la mise à jour:', { companyId, data });
+      await this.getCompanyById(companyId, userId, userRole); // Vérifie les permissions
+  
+      const updatedCompany = await prisma.company.update({
+        where: { id: companyId },
+        data: {
+          name: data.name,
+          website: data.website,
+          phoneNumber: data.phoneNumber,
+          description: data.description,
+          updatedAt: new Date(),
+        },
+        select: {
+          id: true,
+          name: true,
+          website: true,
+          phoneNumber: true,
+          description: true,
+          ownerId: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+  
+      console.log('Résultat de la mise à jour Prisma:', updatedCompany);
+      // Vérification immédiate dans la base
+      const verifyCompany = await prisma.company.findUnique({
+        where: { id: companyId },
+        select: { name: true, updatedAt: true },
+      });
+      console.log('Vérification post-mise à jour:', verifyCompany);
+  
+      return updatedCompany;
+    } catch (error) {
+      console.error('Erreur Prisma lors de la mise à jour:', error);
+      const err = new Error('Failed to update company');
+      err.statusCode = 500;
+      err.details = error.message;
+      throw err;
     }
-
-    const updatedCompany = await prisma.company.update({
-      where: { id: companyId },
-      data: {
-        name,
-        website,
-        phoneNumber,
-        description,
-      },
-    });
-    return updatedCompany;
   }
 
   async addMemberToCompany(companyId, actorUserId, actorUserRole, newMemberData) {
@@ -204,6 +231,101 @@ class CompanyService {
         },
         orderBy: { user: { firstName: 'asc' } }
     });
+  }
+
+  async getDepartments(companyId, userId, userRole) {
+    await this.getCompanyById(companyId, userId, userRole); // Vérifie les permissions
+    return prisma.department.findMany({
+      where: { companyId },
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
+    });
+  }
+  
+  async createDepartment(companyId, userId, userRole, departmentData) {
+    await this.getCompanyById(companyId, userId, userRole); // Vérifie les permissions
+    const { name } = departmentData;
+    return prisma.department.create({
+      data: { companyId, name },
+      select: { id: true, name: true },
+    });
+  }
+  
+  async updateDepartment(companyId, departmentId, userId, userRole, departmentData) {
+    await this.getCompanyById(companyId, userId, userRole); // Vérifie les permissions
+    const { name } = departmentData;
+    return prisma.department.update({
+      where: { id: departmentId, companyId },
+      data: { name },
+      select: { id: true, name: true },
+    });
+  }
+  
+  async deleteDepartment(companyId, departmentId, userId, userRole) {
+    await this.getCompanyById(companyId, userId, userRole); // Vérifie les permissions
+    try {
+      await prisma.department.delete({
+        where: { id: departmentId, companyId },
+      });
+    } catch (e) {
+      if (e.code === 'P2025') {
+        const error = new Error('Department not found.');
+        error.statusCode = 404;
+        throw error;
+      }
+      throw e;
+    }
+  }
+  
+  async getCompanyLocations(companyId, userId, userRole) {
+    await this.getCompanyById(companyId, userId, userRole); // Vérifie les permissions
+    return prisma.jobLocation.findMany({
+      where: { companyId },
+      select: { id: true, address: true, city: true, country: true, zipPostal: true },
+      orderBy: { city: 'asc' },
+    });
+  }
+  
+  async addCompanyLocation(companyId, userId, userRole, locationData) {
+    try {
+      await this.getCompanyById(companyId, userId, userRole);
+      const { address, city, country, zipPostal } = locationData; // Utilisez zipPostal
+      console.log('Données à insérer:', { address, city, country, zipPostal });
+  
+      return await prisma.jobLocation.create({
+        data: { companyId, address, city, country, zipPostal },
+        select: { id: true, address: true, city: true, country: true, zipPostal: true },
+      });
+    } catch (error) {
+      console.error('Erreur Prisma:', error);
+      throw new Error('Failed to add location');
+    }
+  }
+  
+  async updateCompanyLocation(companyId, locationId, userId, userRole, locationData) {
+    await this.getCompanyById(companyId, userId, userRole); // Vérifie les permissions
+    const { address, city, country, zipPostal } = locationData;
+    return prisma.jobLocation.update({
+      where: { id: locationId, companyId },
+      data: { address, city, country, zipPostal },
+      select: { id: true, address: true, city: true, country: true, zipPostal: true },
+    });
+  }
+  
+  async deleteCompanyLocation(companyId, locationId, userId, userRole) {
+    await this.getCompanyById(companyId, userId, userRole); // Vérifie les permissions
+    try {
+      await prisma.jobLocation.delete({
+        where: { id: locationId, companyId },
+      });
+    } catch (e) {
+      if (e.code === 'P2025') {
+        const error = new Error('Location not found.');
+        error.statusCode = 404;
+        throw error;
+      }
+      throw e;
+    }
   }
 }
 

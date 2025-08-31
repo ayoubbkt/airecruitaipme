@@ -176,6 +176,9 @@ exports.Prisma.JobScalarFieldEnum = {
   companyId: 'companyId',
   departmentId: 'departmentId',
   locationId: 'locationId',
+  minYearsExperience: 'minYearsExperience',
+  skills: 'skills',
+  jobBoards: 'jobBoards',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -509,10 +512,34 @@ exports.Prisma.MessageTemplateScalarFieldEnum = {
   companyId: 'companyId',
   name: 'name',
   subject: 'subject',
-  body: 'body',
-  type: 'type',
-  stageTrigger: 'stageTrigger',
-  isDefault: 'isDefault',
+  content: 'content',
+  description: 'description',
+  isRequired: 'isRequired',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.QuestionScalarFieldEnum = {
+  id: 'id',
+  companyId: 'companyId',
+  text: 'text',
+  responseType: 'responseType',
+  visibility: 'visibility',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.QuestionOptionScalarFieldEnum = {
+  id: 'id',
+  questionId: 'questionId',
+  value: 'value'
+};
+
+exports.Prisma.QuestionSetScalarFieldEnum = {
+  id: 'id',
+  companyId: 'companyId',
+  name: 'name',
+  description: 'description',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -681,12 +708,6 @@ exports.CalendarProvider = exports.$Enums.CalendarProvider = {
   MS_365_OUTLOOK: 'MS_365_OUTLOOK'
 };
 
-exports.TemplateType = exports.$Enums.TemplateType = {
-  EMAIL: 'EMAIL',
-  IN_APP_MESSAGE: 'IN_APP_MESSAGE',
-  SMS: 'SMS'
-};
-
 exports.Prisma.ModelName = {
   User: 'User',
   UserProfile: 'UserProfile',
@@ -724,7 +745,10 @@ exports.Prisma.ModelName = {
   AICommunicationPreference: 'AICommunicationPreference',
   CalendarIntegration: 'CalendarIntegration',
   JobBoardIntegration: 'JobBoardIntegration',
-  MessageTemplate: 'MessageTemplate'
+  MessageTemplate: 'MessageTemplate',
+  Question: 'Question',
+  QuestionOption: 'QuestionOption',
+  QuestionSet: 'QuestionSet'
 };
 
 /**

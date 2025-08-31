@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import config from './config/index.js';
 import errorHandler from './middleware/errorHandler.middleware.js';
+import path from 'path';
 
 // Importation des routes (à créer)
 import authRoutes from './api/auth/auth.routes.js';
@@ -19,6 +20,10 @@ import notificationRoutes from './api/notifications/notification.routes.js';
 import aiMeganRoutes from './api/aiMegan/aiMegan.routes.js';
 import integrationRoutes from './api/integrations/integration.routes.js';
 import CompanyController from './api/companies/company.controller.js'; // Ajouté
+import messageTemplateRoutes from './api/messaging/messageTemplate.routes.js';
+import questionRoutes from './api/questions/question.routes.js';
+import candidateRoutes from './api/candidates/candidate.routes.js';
+
 import { protect } from './middleware/auth.middleware.js'; // Ajouté
 
 const app = express();
@@ -55,9 +60,14 @@ app.use('/api/v1/careers-page', careersPageRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
 app.use('/api/v1/ai-megan', aiMeganRoutes);
 app.use('/api/v1/integrations', integrationRoutes);
+app.use('/api/v1/messagingTemplate', messageTemplateRoutes);
+app.use('/api/v1/questions', questionRoutes);
+app.use('/api/v1/candidates', candidateRoutes);
 app.get('/', (req, res) => {
   res.json({ message: 'API is ' });
 });
+
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // Gestionnaire d'erreurs global (doit être le dernier middleware)
 app.use(errorHandler);

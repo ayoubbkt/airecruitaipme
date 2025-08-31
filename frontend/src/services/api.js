@@ -1,5 +1,6 @@
 import axios from '../utils/axios';
 
+
 export const authService = {
   login: async (email, password) => {
     const response = await axios.post('/auth/login', { email, password });
@@ -34,117 +35,199 @@ export const authService = {
   }
 };
 
-export const cvService = {
-  uploadCV: async (files, jobId = null) => {
-    const formData = new FormData();
+// export const cvService = {
+//   uploadCV: async (files, jobId = null) => {
+//     const formData = new FormData();
     
-    if (jobId) {
-      formData.append('jobId', jobId);
-    }
+//     if (jobId) {
+//       formData.append('jobId', jobId);
+//     }
     
-    Array.from(files).forEach(file => {
-      formData.append('files', file);
-    });
+//     Array.from(files).forEach(file => {
+//       formData.append('files', file);
+//     });
     
-    const response = await axios.post('/api/cv/upload', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    });
+//     const response = await axios.post('/api/cv/upload', formData, {
+//       headers: {
+//         'Content-Type': 'multipart/form-data'
+//       }
+//     });
     
-    return response.data;
-  },
+//     return response.data;
+//   },
   
-  analyzeCV: async (cvId, jobId) => {
-    const response = await axios.post('/api/cv/analyze-single', { cvId, jobId });
-    return response.data;
-  },
+//   analyzeCV: async (cvId, jobId) => {
+//     const response = await axios.post('/api/cv/analyze-single', { cvId, jobId });
+//     return response.data;
+//   },
   
-  analyzeBatch: async (files, jobId) => {
-    const formData = new FormData();
-    formData.append('jobId', jobId);
+//   analyzeBatch: async (files, jobId) => {
+//     const formData = new FormData();
+//     formData.append('jobId', jobId);
     
-    Array.from(files).forEach(file => {
-      formData.append('files', file);
-    });
+//     Array.from(files).forEach(file => {
+//       formData.append('files', file);
+//     });
     
-    const response = await axios.post('/api/cv/analyze', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    });
+//     const response = await axios.post('/api/cv/analyze', formData, {
+//       headers: {
+//         'Content-Type': 'multipart/form-data'
+//       }
+//     });
     
-    return response.data.analysisId;
-  },
+//     return response.data.analysisId;
+//   },
   
-  getAnalysisProgress: async (analysisId) => {
-    const response = await axios.get(`/api/cv/analyze/progress/${analysisId}`);
-    return response.data;
-  },
+//   getAnalysisProgress: async (analysisId) => {
+//     const response = await axios.get(`/api/cv/analyze/progress/${analysisId}`);
+//     return response.data;
+//   },
 
-  // Nouvelle méthode pour obtenir tous les candidats
-  getCandidates: async (filters = {}) => {
-    try {
-      const params = new URLSearchParams();
+//   // Nouvelle méthode pour obtenir tous les candidats
+//   getCandidates: async (filters = {}) => {
+//     try {
+//       const params = new URLSearchParams();
 
-      if (filters.status) params.append('status', filters.status);
-      if (filters.skills) params.append('skills', filters.skills.join(','));
-      if (filters.minScore) params.append('minScore', filters.minScore);
+//       if (filters.status) params.append('status', filters.status);
+//       if (filters.skills) params.append('skills', filters.skills.join(','));
+//       if (filters.minScore) params.append('minScore', filters.minScore);
 
-      const response = await axios.get(`/api/candidates?${params.toString()}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching candidates:', error);
-      throw error;
-    }
-  },
+//       const response = await axios.get(`/api/candidates?${params.toString()}`);
+//       return response.data;
+//     } catch (error) {
+//       console.error('Error fetching candidates:', error);
+//       throw error;
+//     }
+//   },
 
-  // Méthode mise à jour pour obtenir les détails d'un candidat
-  getCVById: async (id) => {
-    try {
-      const response = await axios.get(`/api/cv/${id}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching CV details:', error);
-      throw error;
-    }
-  },
+//   // Méthode mise à jour pour obtenir les détails d'un candidat
+//   getCVById: async (id) => {
+//     try {
+//       const response = await axios.get(`/api/cv/${id}`);
+//       return response.data;
+//     } catch (error) {
+//       console.error('Error fetching CV details:', error);
+//       throw error;
+//     }
+//   },
   
-  downloadCV: async (id) => {
-    try {
-      const response = await axios.get(`/api/cv/download/${id}`, {
-        responseType: 'blob'
-      });
+//   downloadCV: async (id) => {
+//     try {
+//       const response = await axios.get(`/api/cv/download/${id}`, {
+//         responseType: 'blob'
+//       });
       
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `cv_${id}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (error) {
-      console.error('Error downloading CV:', error);
-    }
+//       const url = window.URL.createObjectURL(new Blob([response.data]));
+//       const link = document.createElement('a');
+//       link.href = url;
+//       link.setAttribute('download', `cv_${id}.pdf`);
+//       document.body.appendChild(link);
+//       link.click();
+//       link.remove();
+//     } catch (error) {
+//       console.error('Error downloading CV:', error);
+//     }
+//   }
+// };
+
+
+
+
+
+export const getCandidates = async (companyId) => {
+  try {
+        
+    const response = await axios.get(`/candidates/companies/${companyId}/candidates`);
+    
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching candidates:', error);
+    throw error;
+  }
+};
+
+export const getCandidateById = async (companyId, id) => {
+  try {
+    const response = await axios.get(`/candidates/companies/${companyId}/candidates/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching candidate:', error);
+    throw error;
+  }
+};
+
+export const createCandidate = async (companyId, candidateData) => {
+  try {
+    
+    const response = await axios.post(`/candidates/companies/${companyId}/candidates`, candidateData,
+      {
+        headers: { "Content-Type": "multipart/form-data" }, 
+      }
+    );
+    
+    return response.data;
+  } catch (error) {
+    console.error('Error creating candidate:', error);
+    throw error;
+  }
+};
+
+export const updateCandidate = async (companyId, id, candidateData) => {
+  try {
+    const response = await axios.put(`/candidates/companies/${companyId}/candidates/${id}`, candidateData);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating candidate:', error);
+    throw error;
+  }
+};
+
+export const deleteCandidate = async (companyId, id) => {
+  try {
+    const response = await axios.delete(`/candidates/companies/${companyId}/candidates/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting candidate:', error);
+    throw error;
+  }
+};
+
+export const downloadCV = async (id) => {
+  try {
+  
+    const response = await axios.get(`/candidates/candidates/${id}/download-cv`);
+    return response.data.url;
+  } catch (error) {
+    console.error('Error downloading CV:', error);
+    throw error;
   }
 };
 
 export const jobService = {
-  getJobs: async (filters = {}) => {
-    const params = new URLSearchParams();
+  
+
+  getJobs: async (companyId, params = {}) => {
+    try {
+      const response = await axios.get(`/jobs/companies/${companyId}/jobs`, { params });
     
-    if (filters.status) params.append('status', filters.status);
-    if (filters.page !== undefined) params.append('page', filters.page);
-    if (filters.size !== undefined) params.append('size', filters.size);
-    
-    const response = await axios.get(`/api/jobs?${params.toString()}`);
-    return response.data;
+      // Le backend renvoie { data: jobs, currentPage, totalPages, totalJobs }
+      return response.data.data; // On retourne uniquement le tableau des jobs
+    } catch (error) {
+      console.error('Erreur lors de la récupération des jobs:', error.response?.data || error.message);
+      throw error;
+    }
   },
   
-  getJobById: async (id) => {
-    const response = await axios.get(`/api/jobs/${id}`);
-    return response.data;
+  getJobById: async (companyId, jobId) => {
+    try {
+      const response = await axios.get(`/jobs/companies/${companyId}/jobs/${jobId}`);
+      return response.data.data; // Le backend renvoie { data: job }
+    } catch (error) {
+      console.error(`Erreur lors de la récupération du job ${jobId}:`, error.response?.data || error.message);
+      throw error;
+    }
   },
+
 
   getDepartments: async () => {
     try {
@@ -170,31 +253,85 @@ export const jobService = {
     }
   },
 
-  createJob: async (data) => {
+   
+
+  createJob: async (companyId, jobData) => {
     try {
-      const response = await axios.post('/api/jobs', data);
-      return response.data;
+      console.log('Sending job data:', jobData); // Débogage
+      const response = await axios.post(`/jobs/companies/${companyId}/jobs`, jobData, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
+      return response.data.data;
     } catch (error) {
-      console.error('Erreur lors de la création de l\'offre:', error);
+      console.error('Error creating job:', error.response?.data || error);
       throw error;
     }
   },
-  
-  updateJob: async (id, data) => {
-    const response = await axios.put(`/api/jobs/${id}`, data);
-    return response.data;
+
+  // Mettre à jour un job
+  updateJob: async (companyId, jobId, jobData) => {
+    try {
+      const response = await axios.put(`/jobs/companies/${companyId}/jobs/${jobId}`, jobData);
+      return response.data.data;
+    } catch (error) {
+      console.error(`Erreur lors de la mise à jour du job ${jobId}:`, error.response?.data || error.message);
+      throw error;
+    }
   },
-  
-  deleteJob: async (id) => {
-    const response = await axios.delete(`/api/jobs/${id}`);
-    return response.data;
+
+  deleteJob: async (companyId, jobId) => {
+    try {
+      const response = await axios.delete(`/jobs/companies/${companyId}/jobs/${jobId}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Erreur lors de la suppression du job ${jobId}:`, error.response?.data || error.message);
+      throw error;
+    }
   },
-  
+  getHiringTeam: async (companyId, jobId) => {
+    try {
+      const response = await axios.get(`/jobs/companies/${companyId}/jobs/${jobId}/hiring-team`);
+      return response.data.data;
+    } catch (error) {
+      console.error(`Erreur lors de la récupération de l'équipe de recrutement pour le job ${jobId}:`, error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  addHiringMember: async (companyId, jobId, memberData) => {
+    try {
+      const response = await axios.post(`/jobs/companies/${companyId}/jobs/${jobId}/hiring-team`, memberData);
+      return response.data.data;
+    } catch (error) {
+      console.error(`Erreur lors de l'ajout d'un membre à l'équipe de recrutement pour le job ${jobId}:`, error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  removeHiringMember: async (companyId, jobId, memberId) => {
+    try {
+      const response = await axios.delete(`/jobs/companies/${companyId}/jobs/${jobId}/hiring-team/${memberId}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Erreur lors de la suppression d'un membre de l'équipe de recrutement pour le job ${jobId}:`, error.response?.data || error.message);
+      throw error;
+    }
+  },
+
   generateJobDescription: async (title, requirements) => {
-    const response = await axios.post('/api/jobs/generate-description', { title, requirements });
-    return response.data;
+    try {
+      const response = await axios.post('/api/jobs/generate-description', { title, requirements });
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de la génération de la description du job:', error.response?.data || error.message);
+      throw error;
+    }
   }
 };
+
+
+
+ 
 
 export const interviewService = {
   getInterviews: async (filters = {}) => {
@@ -234,22 +371,6 @@ export const interviewService = {
   }
 };
 
-// export const dashboardService = {
-//   getStats: async (period = '30days') => {
-//     const response = await axios.get('/api/dashboard/stats', { params: { period } });
-//     return response.data;
-//   },
-//
-//   getRecentCandidates: async (limit = 5) => {
-//     const response = await axios.get('/api/candidates/recent', { params: { limit } });
-//     return response.data;
-//   },
-//
-//   getRecruitmentSources: async () => {
-//     const response = await axios.get('/api/dashboard/sources');
-//     return response.data;
-//   }
-// };
 
 // Nouveau service pour les messages
 export const messageService = {
@@ -302,81 +423,188 @@ export const dashboardService = {
 };
 
 // Workflow service
+ 
+const getCompanyId = () => {
+  // Example: Retrieve from user context or local storage
+  return localStorage.getItem('companyId') ; // Placeholder
+};
 export const workflowService = {
-  getWorkflows: async () => {
+  // Récupérer les workflows pour une entreprise spécifique
+  getWorkflows: async (companyId) => {
     try {
-      const response = await axios.get('/api/workflows');
-      return response.data;
+      if (!companyId) {
+        throw new Error('companyId est requis');
+      }
+      const response = await axios.get(`/workflows/companies/${companyId}/templates`);
+       
+      return response.data.data; // Le backend renvoie les données dans `data`
     } catch (error) {
       console.error('Error fetching workflows:', error);
-      throw error;
+      throw error.response?.data || error;
     }
   },
 
-  createWorkflow: async (data) => {
+  // Créer un nouveau workflow
+
+  
+
+  createWorkflow: async (companyId, data) => {
     try {
-      const response = await axios.post('/api/workflows', data);
-      return response.data;
+      if (!companyId) throw new Error('companyId est requis pour createWorkflow');
+      if (!data.name) throw new Error('Le nom du workflow est requis');
+      
+      
+
+      const payload = {
+        name: data.name,
+        type: 'RECRUITMENT', // Valeur par défaut
+        stages: [
+          {
+            name: 'Initial Review',
+            type: 'AI_SCREENING', // Valeur par défaut, doit correspondre à StageType
+            order: 0,
+            settings: {},
+          },
+        ],
+      };
+
+      const response = await axios.post(`/workflows/companies/${companyId}/templates`, payload);
+      console.log("response.data.data",response.data.data);
+      return response.data.data;
     } catch (error) {
       console.error('Error creating workflow:', error);
-      throw error;
+      throw error.response?.data || error;
     }
   },
 
-  updateWorkflow: async (id, data) => {
+
+  // Mettre à jour un workflow
+  updateWorkflow: async (companyId, id, data) => {
     try {
-      const response = await axios.put(`/api/workflows/${id}`, data);
-      return response.data;
+      if (!companyId || !id) {
+        throw new Error('companyId et id sont requis');
+      }
+      const response = await axios.put(`/workflows/companies/${companyId}/templates/${id}`, data);
+      return response.data.data;
     } catch (error) {
       console.error('Error updating workflow:', error);
-      throw error;
+      throw error.response?.data || error;
     }
   },
 
-  getWorkflowStages: async (workflowId) => {
+  // Récupérer les stages d'un workflow
+  getWorkflowStages: async (companyId, workflowId) => {
     try {
-      const response = await axios.get(`/api/workflows/${workflowId}/stages`);
-      return response.data;
+      if (!companyId || !workflowId) {
+        throw new Error('companyId et workflowId sont requis');
+      }
+
+      const response2 = await axios.get(`/workflows/companies/${companyId}/templates`)
+      console.log("getWorkflows",response2);
+
+      const response1 = await axios.get(
+        `workflows/companies/${companyId}/templates/${workflowId}`,
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        }
+      );
+      const stages = response1.data.data.stages || [];
+      console.log('Fetched stages response1:', stages); // Débogage
+
+      return stages;
+     
     } catch (error) {
       console.error('Error fetching workflow stages:', error);
-      // Pour les besoins de développement, renvoyer des données simulées si le backend n'est pas encore prêt
       if (process.env.NODE_ENV === 'development') {
-        return getMockStages(workflowId);
+        return [
+          { id: '1', name: 'Initial Review', type: 'SCREENING', order: 0 },
+          { id: '2', name: 'Interview', type: 'INTERVIEW', order: 1 },
+        ];
       }
-      throw error;
+      throw error.response?.data || error;
     }
   },
 
-  createWorkflowStage: async (workflowId, stageData) => {
+  // Créer un nouveau stage
+  createWorkflowStage: async (companyId, workflowId, stageData) => {
     try {
-      const response = await axios.post(`/api/workflows/${workflowId}/stages`, stageData);
-      return response.data;
+      if (!companyId || !workflowId) {
+        throw new Error('companyId et workflowId sont requis');
+      }
+      const templateResponse = await axios.get(`/workflows/companies/${companyId}/templates/${workflowId}`);
+      const currentStages = templateResponse.data.data.stages || [];
+      const newStage = {
+        name: stageData.name,
+        type: stageData.type || 'AI_SCREENING',
+        order: stageData.order || currentStages.length,
+        settings: stageData.settings || {},
+      };
+      const updatedStages = [...currentStages, newStage];
+      const response = await axios.put(`/workflows/companies/${companyId}/templates/${workflowId}`, {
+        stages: updatedStages,
+      });
+      return response.data.data.stages.find((stage) => stage.name === newStage.name);
     } catch (error) {
       console.error('Error creating workflow stage:', error);
-      throw error;
+      throw error.response?.data || error;
     }
   },
 
-  updateWorkflowStage: async (workflowId, stageId, stageData) => {
+  // Mettre à jour un stage
+  async updateWorkflowStage(companyId, workflowId, stageId, stageData) {
     try {
-      const response = await axios.put(`/api/workflows/${workflowId}/stages/${stageId}`, stageData);
-      return response.data;
+      if (!companyId || !workflowId || !stageId) {
+        throw new Error('companyId, workflowId et stageId sont requis');
+      }
+      const templateResponse = await axios.get(
+        `http://localhost:5000/api/v1/workflows/companies/${companyId}/templates/${workflowId}`, // Ajoute le port si nécessaire
+        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+      );
+      console.log('Template response:', templateResponse.data); // Débogage
+      const currentStages = templateResponse.data.data.stages || [];
+      const updatedStages = currentStages.map((stage) =>
+        stage.id === stageId ? { ...stage, ...stageData } : stage
+      );
+      const response = await axios.put(
+        `http://localhost:5000/api/v1/workflows/companies/${companyId}/templates/${workflowId}`,
+        { stages: updatedStages },
+        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+      );
+      console.log('PUT response:', response.data); // Débogage
+      const updatedStage = response.data.data?.stages?.find((stage) => stage.id === stageId) || updatedStages.find((stage) => stage.id === stageId);
+      if (!updatedStage) {
+        throw new Error('Étape mise à jour non trouvée dans la réponse');
+      }
+      return updatedStage;
     } catch (error) {
       console.error('Error updating workflow stage:', error);
-      throw error;
+      throw error.response?.data || error;
     }
   },
 
-  deleteWorkflowStage: async (workflowId, stageId) => {
+  // Supprimer un stage
+  deleteWorkflowStage: async (companyId, workflowId, stageId) => {
     try {
-      const response = await axios.delete(`/api/workflows/${workflowId}/stages/${stageId}`);
-      return response.data;
+      if (!companyId || !workflowId || !stageId) {
+        throw new Error('companyId, workflowId et stageId sont requis');
+      }
+      const templateResponse = await axios.get(`/workflows/companies/${companyId}/templates/${workflowId}`);
+      const currentStages = templateResponse.data.data.stages || [];
+      const updatedStages = currentStages
+        .filter((stage) => stage.id !== stageId)
+        .map((stage, index) => ({ ...stage, order: index })); // Réajuster les ordres
+      const response = await axios.put(`/workflows/companies/${companyId}/templates/${workflowId}`, {
+        stages: updatedStages,
+      });
+      return response.data.data;
     } catch (error) {
       console.error('Error deleting workflow stage:', error);
-      throw error;
+      throw error.response?.data || error;
     }
-  }
+  },
 };
+
+
 
 // Mock data pour le développement
 function getMockStages(workflowId) {
@@ -405,14 +633,79 @@ function getMockStages(workflowId) {
 }
 
 // Service pour les templates d'entretien
+// export const meetingTemplateService = {
+//   getMeetingTemplates: async () => {
+//     try {
+//       const response = await axios.get('/api/meeting-templates');
+//       return response.data;
+//     } catch (error) {
+//       console.error('Erreur lors du chargement des templates d\'entretien:', error);
+//       // Pour le développement, retourner des données simulées
+//       if (process.env.NODE_ENV === 'development') {
+//         return getMockMeetingTemplates();
+//       }
+//       throw error;
+//     }
+//   },
+
+//   getMeetingTemplateById: async (id) => {
+//     try {
+//       const response = await axios.get(`/api/meeting-templates/${id}`);
+//       return response.data;
+//     } catch (error) {
+//       console.error(`Erreur lors du chargement du template d'entretien ${id}:`, error);
+//       throw error;
+//     }
+//   },
+
+//   createMeetingTemplate: async (data) => {
+//     try {
+//       const response = await axios.post('/scheduling/companies/:companyId/meeting-templates', data);
+//       console.log("response.data",response.data);
+//       return response.data;
+//     } catch (error) {
+//       console.error('Erreur lors de la création du template d\'entretien:', error);
+//       throw error;
+//     }
+//   },
+
+//   updateMeetingTemplate: async (id, data) => {
+//     try {
+//       const response = await axios.put(`/api/meeting-templates/${id}`, data);
+//       return response.data;
+//     } catch (error) {
+//       console.error(`Erreur lors de la mise à jour du template d'entretien ${id}:`, error);
+//       throw error;
+//     }
+//   },
+
+//   deleteMeetingTemplate: async (id) => {
+//     try {
+//       const response = await axios.delete(`/api/meeting-templates/${id}`);
+//       return response.data;
+//     } catch (error) {
+//       console.error(`Erreur lors de la suppression du template d'entretien ${id}:`, error);
+//       throw error;
+//     }
+//   }
+// };
+
 export const meetingTemplateService = {
-  getMeetingTemplates: async () => {
+  getRatingCards: async (companyId) => {
     try {
-      const response = await axios.get('/api/meeting-templates');
-      return response.data;
+      const response = await axios.get(`/ratings/companies/${companyId}/rating-card-templates`);
+      return response.data.data;
+    } catch (error) {
+      console.error('Erreur lors de la récupération des fiches d\'évaluation:', error);
+      throw error;
+    }
+  },
+  getMeetingTemplates: async (companyId) => {
+    try {
+      const response = await axios.get(`/scheduling/companies/${companyId}/meeting-templates`);
+      return response.data.data; // Ajuste selon la structure de réponse du backend
     } catch (error) {
       console.error('Erreur lors du chargement des templates d\'entretien:', error);
-      // Pour le développement, retourner des données simulées
       if (process.env.NODE_ENV === 'development') {
         return getMockMeetingTemplates();
       }
@@ -420,68 +713,68 @@ export const meetingTemplateService = {
     }
   },
 
-  getMeetingTemplateById: async (id) => {
+  getMeetingTemplateById: async (companyId, id) => {
     try {
-      const response = await axios.get(`/api/meeting-templates/${id}`);
-      return response.data;
+      const response = await axios.get(`/scheduling/companies/${companyId}/meeting-templates/${id}`);
+      return response.data.data;
     } catch (error) {
       console.error(`Erreur lors du chargement du template d'entretien ${id}:`, error);
       throw error;
     }
   },
 
-  createMeetingTemplate: async (data) => {
+  createMeetingTemplate: async (companyId, data) => {
     try {
-      const response = await axios.post('/api/meeting-templates', data);
-      return response.data;
+      const response = await axios.post(`/scheduling/companies/${companyId}/meeting-templates`, data);
+      console.log("response.data", response.data);
+      return response.data.data;
     } catch (error) {
       console.error('Erreur lors de la création du template d\'entretien:', error);
       throw error;
     }
   },
 
-  updateMeetingTemplate: async (id, data) => {
+  updateMeetingTemplate: async (companyId, id, data) => {
     try {
-      const response = await axios.put(`/api/meeting-templates/${id}`, data);
-      return response.data;
+      const response = await axios.put(`/scheduling/companies/${companyId}/meeting-templates/${id}`, data);
+      return response.data.data;
     } catch (error) {
       console.error(`Erreur lors de la mise à jour du template d'entretien ${id}:`, error);
       throw error;
     }
   },
 
-  deleteMeetingTemplate: async (id) => {
+  deleteMeetingTemplate: async (companyId, id) => {
     try {
-      const response = await axios.delete(`/api/meeting-templates/${id}`);
+      const response = await axios.delete(`/scheduling/companies/${companyId}/meeting-templates/${id}`);
       return response.data;
     } catch (error) {
       console.error(`Erreur lors de la suppression du template d'entretien ${id}:`, error);
       throw error;
     }
   }
+
 };
 
 
 
 // Service de templates de messages
+
+
 export const messageTemplateService = {
-  getMessageTemplates: async () => {
+  getMessageTemplates: async (companyId) => {
     try {
-      const response = await axios.get('/api/message-templates');
+      const response = await axios.get(`/messagingTemplate/companies/${companyId}/message-templates`);
       return response.data;
     } catch (error) {
       console.error('Erreur lors de la récupération des templates de messages:', error);
-      // Pour le développement, retourner des données fictives si le backend n'est pas prêt
-      if (process.env.NODE_ENV === 'development') {
-        return getMockMessageTemplates();
-      }
       throw error;
     }
   },
 
-  getMessageTemplateById: async (id) => {
+  getMessageTemplateById: async (companyId, id) => {
     try {
-      const response = await axios.get(`/api/message-templates/${id}`);
+      const response = await axios.get(`/messagingTemplate/companies/${companyId}/message-templates/${id}`);
       return response.data;
     } catch (error) {
       console.error(`Erreur lors de la récupération du template ${id}:`, error);
@@ -489,9 +782,9 @@ export const messageTemplateService = {
     }
   },
 
-  createMessageTemplate: async (templateData) => {
+  createMessageTemplate: async (companyId, templateData) => {
     try {
-      const response = await axios.post('/api/message-templates', templateData);
+      const response = await axios.post(`/messagingTemplate/companies/${companyId}/message-templates`, templateData);
       return response.data;
     } catch (error) {
       console.error('Erreur lors de la création du template:', error);
@@ -499,9 +792,9 @@ export const messageTemplateService = {
     }
   },
 
-  updateMessageTemplate: async (id, templateData) => {
+  updateMessageTemplate: async (companyId, id, templateData) => {
     try {
-      const response = await axios.put(`/api/message-templates/${id}`, templateData);
+      const response = await axios.put(`/messagingTemplate/companies/${companyId}/message-templates/${id}`, templateData);
       return response.data;
     } catch (error) {
       console.error(`Erreur lors de la mise à jour du template ${id}:`, error);
@@ -509,9 +802,9 @@ export const messageTemplateService = {
     }
   },
 
-  deleteMessageTemplate: async (id) => {
+  deleteMessageTemplate: async (companyId, id) => {
     try {
-      const response = await axios.delete(`/api/message-templates/${id}`);
+      const response = await axios.delete(`/messagingTemplate/companies/${companyId}/message-templates/${id}`);
       return response.data;
     } catch (error) {
       console.error(`Erreur lors de la suppression du template ${id}:`, error);
@@ -520,114 +813,126 @@ export const messageTemplateService = {
   }
 };
 
-// Données fictives pour le développement
-function getMockMessageTemplates() {
-  return {
-    required: [
-      {
-        id: 'template-1',
-        name: 'Confirmation de Candidature',
-        subject: 'Merci pour votre candidature !',
-        description: 'Email par défaut envoyé aux nouveaux candidats comme confirmation.',
-        content: `Bonjour {{candidat.prenom}},\n\nMerci d'avoir postulé à notre poste de {{poste.titre}}! Nous sommes ravis de votre intérêt et apprécions le temps que vous avez consacré à cette démarche.\n\nNotre équipe examine actuellement les candidatures et nous vous contacterons prochainement pour vous informer des prochaines étapes. Si votre profil correspond à nos besoins, nous vous proposerons un entretien.\n\nN'hésitez pas à me contacter si vous avez des questions.\n\nCordialement,\n{{recruteur.nom}}`
-      },
-      {
-        id: 'template-2',
-        name: 'Email de Disqualification',
-        subject: 'Concernant votre candidature',
-        description: 'Email par défaut envoyé quand un candidat est disqualifié.',
-        content: `Bonjour {{candidat.prenom}},\n\nNous vous remercions d'avoir postulé pour le poste de {{poste.titre}}.\n\nAprès examen attentif de votre candidature, nous regrettons de vous informer que nous avons décidé de poursuivre avec d'autres candidats dont les profils correspondent davantage aux critères que nous recherchons pour ce poste.\n\nNous apprécions votre intérêt pour notre entreprise et vous souhaitons plein succès dans vos recherches professionnelles.\n\nCordialement,\n{{recruteur.nom}}`
-      }
-    ],
-    custom: [
-      {
-        id: 'template-3',
-        name: 'Appel Téléphonique',
-        subject: 'Planification d\'un entretien téléphonique',
-        content: `Bonjour {{candidat.prenom}},\n\nSuite à l'examen de votre candidature pour le poste de {{poste.titre}}, nous aimerions vous inviter à un entretien téléphonique afin de discuter plus en détail de votre profil.\n\nPourriez-vous me communiquer vos disponibilités pour la semaine prochaine ?\n\nÀ bientôt,\n{{recruteur.nom}}`
-      },
-      {
-        id: 'template-4',
-        name: 'Appel Téléphonique (Auto-planification)',
-        subject: 'Planifiez votre entretien téléphonique',
-        content: `Bonjour {{candidat.prenom}},\n\nNous souhaitons vous inviter à un entretien téléphonique pour le poste de {{poste.titre}}.\n\nVous pouvez planifier cet entretien directement via le lien suivant selon vos disponibilités : {{lien_planification}}\n\nNous sommes impatients d'échanger avec vous.\n\nCordialement,\n{{recruteur.nom}}`
-      },
-      {
-        id: 'template-5',
-        name: 'Entretien (Auto-planification)',
-        subject: 'Planifiez votre entretien',
-        content: `Bonjour {{candidat.prenom}},\n\nNous sommes heureux de vous inviter à un entretien pour le poste de {{poste.titre}}.\n\nVeuillez utiliser le lien suivant pour planifier votre entretien selon vos disponibilités : {{lien_planification}}\n\nL'entretien se déroulera à notre bureau situé à {{entreprise.adresse}} et durera environ 1 heure.\n\nN'hésitez pas à me contacter si vous avez des questions.\n\nCordialement,\n{{recruteur.nom}}`
-      },
-      {
-        id: 'template-6',
-        name: 'Entretien',
-        subject: 'Invitation à un entretien',
-        content: `Bonjour {{candidat.prenom}},\n\nNous sommes ravis de vous inviter à un entretien pour le poste de {{poste.titre}}.\n\nSeriez-vous disponible aux dates suivantes :\n- Jeudi 25 mars à 14h\n- Vendredi 26 mars à 10h\n- Lundi 29 mars à 15h\n\nMerci de me faire part de vos préférences, et nous confirmerons l'horaire définitif.\n\nL'entretien se déroulera à notre siège social et durera environ 1 heure.\n\nCordialement,\n{{recruteur.nom}}`
-      },
-      {
-        id: 'template-7',
-        name: 'Envoi d\'Offre',
-        subject: 'Offre d\'emploi - {{poste.titre}}',
-        content: `Bonjour {{candidat.prenom}},\n\nSuite à notre processus de recrutement, nous sommes heureux de vous proposer un poste de {{poste.titre}} au sein de notre entreprise.\n\nVous trouverez ci-joint votre lettre d'offre détaillant les conditions de votre emploi, la rémunération, et les avantages sociaux associés.\n\nNous vous prions de bien vouloir nous indiquer votre décision d'ici le {{date_limite_reponse}}.\n\nEn cas d'acceptation, nous organiserons votre intégration et vous communiquerons toutes les informations nécessaires.\n\nNous restons à votre disposition pour répondre à vos questions.\n\nCordialement,\n{{recruteur.nom}}`
-      }
-    ]
-  };
-}
 
 
+
+// // Service de questions
+// export const questionService = {
+//   getCustomQuestions: async () => {
+//     try {
+//       const response = await axios.get('/api/questions/custom');
+//       return response.data;
+//     } catch (error) {
+//       console.error('Erreur lors de la récupération des questions personnalisées:', error);
+//       // Pour les besoins de développement, renvoyer des données simulées si le backend n'est pas encore prêt
+//       if (process.env.NODE_ENV === 'development') {
+//         return getMockQuestions();
+//       }
+//       throw error;
+//     }
+//   },
+
+//   getQuestionSets: async () => {
+//     try {
+//       const response = await axios.get('/api/questions/sets');
+//       return response.data;
+//     } catch (error) {
+//       console.error('Erreur lors de la récupération des ensembles de questions:', error);
+//       // Pour les besoins de développement, renvoyer des données simulées si le backend n'est pas encore prêt
+//       if (process.env.NODE_ENV === 'development') {
+//         return [];
+//       }
+//       throw error;
+//     }
+//   },
+
+//   createQuestion: async (questionData) => {
+//     try {
+//       const response = await axios.post('/api/questions', questionData);
+//       return response.data;
+//     } catch (error) {
+//       console.error('Erreur lors de la création de la question:', error);
+//       throw error;
+//     }
+//   },
+
+//   updateQuestion: async (id, questionData) => {
+//     try {
+//       const response = await axios.put(`/api/questions/${id}`, questionData);
+//       return response.data;
+//     } catch (error) {
+//       console.error('Erreur lors de la mise à jour de la question:', error);
+//       throw error;
+//     }
+//   },
+
+//   deleteQuestion: async (id) => {
+//     try {
+//       const response = await axios.delete(`/api/questions/${id}`);
+//       return response.data;
+//     } catch (error) {
+//       console.error('Erreur lors de la suppression de la question:', error);
+//       throw error;
+//     }
+//   },
+
+//   createQuestionSet: async (setData) => {
+//     try {
+//       const response = await axios.post('/api/questions/sets', setData);
+//       return response.data;
+//     } catch (error) {
+//       console.error('Erreur lors de la création de l\'ensemble de questions:', error);
+//       throw error;
+//     }
+//   }
+// };
+
+ 
 // Service de questions
 export const questionService = {
-  getCustomQuestions: async () => {
+  getCustomQuestions: async (companyId) => {
     try {
-      const response = await axios.get('/api/questions/custom');
+      const response = await axios.get(`/questions/companies/${companyId}/questions/custom`);
       return response.data;
     } catch (error) {
       console.error('Erreur lors de la récupération des questions personnalisées:', error);
-      // Pour les besoins de développement, renvoyer des données simulées si le backend n'est pas encore prêt
-      if (process.env.NODE_ENV === 'development') {
-        return getMockQuestions();
-      }
       throw error;
     }
   },
 
-  getQuestionSets: async () => {
+  getQuestionSets: async (companyId) => {
     try {
-      const response = await axios.get('/api/questions/sets');
+      const response = await axios.get(`/questions/companies/${companyId}/questions/sets`);
       return response.data;
     } catch (error) {
       console.error('Erreur lors de la récupération des ensembles de questions:', error);
-      // Pour les besoins de développement, renvoyer des données simulées si le backend n'est pas encore prêt
-      if (process.env.NODE_ENV === 'development') {
-        return [];
-      }
       throw error;
     }
   },
 
-  createQuestion: async (questionData) => {
+  createQuestion: async (companyId, questionData) => {
     try {
-      const response = await axios.post('/api/questions', questionData);
-      return response.data;
+      const response = await axios.post(`/questions/companies/${companyId}/questions`, questionData);
+      return response.data.data;
     } catch (error) {
       console.error('Erreur lors de la création de la question:', error);
       throw error;
     }
   },
 
-  updateQuestion: async (id, questionData) => {
+  updateQuestion: async (companyId, id, questionData) => {
     try {
-      const response = await axios.put(`/api/questions/${id}`, questionData);
-      return response.data;
+      const response = await axios.put(`/questions/companies/${companyId}/questions/${id}`, questionData);
+      return response.data.data;
     } catch (error) {
       console.error('Erreur lors de la mise à jour de la question:', error);
       throw error;
     }
   },
 
-  deleteQuestion: async (id) => {
+  deleteQuestion: async (companyId, id) => {
     try {
-      const response = await axios.delete(`/api/questions/${id}`);
+      const response = await axios.delete(`/questions/companies/${companyId}/questions/${id}`);
       return response.data;
     } catch (error) {
       console.error('Erreur lors de la suppression de la question:', error);
@@ -635,12 +940,31 @@ export const questionService = {
     }
   },
 
-  createQuestionSet: async (setData) => {
+  createQuestionSet: async (companyId, setData) => {
     try {
-      const response = await axios.post('/api/questions/sets', setData);
-      return response.data;
+      const response = await axios.post(`/questions/companies/${companyId}/questions/sets`, setData);
+      return response.data.data;
     } catch (error) {
       console.error('Erreur lors de la création de l\'ensemble de questions:', error);
+      throw error;
+    }
+  },
+  updateQuestionSet: async (companyId, id, setData) => {
+    try {
+      const response = await axios.put(`/questions/companies/${companyId}/questions/sets/${id}`, setData);
+      return response.data.data;
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour de l\'ensemble de questions:', error);
+      throw error;
+    }
+  },
+
+  deleteQuestionSet: async (companyId, id) => {
+    try {
+      const response = await axios.delete(`/questions/companies/${companyId}/questions/sets/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de la suppression de l\'ensemble de questions:', error);
       throw error;
     }
   }
@@ -708,22 +1032,57 @@ function getMockQuestions() {
 
 // Service pour les fiches d'évaluation
 export const ratingCardService = {
-  getRatingCards: async () => {
+  // Get all rating card templates for a company
+  async getRatingCards(companyId) {
     try {
-      const response = await axios.get('/api/rating-cards');
-      return response.data;
+      const response = await axios.get(`/ratings/companies/${companyId}/rating-card-templates`);
+      return response.data.data; // Backend returns templates in `data`
     } catch (error) {
-      console.error('Erreur lors du chargement des fiches d\'évaluation:', error);
-      // Pour le développement, retourner des données simulées
-      if (process.env.NODE_ENV === 'development') {
-        return getMockRatingCards();
-      }
-      throw error;
+      throw new Error(error.response?.data?.message || 'Erreur lors de la récupération des fiches d\'évaluation');
     }
   },
 
-  // Autres méthodes selon besoin...
+  // Get a specific rating card template by ID
+  async getRatingCardById(companyId, templateId) {
+    try {
+      const response = await axios.get(`/ratings/companies/${companyId}/rating-card-templates/${templateId}`);
+      return response.data.data; // Backend returns template in `data`
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Erreur lors de la récupération de la fiche d\'évaluation');
+    }
+  },
+
+  // Create a new rating card template
+  async createRatingCard(companyId, ratingCardData) {
+    try {
+      const response = await axios.post(`/ratings/companies/${companyId}/rating-card-templates`, ratingCardData);
+      return response.data.data; // Backend returns created template in `data`
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Erreur lors de la création de la fiche d\'évaluation');
+    }
+  },
+
+  // Update an existing rating card template
+  async updateRatingCard(companyId, templateId, ratingCardData) {
+    try {
+      const response = await axios.put(`/ratings/companies/${companyId}/rating-card-templates/${templateId}`, ratingCardData);
+      return response.data.data; // Backend returns updated template in `data`
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Erreur lors de la mise à jour de la fiche d\'évaluation');
+    }
+  },
+
+  // Delete a rating card template
+  async deleteRatingCard(companyId, templateId) {
+    try {
+      await axios.delete(`/ratings/companies/${companyId}/rating-card-templates/${templateId}`);
+      return { message: 'Fiche d\'évaluation supprimée avec succès' };
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Erreur lors de la suppression de la fiche d\'évaluation');
+    }
+  },
 };
+ 
 
 // Données simulées pour le développement
 function getMockMeetingTemplates() {
@@ -922,20 +1281,44 @@ function getMockRatingCards() {
 //     }
 //   }
 // };
+// export const companyService = {
+//   createCompany: async (companyData) => {
+//     try {
+//       const response = await axios.post('/companies', companyData);
+//       return response.data;
+//     } catch (error) {
+//       const errorMessage = error.response?.data?.message || 'Erreur lors de la création de l\'entreprise';
+//       const validationErrors = error.response?.data?.errors || [];
+//       throw new Error(`${errorMessage}: ${validationErrors.map(e => e.message).join(', ')}`);
+//     }
+//   },
+//   getCompanyProfile: async () => {
+//     try {
+//       const response = await axios.get('/my-companies'); // Doit correspondre à /my-companies
+//       console.log('Réponse de /my-companies:', response.data);
+//       return response.data.data[0] || null;
+//     } catch (error) {
+//       console.error('Erreur lors de getCompanyProfile:', error);
+//       throw error.response?.data?.message || 'Erreur lors de la récupération du profil';
+//     }
+//   },
+//   updateCompany: async (companyId, companyData) => {
+//     try {
+//       const response = await axios.put(`/companies/${companyId}`, companyData);
+//       return response.data;
+//     } catch (error) {
+//       throw error.response?.data?.message || 'Erreur lors de la mise à jour de l\'entreprise';
+//     }
+//   }
+// };
+
 export const companyService = {
-  createCompany: async (companyData) => {
+  // Récupérer le profil de l'entreprise
+  
+
+    getCompanyProfile: async () => {
     try {
-      const response = await axios.post('/companies', companyData);
-      return response.data;
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Erreur lors de la création de l\'entreprise';
-      const validationErrors = error.response?.data?.errors || [];
-      throw new Error(`${errorMessage}: ${validationErrors.map(e => e.message).join(', ')}`);
-    }
-  },
-  getCompanyProfile: async () => {
-    try {
-      const response = await axios.get('/my-companies'); // Doit correspondre à /api/v1/my-companies
+      const response = await axios.get('/companies/my-companies'); // Doit correspondre à /my-companies
       console.log('Réponse de /my-companies:', response.data);
       return response.data.data[0] || null;
     } catch (error) {
@@ -943,12 +1326,227 @@ export const companyService = {
       throw error.response?.data?.message || 'Erreur lors de la récupération du profil';
     }
   },
-  updateCompany: async (companyId, companyData) => {
+
+  
+
+  createCompany: async (companyData) => {
+        try {
+          const response = await axios.post('/companies', companyData);
+          return response.data;
+        } catch (error) {
+          const errorMessage = error.response?.data?.message || 'Erreur lors de la création de l\'entreprise';
+          const validationErrors = error.response?.data?.errors || [];
+          throw new Error(`${errorMessage}: ${validationErrors.map(e => e.message).join(', ')}`);
+        }},
+
+  // Mettre à jour une entreprise
+  async updateCompany(companyId, data) {
     try {
-      const response = await axios.put(`/companies/${companyId}`, companyData);
+      console.log('Données envoyées au backend:', { companyId, data });
+      const response = await axios.put(`/companies/${companyId}`, data);
+      console.log(response.data);
       return response.data;
     } catch (error) {
-      throw error.response?.data?.message || 'Erreur lors de la mise à jour de l\'entreprise';
+      throw new Error(error.response?.data?.message || 'Erreur lors de la mise à jour de l\'entreprise');
     }
-  }
+  },
+
+  // Récupérer les départements
+  async getDepartments(companyId) {
+    try {
+      const response = await axios.get(`/companies/${companyId}/departments`);
+       
+
+      return response.data.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Erreur lors de la récupération des départements');
+    }
+  },
+
+  // Créer un département
+  async createDepartment(companyId, data) {
+    try {
+      const response = await axios.post(`/companies/${companyId}/departments`, data);
+      return response.data.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Erreur lors de la création du département');
+    }
+  },
+
+  // Mettre à jour un département
+  async updateDepartment(companyId, departmentId, data) {
+    try {
+      const response = await axios.put(`/companies/${companyId}/departments/${departmentId}`, data);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Erreur lors de la mise à jour du département');
+    }
+  },
+
+  // Supprimer un département
+  async deleteDepartment(companyId, departmentId) {
+    try {
+      const response = await axios.delete(`/companies/${companyId}/departments/${departmentId}`);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Erreur lors de la suppression du département');
+    }
+  },
+
+  // Récupérer les emplacements
+  async getCompanyLocations(companyId) {
+    try {
+      const response = await axios.get(`/companies/${companyId}/locations`);
+      return response.data.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Erreur lors de la récupération des emplacements');
+    }
+  },
+
+  // Ajouter un emplacement
+  async addCompanyLocation(companyId, data) {
+    try {
+      console.log('Données envoyées pour ajout d\'emplacement:', { companyId, data });
+      const response = await axios.post(`/companies/${companyId}/locations`, data);
+      return response.data.data;
+    } catch (error) {
+      console.error('Erreur lors de l\'ajout de l\'emplacement:', error);
+      throw new Error(error.response?.data?.message || 'Validation failed');
+    }
+  },
+
+  // Mettre à jour un emplacement
+  async updateCompanyLocation(companyId, locationId, data) {
+    try {
+      const response = await axios.put(`/companies/${companyId}/locations/${locationId}`, data);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Erreur lors de la mise à jour de l\'emplacement');
+    }
+  },
+
+  // Supprimer un emplacement
+  async deleteCompanyLocation(companyId, locationId) {
+    try {
+      const response = await axios.delete(`/companies/${companyId}/locations/${locationId}`);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Erreur lors de la suppression de l\'emplacement');
+    }
+  },
 };
+
+export const userService = {
+  getUserIdByEmail: async (email) => {
+    try {
+      const response = await axios.get(`/users/email/${email}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
+      return response.data.id;
+    } catch (error) {
+      console.error('Erreur lors de la récupération de l\'ID utilisateur:', error);
+      throw error;
+    }
+  },
+};
+
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('token');
+  return {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json',
+  };
+};
+
+const handleResponse = async (response) => {
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Request failed');
+  }
+  return response.json();
+};
+
+export const cvService = {
+  getCandidates: async (companyId) => {
+    
+    const response = await axios.get(`candidates/companies/${companyId}/candidates`, {
+      
+      headers: getAuthHeaders(),
+    });
+    return response.data;
+  },
+
+  getCandidateById: async (companyId, id) => {
+    const response = await axios.get(`candidates/companies/${companyId}/candidates/${id}`, {
+       
+      headers: getAuthHeaders(),
+    });
+    console.log("response.data;",response.data);
+    // console.log("response.data;",response.data);
+    return { data: response.data };
+  },
+
+  createCandidate: async (companyId, candidateData) => {
+    const response = await axios.post(`candidates/companies/${companyId}/candidates`, {
+      
+      headers: getAuthHeaders(),
+      body: JSON.stringify(candidateData),
+    });
+    return handleResponse(response);
+  },
+
+  updateCandidate: async (companyId, id, candidateData) => {
+    const response = await axios.put(`candidates/companies/${companyId}/candidates/${id}`, {
+      
+      headers: getAuthHeaders(),
+      body: JSON.stringify(candidateData),
+    });
+    return handleResponse(response);
+  },
+
+  deleteCandidate: async (companyId, id) => {
+    const response = await axios.delete(`candidates/companies/${companyId}/candidates/${id}`, {
+      
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+  },
+
+  downloadCV: async (id) => {
+    const response = await axios.get(`candidates/candidates/${id}/download-cv`, {
+       
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+  },
+
+  getCandidatesByJob: async (jobId) => {
+    const response = await axios.get(`candidates/jobs/${jobId}/candidates`, {
+      
+      headers: getAuthHeaders(),
+    });
+    return response.data;
+  },
+
+  updateCandidateStage: async (candidateId, /*stageId*/ stage) => {
+    // const response = await axios.put(`candidates/candidates/${candidateId}/stage`, {
+       
+    //   headers: getAuthHeaders(),
+    //   body: JSON.stringify({ stageId }),
+    // });
+    // return response.data;
+
+    const response = await axios.put(`/candidates/candidates/${candidateId}/stage`, { stage });
+    return response.data;
+  },
+
+  disqualifyCandidate: async (candidateId) => {
+    const response = await axios.put(`candidates/candidates/${candidateId}/disqualify`, {
+      
+      headers: getAuthHeaders(),
+    });
+    return response.data;
+  },
+};
+
+ 

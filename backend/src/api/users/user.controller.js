@@ -1,4 +1,5 @@
 import UserService from './user.service.js';
+import prisma from '../../config/db.js';
 import pkg from '@prisma/client';
 const { UserRole } = pkg;
 
@@ -54,6 +55,25 @@ class UserController {
       const limit = parseInt(req.query.limit) || 10;
       const users = await UserService.getAllUsers(page, limit);
       res.status(200).json(users);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+
+  async getUserByEmail(req, res, next) {
+    try {
+      const { email } = req.params;
+      const user = await prisma.user.findUnique({
+        where: { email },
+        select: { id: true },
+      });
+      if (!user) {
+        const error = new Error('User not found.');
+        error.statusCode = 404;
+        throw error;
+      }
+      res.status(200).json(user);
     } catch (error) {
       next(error);
     }

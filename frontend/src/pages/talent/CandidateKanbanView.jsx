@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Star, Plus, ChevronRight, Calendar, MessageCircle, X } from 'lucide-react';
-import { cvService, jobService } from '../../services/api';
+import { cvService, jobService ,workflowService} from '../../services/api';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { useParams } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext'; // Ajoute cet import
 
 const CandidateKanbanView = () => {
     const { jobId } = useParams();
+    const { companyId } = useAuth(); // Ajoute cette ligne
+    
+
     const [loading, setLoading] = useState(true);
     const [candidates, setCandidates] = useState([]);
     const [job, setJob] = useState(null);
@@ -23,12 +27,14 @@ const CandidateKanbanView = () => {
                 }
 
                 // Fetch workflow stages
-                const workflowId = jobId ? jobId : 'default';
-                const stagesData = await jobService.getWorkflowStages(workflowId);
+                const workflowId = jobId || 'default';
+                console.log("job",job);
+                const stagesData = await workflowService.getWorkflowStages(companyId, workflowId)
                 setStages(stagesData);
 
                 // Fetch candidates
-                const candidatesData = await cvService.getCandidatesByJob(jobId);
+                const candidatesData = await cvService.getCandidates(companyId);
+ 
                 setCandidates(candidatesData);
             } catch (error) {
                 console.error('Error fetching data:', error);
@@ -38,7 +44,7 @@ const CandidateKanbanView = () => {
         };
 
         fetchData();
-    }, [jobId]);
+    }, [jobId, companyId]);
 
     // Function to get the count of candidates in a stage
     const getCandidateCountByStage = (stageId) => {

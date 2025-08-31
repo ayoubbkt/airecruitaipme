@@ -57,3 +57,34 @@ export const getCompanySchema = z.object({
     id: z.string().min(1, 'Company ID is required'),
   }),
 });
+
+export const createDepartmentSchema = z.object({
+  body: z.object({
+    name: z
+      .string()
+      .min(2, 'Department name must be at least 2 characters')
+      .max(50, 'Department name must not exceed 50 characters'),
+  }),
+  params: z.object({
+    companyId: z.string().min(1, 'Company ID is required'),
+  }),
+});
+
+export const updateDepartmentSchema = createDepartmentSchema;
+
+export const createLocationSchema = z.object({
+  body: z.object({
+    address: z.string().min(5, 'Address must be at least 5 characters').optional(),
+    city: z.string().min(2, 'City must be at least 2 characters'),
+    country: z.string().min(2, 'Country must be at least 2 characters'),
+    zipPostal: z
+      .string()
+      .regex(/^[A-Z0-9-\s]{3,10}$/, 'Invalid postal code format')
+      .optional(),
+  }),
+  params: z.object({
+    companyId: z.string().min(1, 'Company ID is required'),
+  }),
+});
+
+export const updateLocationSchema = createLocationSchema;

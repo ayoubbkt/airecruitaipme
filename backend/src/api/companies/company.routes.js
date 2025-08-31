@@ -6,7 +6,8 @@ import {
   createCompanySchema,
   updateCompanySchema,
   addCompanyMemberSchema,
-  getCompanySchema
+  getCompanySchema,
+  createDepartmentSchema, updateDepartmentSchema, createLocationSchema, updateLocationSchema
 } from './company.validation.js';
 import pkg from '../../generated/prisma/index.js';
 const { UserRole } = pkg;
@@ -34,5 +35,17 @@ router.delete('/:companyId/members/:memberId', CompanyController.removeMemberFro
 // TODO: Add routes for Departments and Locations within a company context
 // e.g., POST /:companyId/departments, GET /:companyId/departments
 // e.g., POST /:companyId/locations, GET /:companyId/locations
+
+
+router.get('/:companyId/departments', CompanyController.getDepartments);
+router.post('/:companyId/departments', validate(createDepartmentSchema), CompanyController.createDepartment);
+router.put('/:companyId/departments/:departmentId', validate(updateDepartmentSchema), CompanyController.updateDepartment);
+router.delete('/:companyId/departments/:departmentId', CompanyController.deleteDepartment);
+
+// Routes pour les emplacements
+router.get('/:companyId/locations', CompanyController.getCompanyLocations);
+router.post('/:companyId/locations', validate(createLocationSchema), CompanyController.addCompanyLocation);
+router.put('/:companyId/locations/:locationId', validate(updateLocationSchema), CompanyController.updateCompanyLocation);
+router.delete('/:companyId/locations/:locationId', CompanyController.deleteCompanyLocation);
 
 export default router;

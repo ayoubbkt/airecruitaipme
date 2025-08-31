@@ -85,6 +85,10 @@ model Company {
   ratingCardTemplates RatingCardTemplate[]
   careersPageSettings CareersPageSetting?
   jobBoardIntegrations JobBoardIntegration[]
+  messageTemplates MessageTemplate[]
+  questions Question[]
+  questionSets   QuestionSet[]
+
 
   @@map("companies")
 }
@@ -131,6 +135,9 @@ model Job {
   department        Department?       @relation(fields: [departmentId], references: [id], onDelete:SetNull)
   locationId        String?
   location          JobLocation?      @relation(fields: [locationId], references: [id], onDelete:SetNull)
+  minYearsExperience Int?             // Nouveau champ
+  skills            Json?             // Nouveau champ pour required/preferred skills
+  jobBoards         Json?
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 
@@ -781,13 +788,12 @@ model JobBoardIntegration { // For posting jobs TO job boards
 model MessageTemplate {
   id          String   @id @default(cuid())
   companyId   String
-  // company  Company  @relation(fields: [companyId], references: [id])
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   name        String   // Internal name, e.g., "Application Confirmation"
-  subject     String?  // For email templates
-  body        String   @db.Text // Template body with variables like [[candidateFirstName]]
-  type        TemplateType @default(EMAIL) // EMAIL, IN_APP_MESSAGE
-  stageTrigger StageType? // Optional: stage that might auto-trigger this (e.g., APPLIED for confirmation)
-  isDefault   Boolean  @default(false) // e.g. default disqualification email
+  subject     String   // For email templates
+  content     String   @db.Text // Template body with variables like {{candidateFirstName}}
+  description String?  @db.Text // Description for required templates
+  isRequired  Boolean  @default(false) // To differentiate required and custom templates
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -818,4 +824,44 @@ enum ActionType {
   SCHEDULE_INTERVIEW
   AUTO_PROGRESS
   SEND_SURVEY
+}
+
+model Question {
+  id           String           @id @default(cuid())
+  companyId    String
+  text         String
+  responseType String
+  visibility   String
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  company      Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  options      QuestionOption[]
+  questionSets QuestionSet[]
+
+  @@map("questions")
+}
+
+model QuestionOption {
+  id         String   @id @default(cuid())
+  questionId String
+  value      String
+
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("question_options")
+}
+
+model QuestionSet {
+  id           String     @id @default(cuid())
+  companyId    String
+  name         String
+  description  String?    @db.Text
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  company      Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  questions    Question[] @relation()
+
+  @@map("question_sets")
 }

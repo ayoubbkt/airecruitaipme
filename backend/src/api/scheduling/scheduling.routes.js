@@ -8,7 +8,8 @@ router.use(protect);
 // Meeting Templates (scoped by company)
 router.post('/companies/:companyId/meeting-templates', SchedulingController.createMeetingTemplate);
 router.get('/companies/:companyId/meeting-templates', SchedulingController.getMeetingTemplatesByCompany);
-// TODO: Add GET /:templateId, PUT /:templateId, DELETE /:templateId for templates
+router.put('/companies/:companyId/meeting-templates/:id', SchedulingController.updateMeetingTemplate);
+router.delete('/companies/:companyId/meeting-templates/:id', SchedulingController.deleteMeetingTemplate); // Nouvelle route pour la suppression
 
 // Meetings
 router.post('/meetings', SchedulingController.scheduleMeeting);

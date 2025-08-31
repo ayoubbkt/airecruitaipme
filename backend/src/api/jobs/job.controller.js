@@ -3,9 +3,19 @@ import JobService from './job.service.js';
 class JobController {
   async createJob(req, res, next) {
     try {
-      const { companyId } = req.params; // Or from req.body if preferred
-      // TODO: Validation for req.body and companyId
-      const job = await JobService.createJob(req.user.id, companyId, req.body);
+      const { companyId } = req.params;
+      const jobData = {
+        ...req.body,
+        applicationFormFields: req.body.applicationFields ? Object.entries(req.body.applicationFields).map(([name, field]) => ({ name, required: field.required })) : [],
+        hiringTeam: req.body.hiringTeam || [],
+        workflowId: req.body.workflowId,
+        minYearsExperience: req.body.minYearsExperience,
+        skills: {
+          required: req.body.requiredSkills || [],
+          preferred: req.body.preferredSkills || [],
+        },
+      };
+      const job = await JobService.createJob(req.user.id, companyId, jobData);
       res.status(201).json({ message: 'Job created successfully', data: job });
     } catch (error) {
       next(error);
@@ -14,9 +24,11 @@ class JobController {
 
   async getJobById(req, res, next) {
     try {
+       
       const job = await JobService.getJobById(req.user.id, req.params.jobId);
       res.status(200).json({ data: job });
     } catch (error) {
+     
       next(error);
     }
   }
@@ -33,8 +45,17 @@ class JobController {
 
   async updateJob(req, res, next) {
     try {
-      // TODO: Validation for req.body
-      const updatedJob = await JobService.updateJob(req.user.id, req.params.jobId, req.body);
+      const updatedJob = await JobService.updateJob(req.user.id, req.params.jobId, {
+        ...req.body,
+        applicationFormFields: req.body.applicationFields ? Object.entries(req.body.applicationFields).map(([name, field]) => ({ name, required: field.required })) : [],
+        hiringTeam: req.body.hiringTeam || [],
+        workflowId: req.body.workflowId,
+        minYearsExperience: req.body.minYearsExperience,
+        skills: {
+          required: req.body.requiredSkills || [],
+          preferred: req.body.preferredSkills || [],
+        },
+      });
       res.status(200).json({ message: 'Job updated successfully', data: updatedJob });
     } catch (error) {
       next(error);
@@ -50,35 +71,33 @@ class JobController {
     }
   }
 
-  // Hiring Team
   async addHiringMember(req, res, next) {
     try {
-        const { jobId } = req.params;
-        // TODO: Validate req.body (memberUserId, role)
-        const member = await JobService.addHiringMember(req.user.id, jobId, req.body);
-        res.status(201).json({ message: 'Hiring member added.', data: member });
+      const { jobId } = req.params;
+      const member = await JobService.addHiringMember(req.user.id, jobId, req.body);
+      res.status(201).json({ message: 'Hiring member added.', data: member });
     } catch (error) {
-        next(error);
+      next(error);
     }
   }
 
   async removeHiringMember(req, res, next) {
     try {
-        const { jobId, memberId } = req.params;
-        const result = await JobService.removeHiringMember(req.user.id, jobId, memberId);
-        res.status(200).json(result);
+      const { jobId, memberId } = req.params;
+      const result = await JobService.removeHiringMember(req.user.id, jobId, memberId);
+      res.status(200).json(result);
     } catch (error) {
-        next(error);
+      next(error);
     }
   }
 
   async getHiringTeam(req, res, next) {
     try {
-        const { jobId } = req.params;
-        const team = await JobService.getHiringTeam(req.user.id, jobId);
-        res.status(200).json({ data: team });
+      const { jobId } = req.params;
+      const team = await JobService.getHiringTeam(req.user.id, jobId);
+      res.status(200).json({ data: team });
     } catch (error) {
-        next(error);
+      next(error);
     }
   }
 }

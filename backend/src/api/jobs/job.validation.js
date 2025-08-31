@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import pkg from '../../generated/prisma/index.js';
-const { EmploymentType, WorkType, JobStatus } = pkg;
+const { EmploymentType, WorkType, JobStatus, CompanyMemberRole } = pkg;
 
 export const createJobSchema = z.object({
   body: z.object({
@@ -11,59 +11,46 @@ export const createJobSchema = z.object({
     description: z.string()
       .min(50, 'Job description must be at least 50 characters')
       .max(5000, 'Job description must not exceed 5000 characters'),
-    employmentType: z.nativeEnum(EmploymentType, {
-      errorMap: () => ({ message: 'Invalid employment type' })
-    }),
-    workType: z.nativeEnum(WorkType, {
-      errorMap: () => ({ message: 'Invalid work type' })
-    }),
+    employmentType: z.nativeEnum(EmploymentType, { errorMap: () => ({ message: 'Invalid employment type' }) }),
+    workType: z.nativeEnum(WorkType, { errorMap: () => ({ message: 'Invalid work type' }) }),
     salaryMin: z.number()
       .positive('Minimum salary must be positive')
       .min(1000, 'Minimum salary must be at least 1000')
+      .nullable()
       .optional(),
     salaryMax: z.number()
       .positive('Maximum salary must be positive')
+      .nullable()
       .optional(),
     currency: z.string()
       .regex(/^[A-Z]{3}$/, 'Currency must be a 3-letter ISO code')
       .optional(),
-    departmentName: z.string()
-      .min(2, 'Department name must be at least 2 characters')
-      .max(50, 'Department name must not exceed 50 characters')
+    payPeriod: z.enum(['HOURLY', 'DAILY', 'WEEKLY', 'MONTHLY', 'ANNUAL']).optional(),
+    displaySalary: z.boolean().optional(),
+    status: z.nativeEnum(JobStatus, { errorMap: () => ({ message: 'Invalid job status' }) }).optional(),
+    departmentId: z.string().optional(),
+    locationId: z.string().optional(),
+    minYearsExperience: z.number()
+      .int()
+      .min(0)
+      .nullable()
       .optional(),
-    location: z.object({
-      city: z.string().min(2, 'City must be at least 2 characters').optional(),
-      country: z.string().length(2, 'Country must be a 2-letter ISO code'),
-      remote: z.boolean().optional(),
-      timezone: z.string().regex(/^[A-Z][a-z]+\/[A-Z][a-z]+$/, 'Invalid timezone format').optional(),
-    }).optional(),
-    requirements: z.array(
-      z.string()
-        .min(5, 'Each requirement must be at least 5 characters')
-        .max(200, 'Each requirement must not exceed 200 characters')
-    )
-      .min(1, 'At least one requirement is required')
-      .max(15, 'Maximum 15 requirements allowed'),
-    responsibilities: z.array(
-      z.string()
-        .min(5, 'Each responsibility must be at least 5 characters')
-        .max(200, 'Each responsibility must not exceed 200 characters')
-    )
-      .min(1, 'At least one responsibility is required')
-      .max(15, 'Maximum 15 responsibilities allowed'),
-    skills: z.array(
-      z.string()
-        .min(2, 'Each skill must be at least 2 characters')
-        .max(30, 'Each skill must not exceed 30 characters')
-    )
-      .min(1, 'At least one skill is required')
-      .max(20, 'Maximum 20 skills allowed')
-      .optional(),
-    experienceLevel: z.enum(['ENTRY', 'JUNIOR', 'MID', 'SENIOR', 'LEAD', 'MANAGER'])
-      .optional(),
-    deadline: z.string()
-      .datetime('Invalid deadline date format')
-      .refine(date => new Date(date) > new Date(), 'Deadline must be in the future')
+    requiredSkills: z.array(z.string().min(2).max(30)).optional(),
+    preferredSkills: z.array(z.string().min(2).max(30)).optional(),
+    applicationFields: z.record(z.object({ required: z.boolean() })).optional(),
+    hiringTeam: z.array(z.object({
+      userId: z.string().optional(),
+      role: z.nativeEnum(CompanyMemberRole),
+      isExternalRecruiter: z.boolean().optional().default(false),
+    })).optional(),
+    workflowId: z.string().optional(),
+    jobBoards: z.array(z.object({
+      id: z.string().optional(),
+      price: z.number().optional().default(0),
+    })).optional(),
+    jobCode: z.string()
+      .max(50, 'Job code must not exceed 50 characters')
+      .regex(/^[\w-]+$/,'Job code contains invalid characters')
       .optional(),
   }).refine(data => {
     if (data.salaryMin && data.salaryMax) {
@@ -90,6 +77,7 @@ export const getJobsSchema = z.object({
 
 export const getJobByIdSchema = z.object({
   params: z.object({
-    id: z.string().min(1, 'Job ID is required'),
+    companyId: z.string().regex(/^[a-z0-9]{25}$/, 'Invalid company ID format'),
+    jobId: z.string().regex(/^[a-z0-9]{25}$/, 'Invalid job ID format'),
   }),
 });

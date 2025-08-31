@@ -1,6 +1,7 @@
 import prisma from '../../config/db.js';
 import pkg from '../../generated/prisma/index.js';
 const { UserRole, CompanyMemberRole, MeetingType, AttendeeStatus } = pkg;
+
 // Helper to check if user can manage meetings for a job/application
 async function checkMeetingPermission(userId, companyId, allowedRoles = [CompanyMemberRole.RECRUITING_ADMIN, CompanyMemberRole.HIRING_MANAGER]) {
   const membership = await prisma.companyMember.findUnique({
@@ -43,6 +44,56 @@ class SchedulingService {
     });
   }
 
+  async updateMeetingTemplate(userId, companyId, id, templateData) {
+    await checkMeetingPermission(userId, companyId); // Requires admin/manager
+    const { name, title, duration, meetingType, description /*, defaultRatingCardId */ } = templateData;
+
+    if (!name || !title || !duration || !meetingType) {
+      throw new Error('Name, title, duration, and meetingType are required for template.');
+    }
+    if (!Object.values(MeetingType).includes(meetingType)) {
+        throw new Error(`Invalid meeting type: ${meetingType}`);
+    }
+
+    const existingTemplate = await prisma.meetingTemplate.findUnique({
+      where: { id }
+    });
+
+    if (!existingTemplate || existingTemplate.companyId !== companyId) {
+      throw new Error('Meeting template not found or access denied.');
+    }
+
+    return prisma.meetingTemplate.update({
+      where: { id },
+      data: {
+        name,
+        title,
+        duration,
+        meetingType,
+        description,
+        // defaultRatingCardId
+      }
+    });
+  }
+
+  async deleteMeetingTemplate(userId, companyId, id) {
+    await checkMeetingPermission(userId, companyId); // Requires admin/manager
+
+    const existingTemplate = await prisma.meetingTemplate.findUnique({
+      where: { id }
+    });
+
+    if (!existingTemplate || existingTemplate.companyId !== companyId) {
+      throw new Error('Meeting template not found or access denied.');
+    }
+
+    await prisma.meetingTemplate.delete({
+      where: { id }
+    });
+
+    return { message: 'Meeting template deleted successfully.' };
+  }
+
   async getMeetingTemplatesByCompany(userId, companyId) {
     await checkMeetingPermission(userId, companyId, [CompanyMemberRole.RECRUITING_ADMIN, CompanyMemberRole.HIRING_MANAGER, CompanyMemberRole.REVIEWER]); // Reviewers can see templates
     return prisma.meetingTemplate.findMany({
@@ -51,8 +102,6 @@ class SchedulingService {
     });
   }
   
-  // TODO: GetById, Update, Delete for Meeting Templates
-
   // --- Meetings ---
   async scheduleMeeting(organizerId, meetingData) {
     const { 

@@ -23,6 +23,27 @@ class SchedulingController {
     }
   }
 
+  async updateMeetingTemplate(req, res, next) {
+    try {
+      const { companyId, id } = req.params;
+      const templateData = req.body;
+      const updatedTemplate = await SchedulingService.updateMeetingTemplate(req.user.id, companyId, id, templateData);
+      res.status(200).json({ message: 'Meeting template updated.', data: updatedTemplate });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async deleteMeetingTemplate(req, res, next) {
+    try {
+      const { companyId, id } = req.params;
+      await SchedulingService.deleteMeetingTemplate(req.user.id, companyId, id);
+      res.status(200).json({ message: 'Meeting template deleted.' });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // Meetings
   async scheduleMeeting(req, res, next) {
     try {

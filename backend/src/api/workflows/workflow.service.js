@@ -73,6 +73,7 @@ class WorkflowService {
 
   async getWorkflowTemplateById(userId, companyId, templateId) {
     await checkCompanyAdminAccess(userId, companyId);
+     
     const template = await prisma.workflowTemplate.findUnique({
       where: { id: templateId, companyId }, // Ensure it belongs to the company
       include: { stages: { orderBy: { order: 'asc' } } }

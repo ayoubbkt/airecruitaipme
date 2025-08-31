@@ -3,49 +3,61 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ChevronLeft, Edit, Trash2, UserPlus, User, MapPin, BriefcaseBusiness, Calendar } from 'lucide-react';
 import { jobService } from '../../services/api';
 import { toast } from 'react-toastify';
+import { useAuth } from '../../contexts/AuthContext';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 const JobDetail = () => {
   const { id } = useParams();
+  const { companyId } = useAuth();
   const navigate = useNavigate();
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
 
-
   useEffect(() => {
-    const fetchJobDetail = async () => {
-      try {
-        setLoading(true);
-        const data = await jobService.getJobById(id);
-        setJob(data);
-      } catch (error) {
-        console.error('Error fetching job details:', error);
-        toast.error('Erreur lors du chargement des détails de l\'offre');
-        navigate('/jobs');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
+    if (!companyId || !id) {
+      
+      setError('Données manquantes pour charger l\'offre d\'emploi.');
+      setLoading(false);
+      return;
+    }
     fetchJobDetail();
-  }, [id, navigate]);
-  
+  }, [id, companyId, navigate]);
+
+  const fetchJobDetail = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const data = await jobService.getJobById(companyId, id);
+      
+      setJob(data);
+    } catch (error) {
+      
+      setError(`Erreur lors du chargement des détails de l'offre: ${error.response?.data?.message || error.message}`);
+      toast.error(`Erreur lors du chargement des détails de l'offre: ${error.response?.data?.message || error.message}`);
+      navigate('/jobs');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDelete = async () => {
     try {
-      await jobService.deleteJob(id);
+      await jobService.deleteJob(companyId, id);
       toast.success('Offre supprimée avec succès');
       navigate('/jobs');
     } catch (error) {
-      console.error('Error deleting job:', error);
+       
       toast.error('Erreur lors de la suppression de l\'offre');
     }
   };
-  
+
   if (loading) {
     return <LoadingSpinner />;
   }
-  
+
   if (!job) {
     return (
       <div className="text-center py-12">
@@ -57,11 +69,11 @@ const JobDetail = () => {
       </div>
     );
   }
-  
+
   return (
-    <div>
+    <div className="p-6">
       <div className="flex items-center mb-6">
-        <button 
+        <button
           className="p-2 rounded-full hover:bg-slate-100 mr-2"
           onClick={() => navigate(-1)}
         >
@@ -69,26 +81,30 @@ const JobDetail = () => {
         </button>
         <h1 className="text-2xl font-bold text-slate-800">Détails de l'offre</h1>
       </div>
-      
+
+      {error && (
+        <div className="mb-4 p-2 bg-red-50 text-red-600 rounded-md">{error}</div>
+      )}
+
       <div className="mb-6 flex justify-between items-center">
         <div>
           <h2 className="text-xl font-bold text-slate-800">{job.title}</h2>
           <div className="flex items-center mt-1">
             <MapPin className="h-4 w-4 text-slate-500 mr-1" />
-            <span className="text-slate-600 mr-4">{job.location}</span>
+            <span className="text-slate-600 mr-4">{job.location ? `${job.location.city}, ${job.location.country}` : 'Non précisé'}</span>
             <BriefcaseBusiness className="h-4 w-4 text-slate-500 mr-1" />
-            <span className="text-slate-600">{job.jobType}</span>
+            <span className="text-slate-600">{job.employmentType || 'Non précisé'}</span>
           </div>
         </div>
-        
+
         <div className="flex space-x-3">
           <Link to={`/jobs/${id}/edit`} className="flex items-center px-3 py-2 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 text-slate-700">
             <Edit className="h-4 w-4 mr-2" />
             <span className="text-sm font-medium">Modifier</span>
           </Link>
-          
+
           {!deleteConfirm ? (
-            <button 
+            <button
               onClick={() => setDeleteConfirm(true)}
               className="flex items-center px-3 py-2 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-red-50 hover:border-red-200 hover:text-red-600"
             >
@@ -113,10 +129,9 @@ const JobDetail = () => {
           )}
         </div>
       </div>
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          {/* Job Description */}
           <div className="bg-white rounded-xl shadow-sm mb-6 overflow-hidden">
             <div className="p-6 pb-3 border-b border-slate-100">
               <h3 className="text-lg font-semibold text-slate-800">Description du poste</h3>
@@ -125,24 +140,23 @@ const JobDetail = () => {
               <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: job.description.replace(/\n/g, '<br>') }}></div>
             </div>
           </div>
-          
-          {/* Required Skills */}
+
           <div className="bg-white rounded-xl shadow-sm mb-6 overflow-hidden">
             <div className="p-6 pb-3 border-b border-slate-100">
               <h3 className="text-lg font-semibold text-slate-800">Compétences requises</h3>
             </div>
             <div className="p-6">
               <div className="flex flex-wrap gap-2 mb-4">
-                {job.requiredSkills.map((skill, index) => (
+                {job.requiredSkills?.map((skill, index) => (
                   <span key={index} className="px-3 py-1 rounded-full text-sm font-medium bg-blue-50 text-blue-700">
                     {skill}
                   </span>
                 ))}
               </div>
-              
+
               <h4 className="text-md font-medium text-slate-700 mt-6 mb-3">Compétences souhaitées</h4>
               <div className="flex flex-wrap gap-2">
-                {job.preferredSkills.length > 0 ? (
+                {job.preferredSkills?.length > 0 ? (
                   job.preferredSkills.map((skill, index) => (
                     <span key={index} className="px-3 py-1 rounded-full text-sm font-medium bg-slate-50 text-slate-700">
                       {skill}
@@ -154,8 +168,7 @@ const JobDetail = () => {
               </div>
             </div>
           </div>
-          
-          {/* Recent Applications */}
+
           <div className="bg-white rounded-xl shadow-sm overflow-hidden">
             <div className="p-6 pb-3 border-b border-slate-100">
               <div className="flex justify-between items-center">
@@ -163,9 +176,9 @@ const JobDetail = () => {
                 <Link to={`/jobs/${id}/applications`} className="text-sm text-blue-600 font-medium">Voir toutes</Link>
               </div>
             </div>
-            
+
             <div className="p-6">
-              {job.recentApplications && job.recentApplications.length > 0 ? (
+              {job.recentApplications?.length > 0 ? (
                 <div className="space-y-4">
                   {job.recentApplications.map((application) => (
                     <div key={application.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
@@ -196,10 +209,8 @@ const JobDetail = () => {
             </div>
           </div>
         </div>
-        
-        {/* Side Panel */}
+
         <div className="space-y-6">
-          {/* Job Details */}
           <div className="bg-white rounded-xl shadow-sm overflow-hidden">
             <div className="p-6 pb-3 border-b border-slate-100">
               <h3 className="text-lg font-semibold text-slate-800">Informations sur le poste</h3>
@@ -208,26 +219,28 @@ const JobDetail = () => {
               <dl className="space-y-4">
                 <div>
                   <dt className="text-sm text-slate-500">Département</dt>
-                  <dd className="text-sm font-medium text-slate-800 mt-1">{job.department}</dd>
+                  <dd className="text-sm font-medium text-slate-800 mt-1">{job.department?.name || 'Non précisé'}</dd>
                 </div>
                 <div>
                   <dt className="text-sm text-slate-500">Type de contrat</dt>
-                  <dd className="text-sm font-medium text-slate-800 mt-1">{job.jobType}</dd>
+                  <dd className="text-sm font-medium text-slate-800 mt-1">{job.employmentType || 'Non précisé'}</dd>
                 </div>
                 <div>
                   <dt className="text-sm text-slate-500">Expérience minimale</dt>
-                  <dd className="text-sm font-medium text-slate-800 mt-1">{job.minYearsExperience} {job.minYearsExperience > 1 ? 'ans' : 'an'}</dd>
+                  <dd className="text-sm font-medium text-slate-800 mt-1">{job.minYearsExperience ? `${job.minYearsExperience} ${job.minYearsExperience > 1 ? 'ans' : 'an'}` : 'Non précisé'}</dd>
                 </div>
                 <div>
                   <dt className="text-sm text-slate-500">Salaire</dt>
-                  <dd className="text-sm font-medium text-slate-800 mt-1">{job.salaryRange || 'Non précisé'}</dd>
+                  <dd className="text-sm font-medium text-slate-800 mt-1">
+                    {job.salaryMin && job.salaryMax ? `${job.salaryMin} - ${job.salaryMax} ${job.currency} (${job.payPeriod})` : 'Non précisé'}
+                  </dd>
                 </div>
                 <div>
                   <dt className="text-sm text-slate-500">Statut</dt>
                   <dd className="mt-1">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      job.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 
-                      job.status === 'DRAFT' ? 'bg-slate-100 text-slate-800' : 
+                      job.status === 'ACTIVE' ? 'bg-green-100 text-green-800' :
+                      job.status === 'DRAFT' ? 'bg-slate-100 text-slate-800' :
                       'bg-amber-100 text-amber-800'
                     }`}>
                       {job.status === 'ACTIVE' ? 'Active' : job.status === 'DRAFT' ? 'Brouillon' : 'Archivée'}
@@ -241,8 +254,7 @@ const JobDetail = () => {
               </dl>
             </div>
           </div>
-          
-          {/* Candidates */}
+
           <div className="bg-white rounded-xl shadow-sm overflow-hidden">
             <div className="p-6 pb-3 border-b border-slate-100">
               <h3 className="text-lg font-semibold text-slate-800">Statistiques</h3>
@@ -252,32 +264,14 @@ const JobDetail = () => {
                 <div>
                   <div className="flex justify-between items-center mb-1">
                     <p className="text-sm text-slate-600">Candidatures totales</p>
-                    <p className="text-sm font-medium text-slate-800">{job.applicationsCount || 0}</p>
+                    <p className="text-sm font-medium text-slate-800">{job._count?.applications || 0}</p>
                   </div>
                   <div className="w-full bg-slate-200 rounded-full h-1.5">
                     <div className="bg-blue-600 h-1.5 rounded-full" style={{ width: '100%' }}></div>
                   </div>
                 </div>
-                <div>
-                  <div className="flex justify-between items-center mb-1">
-                    <p className="text-sm text-slate-600">Candidats qualifiés</p>
-                    <p className="text-sm font-medium text-slate-800">{job.qualifiedCandidatesCount || 0}</p>
-                  </div>
-                  <div className="w-full bg-slate-200 rounded-full h-1.5">
-                    <div className="bg-green-600 h-1.5 rounded-full" style={{ width: `${job.qualifiedCandidatesCount && job.applicationsCount ? (job.qualifiedCandidatesCount / job.applicationsCount) * 100 : 0}%` }}></div>
-                  </div>
-                </div>
-                <div>
-                  <div className="flex justify-between items-center mb-1">
-                    <p className="text-sm text-slate-600">Entretiens planifiés</p>
-                    <p className="text-sm font-medium text-slate-800">{job.interviewsCount || 0}</p>
-                  </div>
-                  <div className="w-full bg-slate-200 rounded-full h-1.5">
-                    <div className="bg-indigo-600 h-1.5 rounded-full" style={{ width: `${job.interviewsCount && job.applicationsCount ? (job.interviewsCount / job.applicationsCount) * 100 : 0}%` }}></div>
-                  </div>
-                </div>
               </div>
-              
+
               <div className="mt-6">
                 <Link to="/cv-analysis" className="w-full py-2 flex items-center justify-center bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
                   <UserPlus className="w-4 h-4 mr-2" />

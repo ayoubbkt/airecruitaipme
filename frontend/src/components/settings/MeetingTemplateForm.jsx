@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Bold, Italic, Link, List, X, ChevronDown, ListOrdered } from 'lucide-react';
 import { meetingTemplateService, ratingCardService } from '../../services/api';
 
-const MeetingTemplateForm = ({ template, onSave, onClose }) => {
+const MeetingTemplateForm = ({ template, onSave, onClose, companyId }) => {
     const [formData, setFormData] = useState({
         name: '',
         title: '',
@@ -17,17 +17,27 @@ const MeetingTemplateForm = ({ template, onSave, onClose }) => {
     const [showRatingCardDropdown, setShowRatingCardDropdown] = useState(false);
 
     const durationOptions = ['15 minutes', '30 minutes', '45 minutes', '60 minutes', '90 minutes'];
-    const typeOptions = ['Visioconférence', 'Appel téléphonique', 'Entretien en personne', 'Autre'];
+    const typeOptions = [
+        { display: 'Visioconférence', value: 'VIDEO_CALL' },
+        { display: 'Appel téléphonique', value: 'PHONE_CALL' },
+        { display: 'Entretien en personne', value: 'IN_PERSON' },
+        { display: 'Autre', value: 'OTHER' }
+    ];
+
+    const durationRef = useRef(null);
+    const typeRef = useRef(null);
+    const ratingCardRef = useRef(null);
 
     useEffect(() => {
         if (template) {
+            const typeDisplay = typeOptions.find(opt => opt.value === template.meetingType)?.display || 'VIDEO_CALL';
             setFormData({
                 name: template.name || '',
                 title: template.title || '',
-                duration: template.duration || '30 minutes',
-                type: template.type || 'Visioconférence',
-                content: template.content || '',
-                ratingCardId: template.ratingCardId || ''
+                duration: `${template.duration} minutes` || '30 minutes',
+                type: typeDisplay,
+                content: template.description || '',
+                ratingCardId: template.defaultRatingCardId || ''
             });
         }
 
@@ -36,7 +46,7 @@ const MeetingTemplateForm = ({ template, onSave, onClose }) => {
 
     const fetchRatingCards = async () => {
         try {
-            const data = await ratingCardService.getRatingCards();
+            const data = await ratingCardService.getRatingCards(companyId);
             setRatingCards(data);
         } catch (error) {
             console.error('Erreur lors du chargement des fiches d\'évaluation:', error);
@@ -76,22 +86,32 @@ const MeetingTemplateForm = ({ template, onSave, onClose }) => {
     };
 
     const handleTextFormat = (format) => {
-        // Cette fonction serait étendue pour un éditeur de texte riche réel
-        // Pour l'instant, c'est juste un placeholder
         console.log(`Format: ${format}`);
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        onSave(formData);
+        const selectedType = typeOptions.find(opt => opt.display === formData.type)?.value || 'VIDEO_CALL';
+        const payload = {
+            name: formData.name,
+            title: formData.title,
+            duration: parseInt(formData.duration) || 30,
+            meetingType: selectedType,
+            description: formData.content,
+            ratingCardId: formData.ratingCardId || null
+        };
+        onSave(payload);
     };
 
-    // Pour fermer les dropdowns en cliquant ailleurs
     useEffect(() => {
         const handleClickOutside = (event) => {
-            if (showDurationDropdown || showTypeDropdown || showRatingCardDropdown) {
+            if (showDurationDropdown && durationRef.current && !durationRef.current.contains(event.target)) {
                 setShowDurationDropdown(false);
+            }
+            if (showTypeDropdown && typeRef.current && !typeRef.current.contains(event.target)) {
                 setShowTypeDropdown(false);
+            }
+            if (showRatingCardDropdown && ratingCardRef.current && !ratingCardRef.current.contains(event.target)) {
                 setShowRatingCardDropdown(false);
             }
         };
@@ -149,7 +169,7 @@ const MeetingTemplateForm = ({ template, onSave, onClose }) => {
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 mb-4">
-                        <div className="relative">
+                        <div className="relative" ref={durationRef}>
                             <label className="block text-sm font-medium text-slate-700 mb-1">
                                 Durée de l'entretien
                             </label>
@@ -158,8 +178,6 @@ const MeetingTemplateForm = ({ template, onSave, onClose }) => {
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     setShowDurationDropdown(!showDurationDropdown);
-                                    setShowTypeDropdown(false);
-                                    setShowRatingCardDropdown(false);
                                 }}
                             >
                                 <span>{formData.duration}</span>
@@ -181,7 +199,7 @@ const MeetingTemplateForm = ({ template, onSave, onClose }) => {
                             )}
                         </div>
 
-                        <div className="relative">
+                        <div className="relative" ref={typeRef}>
                             <label className="block text-sm font-medium text-slate-700 mb-1">
                                 Type d'entretien
                             </label>
@@ -190,8 +208,6 @@ const MeetingTemplateForm = ({ template, onSave, onClose }) => {
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     setShowTypeDropdown(!showTypeDropdown);
-                                    setShowDurationDropdown(false);
-                                    setShowRatingCardDropdown(false);
                                 }}
                             >
                                 <span>{formData.type}</span>
@@ -202,11 +218,11 @@ const MeetingTemplateForm = ({ template, onSave, onClose }) => {
                                 <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-md shadow-lg">
                                     {typeOptions.map((option) => (
                                         <div
-                                            key={option}
+                                            key={option.value}
                                             className="p-2 hover:bg-slate-100 cursor-pointer"
-                                            onClick={() => handleSelectType(option)}
+                                            onClick={() => handleSelectType(option.display)}
                                         >
-                                            {option}
+                                            {option.display}
                                         </div>
                                     ))}
                                 </div>
@@ -280,7 +296,7 @@ const MeetingTemplateForm = ({ template, onSave, onClose }) => {
                         </div>
                     </div>
 
-                    <div className="mb-6 relative">
+                    <div className="mb-6 relative" ref={ratingCardRef}>
                         <label className="block text-sm font-medium text-slate-700 mb-1">
                             Fiche d'évaluation pour l'entretien
                         </label>
@@ -289,16 +305,14 @@ const MeetingTemplateForm = ({ template, onSave, onClose }) => {
                             onClick={(e) => {
                                 e.stopPropagation();
                                 setShowRatingCardDropdown(!showRatingCardDropdown);
-                                setShowDurationDropdown(false);
-                                setShowTypeDropdown(false);
                             }}
                         >
-              <span>
-                {formData.ratingCardId
-                    ? ratingCards.find(c => c.id === formData.ratingCardId)?.name || "Fiche d'évaluation par défaut"
-                    : "Sélectionner une fiche d'évaluation"
-                }
-              </span>
+                            <span>
+                                {formData.ratingCardId
+                                    ? ratingCards.find(c => c.id === formData.ratingCardId)?.name || "Fiche d'évaluation par défaut"
+                                    : "Sélectionner une fiche d'évaluation"
+                                }
+                            </span>
                             <ChevronDown size={16} />
                         </div>
 

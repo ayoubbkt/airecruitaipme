@@ -3,129 +3,157 @@ import { Edit2, X, Plus, ChevronDown, UserPlus,FileText, Calendar } from 'lucide
 import { workflowService } from '../../services/api';
 import LoadingSpinner from '../common/LoadingSpinner';
 
-const WorkflowEditor = ({ workflow, onWorkflowUpdate }) => {
+const WorkflowEditor = ({ workflow, companyId, onWorkflowUpdate }) => {
     const [stages, setStages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [editingStage, setEditingStage] = useState(null);
     const [addingStage, setAddingStage] = useState(false);
-    const [workflowName, setWorkflowName] = useState('');
+    const [workflowName, setWorkflowName] = useState(workflow?.name || '');
     const [stageForm, setStageForm] = useState({
+      name: '',
+      type: '',
+      visible: true,
+    });
+    const [error, setError] = useState(null); // Ajout pour afficher les erreurs à l'utilisateur
+  
+    useEffect(() => {
+      if (companyId && workflow?.id) {
+        setWorkflowName(workflow.name); // Initialiser workflowName
+        fetchStages();
+      }
+    }, [workflow, companyId]);
+  
+    const fetchStages = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const stagesData = await workflowService.getWorkflowStages(companyId, workflow.id);
+        setStages(stagesData);
+      } catch (error) {
+        console.error('Error fetching stages:', error);
+        setError('Failed to load stages. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+  
+    const handleWorkflowNameChange = async () => {
+      if (!workflowName.trim() || workflowName.trim() === workflow.name) return;
+  
+      try {
+        setError(null);
+        const updatedWorkflow = await workflowService.updateWorkflow(companyId, workflow.id, {
+          name: workflowName,
+        });
+        if (onWorkflowUpdate) {
+          onWorkflowUpdate(updatedWorkflow);
+        }
+      } catch (error) {
+        console.error('Error updating workflow name:', error);
+        setError('Failed to update workflow name.');
+        setWorkflowName(workflow.name); // Réinitialiser en cas d'erreur
+      }
+    };
+  
+    const handleAddStage = () => {
+      setAddingStage(true);
+      setStageForm({
         name: '',
         type: '',
-        dueDays: 3,
-        visible: true
-    });
-
-    useEffect(() => {
-        if (workflow) {
-            setWorkflowName(workflow.name);
-            fetchStages();
-        }
-    }, [workflow]);
-
-    const fetchStages = async () => {
-        try {
-            setLoading(true);
-            const stagesData = await workflowService.getWorkflowStages(workflow.id);
-            setStages(stagesData);
-        } catch (error) {
-            console.error('Error fetching stages:', error);
-        } finally {
-            setLoading(false);
-        }
+        visible: true,
+      });
     };
-
-    const handleWorkflowNameChange = async () => {
-        if (workflowName.trim() === workflow.name) return;
-
-        try {
-            const updatedWorkflow = await workflowService.updateWorkflow(workflow.id, {
-                ...workflow,
-                name: workflowName
-            });
-
-            if (onWorkflowUpdate) {
-                onWorkflowUpdate(updatedWorkflow);
-            }
-        } catch (error) {
-            console.error('Error updating workflow name:', error);
-            // Reset to original name if update failed
-            setWorkflowName(workflow.name);
-        }
-    };
-
-    const handleAddStage = () => {
-        setAddingStage(true);
-        setStageForm({
-            name: '',
-            type: '',
-            dueDays: 3,
-            visible: true
-        });
-    };
-
+  
     const handleEditStage = (stage) => {
-        setEditingStage(stage.id);
-        setStageForm({
-            name: stage.name,
-            type: stage.type,
-            dueDays: stage.dueDays || 3,
-            visible: stage.visible !== false
-        });
+      setEditingStage(stage.id);
+      setStageForm({
+        name: stage.name,
+        type: stage.type?.toLowerCase() || '', // Convertir en minuscule pour le formulaire
+        visible: stage.visible !== false,
+      });
     };
-
+  
     const handleCancelStageEdit = () => {
-        setEditingStage(null);
-        setAddingStage(false);
+      setEditingStage(null);
+      setAddingStage(false);
+      setError(null);
     };
-
+  
     const handleStageFormChange = (e) => {
-        const { name, value, type, checked } = e.target;
-        setStageForm(prev => ({
-            ...prev,
-            [name]: type === 'checkbox' ? checked : value
-        }));
+      const { name, value, type, checked } = e.target;
+      setStageForm((prev) => ({
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value,
+      }));
     };
-
+  
     const handleSaveStage = async () => {
+        if (!stageForm.name.trim() || !stageForm.type) {
+          setError('Nom et type d’étape requis.');
+          return;
+        }
+      
         try {
-            if (editingStage) {
-                // Update existing stage
-                const updatedStage = await workflowService.updateWorkflowStage(
-                    workflow.id,
-                    editingStage,
-                    stageForm
-                );
-
-                setStages(stages.map(s => s.id === editingStage ? updatedStage : s));
-                setEditingStage(null);
-            } else if (addingStage) {
-                // Create new stage
-                const newStage = await workflowService.createWorkflowStage(
-                    workflow.id,
-                    {
-                        ...stageForm,
-                        order: stages.length
-                    }
-                );
-
-                setStages([...stages, newStage]);
-                setAddingStage(false);
+          setError(null);
+          const stageData = {
+            name: stageForm.name,
+            type: stageForm.type.toUpperCase(),
+            settings: { visible: stageForm.visible },
+          };
+          console.log('Saving stage with data:', stageData); // Débogage
+      
+          if (editingStage) {
+            const updatedStage = await workflowService.updateWorkflowStage(
+              companyId,
+              workflow.id,
+              editingStage,
+              stageData
+            );
+            console.log('Updated stage:', updatedStage); // Débogage
+            if (!updatedStage) {
+              throw new Error('Aucune donnée reçue du serveur pour la mise à jour.');
             }
+            const completeStage = {
+              ...updatedStage,
+              type: updatedStage.type || stageForm.type.toUpperCase(),
+              settings: { ...updatedStage.settings, visible: stageForm.visible } || { visible: stageForm.visible },
+            };
+            setStages(stages.map((s) => (s.id === editingStage ? completeStage : s)));
+            setEditingStage(null);
+          } else if (addingStage) {
+            const newStage = await workflowService.createWorkflowStage(companyId, workflow.id, {
+              ...stageData,
+              order: stages.length,
+            });
+            console.log('New stage:', newStage); // Débogage
+            if (!newStage) {
+              throw new Error('Aucune donnée reçue du serveur pour la création.');
+            }
+            const completeStage = {
+              ...newStage,
+              type: newStage.type || stageForm.type.toUpperCase(),
+              settings: { ...newStage.settings, visible: stageForm.visible } || { visible: stageForm.visible },
+            };
+            setStages([...stages, completeStage]);
+            setAddingStage(false);
+          }
         } catch (error) {
-            console.error('Error saving stage:', error);
+          console.error('Error saving stage:', error);
+          setError(`Échec : ${error.message}`);
         }
-    };
-
+      };
+  
     const handleDeleteStage = async (stageId) => {
-        if (!window.confirm('Are you sure you want to delete this stage?')) return;
-
-        try {
-            await workflowService.deleteWorkflowStage(workflow.id, stageId);
-            setStages(stages.filter(s => s.id !== stageId));
-        } catch (error) {
-            console.error('Error deleting stage:', error);
-        }
+      if (!window.confirm('Are you sure you want to delete this stage?')) return;
+  
+      try {
+        setError(null);
+        await workflowService.deleteWorkflowStage(companyId, workflow.id, stageId);
+        setStages(stages.filter((s) => s.id !== stageId));
+      } catch (error) {
+        console.error('Error deleting stage:', error);
+        setError('Failed to delete stage.');
+      }
     };
 
     if (loading) {
@@ -251,13 +279,17 @@ const WorkflowEditor = ({ workflow, onWorkflowUpdate }) => {
                                                 onChange={handleStageFormChange}
                                             >
                                                 <option value="">Choose stage type</option>
-                                                <option value="lead">Lead</option>
-                                                <option value="applied">Applied</option>
-                                                <option value="review">Review</option>
-                                                <option value="interview">Interview</option>
-                                                <option value="offer">Offer</option>
-                                                <option value="hired">Hired</option>
-                                                <option value="rejected">Rejected</option>
+                                                <option value="leads">Leads</option>
+                                                <option value="applied">Candidature</option>
+                                                <option value="ai_screening">Screening AI</option>
+                                                <option value="review">Revue</option>
+                                                <option value="interview">Entretien</option>
+                                                <option value="background_check">Vérification des antécédents</option>
+                                                <option value="offer">Offre</option>
+                                                <option value="hired">Embauché</option>
+                                                <option value="disqualified">Rejeté</option> {/* Remplacer 'rejected' par 'disqualified' */}
+                                                <option value="archived">Archivé</option>
+                                                <option value="other">Autre</option>
                                             </select>
                                             <div className="absolute right-3 top-2.5 pointer-events-none">
                                                 <ChevronDown size={16} className="text-slate-400" />
@@ -360,13 +392,17 @@ const WorkflowEditor = ({ workflow, onWorkflowUpdate }) => {
                                         onChange={handleStageFormChange}
                                     >
                                         <option value="">Choose stage type</option>
-                                        <option value="lead">Lead</option>
-                                        <option value="applied">Applied</option>
-                                        <option value="review">Review</option>
-                                        <option value="interview">Interview</option>
-                                        <option value="offer">Offer</option>
-                                        <option value="hired">Hired</option>
-                                        <option value="rejected">Rejected</option>
+                                        <option value="leads">Leads</option>
+                                        <option value="applied">Candidature</option>
+                                        <option value="ai_screening">Screening AI</option>
+                                        <option value="review">Revue</option>
+                                        <option value="interview">Entretien</option>
+                                        <option value="background_check">Vérification des antécédents</option>
+                                        <option value="offer">Offre</option>
+                                        <option value="hired">Embauché</option>
+                                        <option value="disqualified">Rejeté</option> {/* Remplacer 'rejected' par 'disqualified' */}
+                                        <option value="archived">Archivé</option>
+                                        <option value="other">Autre</option>
                                     </select>
                                     <div className="absolute right-3 top-2.5 pointer-events-none">
                                         <ChevronDown size={16} className="text-slate-400" />

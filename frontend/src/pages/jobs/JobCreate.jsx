@@ -1,63 +1,53 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PlusCircle, Info, MapPin, Building, DollarSign, Briefcase, Users, Calendar, Star, X, Check, ChevronDown, Save } from 'lucide-react';
-import { jobService, questionService, workflowService } from '../../services/api';
+import { jobService, questionService, workflowService , companyService,userService} from '../../services/api';
 import { toast } from 'react-toastify';
+import { useAuth } from '../../contexts/AuthContext';
 
 const JobCreate = () => {
+  const { companyId } = useAuth();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
-    // Détails de base
     title: '',
-    employmentType: '',
-    workType: 'on-site',
-    location: '',
-    department: '',
-    jobCode: '',
     description: '',
     requiredSkills: [],
     preferredSkills: [],
+    employmentType: '',
+    workType: '',
     minYearsExperience: '',
     salaryFrom: '',
     salaryTo: '',
-    currency: 'EUR',
-    payPeriod: 'annual',
+    currency: '',
+    payPeriod: '',
     displaySalary: false,
-
-    // Informations de candidature requises
+    department: '',
+    location: '',
+    jobCode: '',
     applicationFields: {
       name: { required: true },
       email: { required: true },
       phone: { required: false },
       resume: { required: true },
-      coverLetter: { required: false }
+      coverLetter: { required: false },
     },
-
-    // Questions personnalisées
     customQuestions: [],
-
-    // Équipe de recrutement
     hiringTeam: [],
-    externalRecruiters: [],
-
-    // Workflow
-    workflowId: 'default',
+    workflowId: '',
     workflowStages: [],
-
-    // Diffusion de l'offre
-    jobPostingStatus: 'draft', // draft, published, internal, confidential
-    jobBoards: []
+    jobBoards: [],
   });
-
   const [availableQuestions, setAvailableQuestions] = useState([]);
   const [availableWorkflows, setAvailableWorkflows] = useState([]);
   const [departmentOptions, setDepartmentOptions] = useState([]);
+  const [locationOptions, setLocationOptions] = useState([]); // Ajout de locationOptions
   const [newSkill, setNewSkill] = useState('');
   const [newPreferredSkill, setNewPreferredSkill] = useState('');
   const [showAddQuestionModal, setShowAddQuestionModal] = useState(false);
   const [showTeamMemberModal, setShowTeamMemberModal] = useState(false);
+   
   const [newQuestion, setNewQuestion] = useState({
     text: '',
     responseType: 'short_text',
@@ -73,41 +63,89 @@ const JobCreate = () => {
     role: 'reviewer'
   });
 
+  // Définir les champs requis pour chaque étape
+  const requiredFields = {
+    details: ['title', 'employmentType', 'workType', 'location', 'description'],
+    application: [], // Pas de champs strictement requis ici
+    team: ['hiringTeam'],
+    workflow: ['workflowId', 'workflowStages'],
+    advertise: ['jobPostingStatus']
+  };
+
+  // Fonction de validation pour une étape spécifique
+  const validateStep = (stepId) => {
+    const fields = requiredFields[stepId] || [];
+    return fields.every(field => {
+      if (field === 'title' || field === 'location' || field === 'description' || field === 'employmentType' || field === 'workType' || field === 'workflowId' || field === 'jobPostingStatus') {
+        return formData[field]?.trim() !== '';
+      }
+      if (field === 'hiringTeam' || field === 'workflowStages') {
+        return Array.isArray(formData[field]) && formData[field].length > 0;
+      }
+      return true;
+    });
+  };
+
+  // Valider toutes les étapes avant publication
+  const validateAllSteps = () => {
+    return steps.every(step => {
+      const isValid = validateStep(step.id);
+      if (!isValid) {
+        toast.error(`Veuillez remplir tous les champs requis dans l'étape "${step.title}"`);
+      }
+      return isValid;
+    });
+  };
+
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        // Charger les départements
-        const departments = await jobService.getDepartments();
-        setDepartmentOptions(departments);
+        const departments = await companyService.getDepartments(companyId);
+        setDepartmentOptions(Array.isArray(departments) ? departments : []);
 
-        // Charger les questions personnalisées
-        const questions = await questionService.getCustomQuestions();
-        setAvailableQuestions(questions);
+        const locations = await companyService.getCompanyLocations(companyId);
+         
+        
+        setLocationOptions(Array.isArray(locations) ? locations : []);
 
-        // Charger les workflows
-        const workflows = await workflowService.getWorkflows();
-        setAvailableWorkflows([
-          { id: 'default', name: 'Workflow par défaut' },
-          ...workflows
-        ]);
+        const questions = await questionService.getCustomQuestions(companyId);
+        setAvailableQuestions(questions || []);
 
-        // Charger les étapes du workflow par défaut
-        const defaultStages = await workflowService.getWorkflowStages('default');
+        let workflows = await workflowService.getWorkflows(companyId);
+
+        let defaultWorkflow = workflows.find(w => w.name.toLowerCase() === 'workflow par défaut');
+        if (!defaultWorkflow) {
+          defaultWorkflow = await workflowService.createWorkflow(companyId, {
+            name: 'Workflow par défaut',
+          });
+          workflows = [defaultWorkflow, ...workflows];
+        } else {
+          const refreshedWorkflow = await workflowService.getWorkflowStages(companyId, defaultWorkflow.id);
+          defaultWorkflow.stages = refreshedWorkflow;
+        }
+
+        setAvailableWorkflows(workflows);
+
+        const defaultStages = await workflowService.getWorkflowStages(companyId, defaultWorkflow.id);
         setFormData(prev => ({
           ...prev,
+          workflowId: defaultWorkflow.id,
           workflowStages: defaultStages
         }));
       } catch (error) {
-        console.error('Erreur lors du chargement des données initiales:', error);
+         
         toast.error('Erreur lors du chargement des données. Veuillez réessayer.');
+        setDepartmentOptions([]);
+        setLocationOptions([]);
       }
     };
 
     fetchInitialData();
-  }, []);
+  }, [companyId]);
 
   const steps = [
     { id: 'details', title: 'Détails de l\'offre' },
+    
     { id: 'application', title: 'Formulaire de candidature' },
     { id: 'team', title: 'Équipe de recrutement' },
     { id: 'workflow', title: 'Processus de recrutement' },
@@ -115,11 +153,8 @@ const JobCreate = () => {
   ];
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleWorkTypeChange = (type) => {
@@ -249,7 +284,7 @@ const JobCreate = () => {
         workflowStages: stages
       }));
     } catch (error) {
-      console.error('Erreur lors du chargement des étapes du workflow:', error);
+       
       toast.error('Erreur lors du chargement des étapes du workflow');
     }
   };
@@ -328,33 +363,84 @@ Le candidat idéal possède une solide expérience dans ${formData.requiredSkill
     try {
       setIsSubmitting(true);
 
-      // Conversion des données pour le format attendu par l'API
+      // Validation des étapes avant sauvegarde
+      const stepsToValidate = steps.filter(step => step.id !== 'advertise');
+      const allStepsValid = stepsToValidate.every(step => {
+        const isValid = validateStep(step.id);
+        if (!isValid) {
+          toast.error(`Veuillez remplir tous les champs requis dans l'étape "${step.title}"`);
+        }
+        return isValid;
+      });
+
+      if (!allStepsValid) {
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (formData.description?.trim().length < 50) {
+        toast.error('La description doit contenir au moins 50 caractères.');
+        setIsSubmitting(false);
+        return;
+      }
+
       const jobData = {
-        title: formData.title,
-        description: formData.description,
-        requiredSkills: formData.requiredSkills,
-        preferredSkills: formData.preferredSkills,
-        location: formData.location,
-        jobType: formData.employmentType,
-        workType: formData.workType,
+        title: formData.title?.trim() || null,
+        description: formData.description?.trim() || null,
+        requiredSkills: formData.requiredSkills || [],
+        preferredSkills: formData.preferredSkills || [],
+        employmentType: formData.employmentType ? formData.employmentType.toUpperCase().replace('-', '_') : null,
+        workType: formData.workType ? formData.workType.toUpperCase().replace('-', '_') : 'ON_SITE',
         minYearsExperience: parseInt(formData.minYearsExperience) || 0,
-        salaryRange: formData.displaySalary ? `${formData.salaryFrom}-${formData.salaryTo} ${formData.currency} ${formData.payPeriod}` : null,
-        department: formData.department,
-        jobCode: formData.jobCode,
+        salaryMin: formData.displaySalary ? parseFloat(formData.salaryFrom) || 0 : 0,
+        salaryMax: formData.displaySalary ? parseFloat(formData.salaryTo) || 0 : 0,
+        currency: formData.currency || 'EUR',
+        payPeriod: formData.payPeriod ? formData.payPeriod.toUpperCase() : 'ANNUAL',
+        displaySalary: formData.displaySalary || false,
+        departmentId: departmentOptions.find(d => d.name.toLowerCase() === formData.department?.toLowerCase())?.id || null,
+        locationId: locationOptions.find(l => l.name.toLowerCase() === formData.location?.toLowerCase())?.id || null,
+        jobCode: formData.jobCode?.trim() || null,
         status: 'DRAFT',
-        applicationFields: formData.applicationFields,
-        customQuestions: formData.customQuestions,
-        hiringTeam: formData.hiringTeam,
-        workflowId: formData.workflowId
+        applicationFields: Object.fromEntries(
+          Object.entries(formData.applicationFields || {}).map(([name, field]) => [
+            name?.trim() || 'defaultField',
+            { required: field.required || false }
+          ])
+        ),
+        customQuestions: (formData.customQuestions || []).map(question => ({
+          id: question.id,
+          text: question.text,
+          responseType: question.responseType,
+          visibility: question.visibility,
+          options: question.options || [],
+          isOptional: question.isOptional || false
+        })),
+        hiringTeam: (formData.hiringTeam || []).map(member => ({
+          userId: member.email?.trim() || null,
+          role: member.role ? member.role.toUpperCase().replace('recruiting_admin', 'RECRUITING_ADMIN') : 'REVIEWER'
+        })),
+        workflowId: formData.workflowId || null,
+  requiredSkills: formData.requiredSkills || [], // Changement ici
+  preferredSkills: formData.preferredSkills || [], // Changement ici
+  jobBoards: (formData.jobBoards || []).map(board => ({
+    id: board.id || null,
+    price: parseFloat(board.price) || 0
+  }))
       };
 
-      const createdJob = await jobService.createJob(jobData);
+      
+
+      if (isNaN(jobData.minYearsExperience) || (jobData.displaySalary && (isNaN(jobData.salaryMin) || isNaN(jobData.salaryMax)))) {
+        throw new Error('Les valeurs numériques (expérience ou salaire) sont invalides.');
+      }
+
+      const createdJob = await jobService.createJob(companyId, jobData);
 
       toast.success('Offre d\'emploi enregistrée en brouillon !');
       navigate(`/jobs/${createdJob.id}`);
     } catch (error) {
-      console.error('Erreur lors de la création de l\'offre:', error);
-      toast.error('Erreur lors de la création de l\'offre d\'emploi');
+       
+      toast.error('Erreur lors de la création de l\'offre d\'emploi: ' + (error.response?.data?.message || error.message));
     } finally {
       setIsSubmitting(false);
     }
@@ -364,42 +450,99 @@ Le candidat idéal possède une solide expérience dans ${formData.requiredSkill
     try {
       setIsSubmitting(true);
 
-      // Conversion des données pour le format attendu par l'API
+      if (!validateAllSteps()) {
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (formData.description?.trim().length < 50) {
+        toast.error('La description doit contenir au moins 50 caractères.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (!departmentOptions || !Array.isArray(departmentOptions) || !locationOptions || !Array.isArray(locationOptions)) {
+       
+        toast.error('Les données des départements ou des localisations ne sont pas encore chargées. Veuillez réessayer.');
+        setIsSubmitting(false);
+        return;
+      }
+
+       
+
+      // Convertir les emails en userId avec getUserIdByEmail
+      const hiringTeamWithUserIds = await Promise.all(
+        (formData.hiringTeam || []).map(async (member) => {
+          const userId = await userService.getUserIdByEmail(member.email?.trim());
+          return {
+            userId: userId,
+            role: member.role ? member.role.toUpperCase().replace('recruiting_admin', 'RECRUITING_ADMIN') : 'RECRUITER',
+            isExternalRecruiter: false, // Ajout de la valeur par défaut
+          };
+        })
+      );
+
       const jobData = {
-        title: formData.title,
-        description: formData.description,
-        requiredSkills: formData.requiredSkills,
-        preferredSkills: formData.preferredSkills,
-        location: formData.location,
-        jobType: formData.employmentType,
-        workType: formData.workType,
-        minYearsExperience: parseInt(formData.minYearsExperience) || 0,
-        salaryRange: formData.displaySalary ? `${formData.salaryFrom}-${formData.salaryTo} ${formData.currency} ${formData.payPeriod}` : null,
-        department: formData.department,
-        jobCode: formData.jobCode,
-        status: 'ACTIVE',
-        applicationFields: formData.applicationFields,
-        customQuestions: formData.customQuestions,
-        hiringTeam: formData.hiringTeam,
-        workflowId: formData.workflowId,
-        jobBoards: formData.jobBoards
+        title: formData.title?.trim() || null,
+        description: formData.description?.trim() || null,
+        employmentType: formData.employmentType ? formData.employmentType.toUpperCase().replace('-', '_') : null,
+        workType: formData.workType ? formData.workType.toUpperCase().replace('-', '_') : 'ON_SITE',
+        minYearsExperience: parseInt(formData.minYearsExperience) || null,
+        salaryMin: formData.displaySalary ? parseFloat(formData.salaryFrom) || null : null,
+        salaryMax: formData.displaySalary ? parseFloat(formData.salaryTo) || null : null,
+        currency: formData.currency || 'EUR',
+        payPeriod: formData.payPeriod ? formData.payPeriod.toUpperCase() : 'ANNUAL',
+        displaySalary: formData.displaySalary || false,
+        departmentId: departmentOptions.find(d => d.name?.toLowerCase() === formData.department?.toLowerCase())?.id || null,
+        locationId: locationOptions.find(l => 
+          (l.city + ', ' + l.country).toLowerCase().replace(/\s/g, '') === formData.location?.toLowerCase().replace(/\s/g, '')
+        )?.id || null,
+        jobCode: formData.jobCode?.trim() || null,
+        status: 'PUBLISHED',
+        applicationFields: Object.fromEntries(
+          Object.entries(formData.applicationFields || {}).map(([name, field]) => [
+            name,
+            { required: field.required || false },
+          ])
+        ),
+        hiringTeam: hiringTeamWithUserIds,
+        workflowId: formData.workflowId || null,
+        requiredSkills: formData.requiredSkills || [],
+        preferredSkills: formData.preferredSkills || [],
+        jobBoards: (formData.jobBoards || []).map(board => ({
+          id: board.id || null,
+          price: parseFloat(board.price) || 0
+        }))
       };
 
-      const createdJob = await jobService.createJob(jobData);
+       
+
+      if (isNaN(jobData.minYearsExperience) || (jobData.displaySalary && (jobData.salaryMin === null || jobData.salaryMax === null))) {
+        throw new Error('Les valeurs numériques (expérience ou salaire) sont invalides.');
+      }
+
+      const createdJob = await jobService.createJob(companyId, jobData);
 
       toast.success('Offre d\'emploi publiée avec succès !');
       navigate(`/jobs/${createdJob.id}`);
     } catch (error) {
-      console.error('Erreur lors de la publication de l\'offre:', error);
-      toast.error('Erreur lors de la publication de l\'offre d\'emploi');
+       
+      toast.error('Erreur lors de la publication de l\'offre d\'emploi: ' + (error.response?.data?.message || error.message));
     } finally {
       setIsSubmitting(false);
     }
   };
 
+
+
   const nextStep = () => {
     if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1);
+      // Valider l'étape actuelle avant de passer à la suivante
+      if (validateStep(steps[currentStep].id)) {
+        setCurrentStep(currentStep + 1);
+      } else {
+        toast.error('Veuillez remplir tous les champs requis avant de continuer.');
+      }
     }
   };
 
@@ -513,15 +656,20 @@ Le candidat idéal possède une solide expérience dans ${formData.requiredSkill
                     </label>
                     <div className="relative">
                       <MapPin className="w-5 h-5 text-slate-400 absolute left-3 top-3" />
-                      <input
-                          type="text"
-                          name="location"
-                          value={formData.location}
-                          onChange={handleChange}
-                          placeholder="ex: Paris, France"
-                          className="w-full pl-10 p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          required
-                      />
+                      <select
+                        name="location"
+                        value={formData.location || ''}
+                        onChange={handleChange}
+                        className="w-full pl-10 p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        required
+                      >
+                        <option value="">Sélectionnez une localisation</option>
+                        {locationOptions.map((loc) => (
+                          <option key={loc.id} value={loc.city + ', ' + loc.country}>
+                            {loc.city + ', ' + loc.country}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </div>
                 </div>

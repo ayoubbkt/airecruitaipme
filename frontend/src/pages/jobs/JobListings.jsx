@@ -3,41 +3,50 @@ import { Link } from 'react-router-dom';
 import { PlusCircle, Filter, BriefcaseBusiness, User, MapPin, Clock } from 'lucide-react';
 import { jobService } from '../../services/api';
 import { toast } from 'react-toastify';
+import { useAuth } from '../../contexts/AuthContext';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 const JobListings = () => {
+  const { companyId } = useAuth();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [statusFilter, setStatusFilter] = useState('ACTIVE');
 
-
   useEffect(() => {
-    const fetchJobs = async () => {
-      try {
-        setLoading(true);
-        const data = await jobService.getJobs({ status: statusFilter });
-        setJobs(data);
-      } catch (error) {
-        console.error('Error fetching jobs:', error);
-        toast.error('Erreur lors du chargement des offres d\'emploi');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
     fetchJobs();
-  }, [statusFilter]);
+  }, [statusFilter, companyId]);
   
+  const fetchJobs = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await jobService.getJobs(companyId, { status: statusFilter });
+      console.log("data",data);
+      
+      setJobs(data || []);
+    } catch (error) {
+       
+      setError('Erreur lors du chargement des offres d\'emploi');
+      toast.error('Erreur lors du chargement des offres d\'emploi');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading) {
     return <LoadingSpinner />;
   }
-  
+
   return (
-    <div>
+    <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Offres d'emploi</h1>
           <p className="text-slate-500 mt-1">Gérez vos offres d'emploi et suivez les candidatures</p>
+          {error && (
+            <div className="mt-2 p-2 bg-red-50 text-red-600 rounded-md">{error}</div>
+          )}
         </div>
         <div className="flex space-x-3">
           <div className="relative">
@@ -59,7 +68,7 @@ const JobListings = () => {
           </Link>
         </div>
       </div>
-      
+
       {jobs.length === 0 ? (
         <div className="bg-white rounded-xl shadow-sm p-8 text-center">
           <BriefcaseBusiness className="h-12 w-12 text-slate-400 mx-auto mb-4" />
@@ -79,8 +88,8 @@ const JobListings = () => {
                     <BriefcaseBusiness className="h-5 w-5 text-blue-600" />
                   </div>
                   <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                    job.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 
-                    job.status === 'DRAFT' ? 'bg-slate-100 text-slate-800' : 
+                    job.status === 'ACTIVE' ? 'bg-green-100 text-green-800' :
+                    job.status === 'DRAFT' ? 'bg-slate-100 text-slate-800' :
                     'bg-amber-100 text-amber-800'
                   }`}>
                     {job.status === 'ACTIVE' ? 'Active' : job.status === 'DRAFT' ? 'Brouillon' : 'Archivée'}
@@ -90,15 +99,15 @@ const JobListings = () => {
                 <div className="space-y-2 mb-4">
                   <div className="flex items-center text-sm text-slate-600">
                     <MapPin className="h-4 w-4 mr-2 text-slate-400" />
-                    {job.location}
+                    {job.location ? `${job.location.city}, ${job.location.country}` : 'Non précisé'}
                   </div>
                   <div className="flex items-center text-sm text-slate-600">
                     <Clock className="h-4 w-4 mr-2 text-slate-400" />
-                    {job.jobType}
+                    {job.employmentType || 'Non précisé'}
                   </div>
                   <div className="flex items-center text-sm text-slate-600">
                     <User className="h-4 w-4 mr-2 text-slate-400" />
-                    {job.applicationsCount || 0} candidatures
+                    {job._count?.applications || 0} candidatures
                   </div>
                 </div>
                 <div className="flex justify-between items-center text-sm">

@@ -3,7 +3,7 @@ import { toast } from 'react-toastify';
 
 
 const instance = axios.create({
-  baseURL:  'https://fictional-telegram-vrg565pxq74h9r-5000.app.github.dev/api/v1',
+  baseURL:  'http://localhost:5000/api/v1',
   headers: {
     'Content-Type': 'application/json'
   },
@@ -14,6 +14,7 @@ const instance = axios.create({
 instance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
+    console.log("token: ",token);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
