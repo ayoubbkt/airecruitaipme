@@ -80,7 +80,7 @@ function App() {
 
                   {/* Talent Management */}
                   <Route path="/talent-pool" element={<TalentPool />} />
-                  <Route path="/candidates" element={<CandidatesPage />} />
+                  <Route path="/candidates" element={<CandidateManagement />} />
                   <Route path="/candidates/:candidateId" element={<CandidateDetail />} />
                   <Route path="/candidates/kanban" element={<CandidateKanbanView />} />
                   <Route path="/candidates/kanban/:jobId" element={<CandidateKanbanView />} />

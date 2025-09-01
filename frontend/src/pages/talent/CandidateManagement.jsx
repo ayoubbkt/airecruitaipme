@@ -1,5 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Search, ChevronDown, X, Plus, Upload, Star, Calendar } from 'lucide-react';
+import { Search, ChevronDown, X, Plus, Upload, Star, Calendar 
+,Filter
+  ,
+  ChevronUp,
+  Users,
+  UserCheck,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Briefcase,
+  MapPin,
+  Building2
+
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getCandidates, createCandidate, jobService 
   ,companyService,cvService
@@ -267,14 +280,73 @@ const CandidateManagement = () => {
 const [selectedJobs, setSelectedJobs] = useState([]);  
 const [selectedLocations, setSelectedLocations] = useState([]);
 const [selectedDepartments, setSelectedDepartments] = useState([]);
+ const [selectedHiringPhases, setSelectedHiringPhases] = useState([]);
   
  
   const [sortField, setSortField] = useState('updatedAt');
   const [sortOrder, setSortOrder] = useState('desc');
-  const [openAdvanceDropdown, setOpenAdvanceDropdown] = useState(null);
+  const [showAdvanceDropdown, setShowAdvanceDropdown] = useState(false);
+  const [sortBy, setSortBy] = useState('updatedAt');
+   
 
+const handleSortChange = (field) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc');
+    } else {
+      setSortBy(field);
+      setSortOrder('desc');
+    }
+  };
+  const toggleHiringPhase = (phase) => {
+    setSelectedHiringPhases(prev => 
+      prev.includes(phase) 
+        ? prev.filter(p => p !== phase)
+        : [...prev, phase]
+    );
+  };
 
+  const toggleJob = (jobId) => {
+    setSelectedJobs(prev => 
+      prev.includes(jobId) 
+        ? prev.filter(j => j !== jobId)
+        : [...prev, jobId]
+    );
+  };
 
+  const toggleLocation = (locationId) => {
+    setSelectedLocations(prev => 
+      prev.includes(locationId) 
+        ? prev.filter(l => l !== locationId)
+        : [...prev, locationId]
+    );
+  };
+
+  const addCandidate = async (formData) => {
+    try {
+      await createCandidate(companyId, formData);
+      await fetchCandidates();
+    } catch (error) {
+      console.error('Erreur lors de l\'ajout du candidat:', error);
+      throw error;
+    }
+  };
+
+  const handleStageChange = async (candidateId, newStage) => {
+  try {
+    await cvService.updateCandidateStage(companyId, candidateId, newStage);
+    await fetchCandidates(); // Recharger les candidats
+  } catch (error) {
+    console.error('Erreur lors du changement de stage:', error);
+  }
+};
+
+  const toggleDepartment = (departmentId) => {
+    setSelectedDepartments(prev => 
+      prev.includes(departmentId) 
+        ? prev.filter(d => d !== departmentId)
+        : [...prev, departmentId]
+    );
+  };
 
 
   const fetchCandidates = async () => {
@@ -301,9 +373,17 @@ const [selectedDepartments, setSelectedDepartments] = useState([]);
 
   useEffect(() => {
     fetchCandidates();
+    const handleClickOutside = (event) => {
+    if (showAdvanceDropdown && !event.target.closest('.relative')) {
+      setShowAdvanceDropdown(null);
+    }
+  };
+  
+  document.addEventListener('mousedown', handleClickOutside);
+  return () => document.removeEventListener('mousedown', handleClickOutside);
      
 
-  }, [companyId, isModalOpen]);
+  }, [companyId, isModalOpen,showAdvanceDropdown]);
 
   const getInitials = (firstName, lastName) => {
     return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase();
@@ -404,228 +484,272 @@ const totalPages = Math.ceil(filteredCandidates.length / candidatesPerPage);
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold text-gray-900">Candidats</h1>
             <div className="flex items-center space-x-4">
+              {/* Boutons de tri séparés */}
+
+              <div className="flex items-center bg-white border rounded-lg">
+           
               <button
-  className={`flex items-center text-gray-600 hover:text-gray-900 transition-colors ${sortField === 'updatedAt' ? 'font-bold underline' : ''}`}
-  onClick={() => setSortField('updatedAt')}
->
-  Updated date
-  {sortField === 'updatedAt' && (
-    sortOrder === 'desc'
-      ? <i className="fa-solid fa-arrow-down ml-1"></i>
-      : <i className="fa-solid fa-arrow-up ml-1"></i>
-  )}
-</button>
-<button
-  className={`flex items-center text-gray-600 hover:text-gray-900 transition-colors ${sortOrder === 'desc' ? 'font-bold underline' : ''}`}
-  onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
->
-  {sortOrder === 'desc' ? 'Descending' : 'Ascending'}
-  {sortOrder === 'desc'
-    ? <i className="fa-solid fa-arrow-down ml-1"></i>
-    : <i className="fa-solid fa-arrow-up ml-1"></i>
-  }
-</button>
+                onClick={() => handleSortChange('updatedAt')}
+                className={` px-4 py-2 text-sm text-slate-600 border-r' ${
+                  sortBy === 'updatedAt' 
+                    ? 'bg-blue-100 text-blue-700 border border-blue-200' 
+                    : 'text-gray-700 hover:bg-gray-100 border border-gray-200'
+                }`}
+              >
+                Updated date
+                {sortBy === 'updatedAt' && (
+                  sortOrder === 'desc' ? <ChevronDown className="w-4 h-4 ml-1 inline" /> : <ChevronUp className="w-4 h-4 ml-1 inline" />
+                )}
+              </button>
+              
+              <button
+                onClick={() => handleSortChange('name')}
+                className={`px-4 py-2 text-sm text-slate-600 ${
+                  sortBy === 'name' 
+                    ? 'bg-blue-100 text-blue-700 border border-blue-200' 
+                    : 'text-gray-700 hover:bg-gray-100 border border-gray-200'
+                }`}
+              >
+                Descending
+                {sortBy === 'name' && (
+                  sortOrder === 'desc' ? <ChevronDown className="w-4 h-4 ml-1 inline" /> : <ChevronUp className="w-4 h-4 ml-1 inline" />
+                )}
+              </button>
+              </div>
+              
               <button 
                 onClick={() => setIsModalOpen(true)} 
-                className="bg-blue-600 text-white px-6 py-2 rounded-lg flex items-center hover:bg-blue-700 transition-colors shadow-sm"
+                className="bg-blue-600 text-white px-6 py-2 rounded-lg flex items-center hover:bg-blue-700 transition-colors"
               >
-                <Plus className="w-5 h-5 mr-2" /> Ajouter un Candidat
+                <Plus className="w-5 h-5 mr-2" /> Add Candidate
               </button>
+            </div>
+          </div>
+          
+          {/* Barre de recherche */}
+          <div className="mt-6">
+            <div className="relative max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Search for candidates..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
             </div>
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Sidebar - Filtres */}
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          {/* Sidebar des filtres */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl shadow-sm border p-6 space-y-8">
-              <div className="mb-4">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-        <input 
-          type="text" 
-          placeholder="Rechercher des candidats..." 
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-        />
-      </div>
-    </div>
-              {/* Hiring Phase */}
+            <div className="bg-white rounded-xl shadow-sm border p-6 space-y-6">
               
-<div>
-  
-<div className="flex justify-between items-center mb-4">
-  <div className="flex items-center gap-2">
-    <span className="text-lg"><i className="fa-solid fa-table-cells-large"></i></span>
-    <h3 className="font-semibold text-gray-900">Hiring Phase</h3>
-  </div>
-  {Object.values(selectedFilters).some(v => !v) && (
-    <button
-      onClick={() => setSelectedFilters({
-        leads: true,
-        applicants: true,
-        inProgress: true,
-        hired: true,
-        disqualified: true
-      })}
-      className="text-sm text-blue-600 hover:text-blue-700"
-    >
-      Clear
-    </button>
-  )}
-</div>
-  <div className="space-y-3">
-    {[
-      { key: 'leads', label: 'Leads', count: filterCounts.leads, icon: <i className="fa-regular fa-user"></i> },
-      { key: 'applicants', label: 'New Applicants', count: filterCounts.applicants, icon: <i className="fa-regular fa-user-plus"></i> },
-      { key: 'inProgress', label: 'In-Progress', count: filterCounts.inProgress, icon: <i className="fa-regular fa-spinner"></i> },
-      { key: 'hired', label: 'Hired', count: filterCounts.hired, icon: <i className="fa-regular fa-check"></i> },
-      { key: 'disqualified', label: 'Disqualified', count: filterCounts.disqualified, icon: <i className="fa-regular fa-xmark"></i> }
-    ].map(phase => (
-      <div key={phase.key} className="flex items-center justify-between">
-        <div className="flex items-center">
-          <input 
-            type="checkbox" 
-            checked={selectedFilters[phase.key]}
-            onChange={(e) => setSelectedFilters(prev => ({
-              ...prev,
-              [phase.key]: e.target.checked
-            }))}
-            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" 
-          />
-          <span className="ml-3 text-sm text-gray-700 flex items-center gap-1">{phase.icon}{phase.label}</span>
-        </div>
-        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-          {phase.count}
-        </span>
-      </div>
-    ))}
-  </div>
-</div>
+              {/* Hiring Phase */}
+              <div>
+                <div className="flex justify-between items-center mb-4">
+                  <div className="flex items-center gap-2">
+                    <Filter className="w-5 h-5 text-gray-600" />
+                    <h3 className="font-semibold text-gray-900">Hiring Phase</h3>
+                  </div>
+                  {selectedHiringPhases.length > 0 && (
+                    <button
+                      onClick={() => setSelectedHiringPhases([])}
+                      className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+                
+                <div className="space-y-3">
+                  {[
+                    { key: 'leads', label: 'Leads', count: filterCounts.leads, icon: <Users className="w-4 h-4" /> },
+                    { key: 'applicants', label: 'New Applicants', count: filterCounts.applicants, icon: <UserCheck className="w-4 h-4" /> },
+                    { key: 'inProgress', label: 'In-Progress', count: filterCounts.inProgress, icon: <Clock className="w-4 h-4" /> },
+                    { key: 'hired', label: 'Hired', count: filterCounts.hired, icon: <CheckCircle className="w-4 h-4" /> },
+                    { key: 'disqualified', label: 'Disqualified', count: filterCounts.disqualified, icon: <XCircle className="w-4 h-4" /> }
+                  ].map(phase => (
+                    <div 
+                      key={phase.key} 
+                      onClick={() => toggleHiringPhase(phase.key)}
+                      className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors ${
+                        selectedHiringPhases.includes(phase.key) 
+                          ? 'bg-blue-50 border border-blue-200' 
+                          : 'hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <input 
+                          type="checkbox" 
+                          checked={selectedHiringPhases.includes(phase.key)}
+                          readOnly
+                          className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" 
+                        />
+                        <div className="flex items-center gap-2">
+                          {phase.icon}
+                          <span className="text-sm font-medium text-gray-700">{phase.label}</span>
+                        </div>
+                      </div>
+                      <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full font-medium">
+                        {phase.count}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               {/* Jobs */}
               <div>
-   
-<div className="flex justify-between items-center mb-2">
-  <div className="flex items-center gap-2">
-    <span className="text-lg"><i className="fa-solid fa-briefcase"></i></span>
-    <h3 className="font-semibold text-gray-900">Jobs</h3>
-  </div>
-  {selectedJobs.length > 0 && (
-    <button onClick={() => setSelectedJobs([])} className="text-sm text-blue-600 hover:text-blue-700">Clear</button>
-  )}
-</div>
-<div className="space-y-2">
-  {jobs.map(job => (
-    <div
-      key={job.id}
-      className={`flex items-center gap-2 text-sm px-2 py-1 rounded cursor-pointer ${selectedJobs.includes(job.id) ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-700 hover:bg-blue-50'}`}
-      onClick={() => {
-        setSelectedJobs(selectedJobs.includes(job.id)
-          ? selectedJobs.filter(j => j !== job.id)
-          : [...selectedJobs, job.id]);
-      }}
-    >
-      <input
-        type="checkbox"
-        checked={selectedJobs.includes(job.id)}
-        readOnly
-      />
-      {job.title}
-    </div>
-  ))}
-</div>
-</div>
-              {/* Office Locations */}
-              <div>
-  <div className="flex justify-between items-center mb-2">
-    <div className="flex items-center gap-2">
-      <span className="text-lg"><i className="fa-solid fa-building"></i></span>
-      <h3 className="font-semibold text-gray-900">Office Locations</h3>
-    </div>
-    {selectedLocations.length > 0 && (
-      <button onClick={() => setSelectedLocations([])} className="text-sm text-blue-600 hover:text-blue-700">Clear</button>
-    )}
-  </div>
-  <div className="space-y-2">
-    {locations.length === 0 ? (
-      <span className="text-xs text-gray-400">No locations</span>
-    ) : (
-      locations.map(loc => (
-        <div
-          key={loc.id}
-          className={`flex items-center gap-2 text-sm px-2 py-1 rounded cursor-pointer ${selectedLocations.includes(loc.id) ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-700 hover:bg-blue-50'}`}
-          onClick={() => {
-            setSelectedLocations(selectedLocations.includes(loc.id)
-              ? selectedLocations.filter(l => l !== loc.id)
-              : [...selectedLocations, loc.id]);
-          }}
-        >
-          <input
-            type="checkbox"
-            checked={selectedLocations.includes(loc.id)}
-            readOnly
-          />
-          {loc.city}, {loc.country}
-        </div>
-      ))
-    )}
-  </div>
-</div>
+                <div className="flex justify-between items-center mb-4">
+                  <div className="flex items-center gap-2">
+                    <Briefcase className="w-5 h-5 text-gray-600" />
+                    <h3 className="font-semibold text-gray-900">Jobs</h3>
+                  </div>
+                  {selectedJobs.length > 0 && (
+                    <button 
+                      onClick={() => setSelectedJobs([])} 
+                      className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+                
+                <div className="space-y-2">
+                  {jobs.length === 0 ? (
+                    <span className="text-xs text-gray-400">No jobs available</span>
+                  ) : (
+                    jobs.map(job => (
+                      <div
+                        key={job.id}
+                        onClick={() => toggleJob(job.id)}
+                        className={`flex items-center justify-between p-2 rounded cursor-pointer transition-colors ${
+                          selectedJobs.includes(job.id) 
+                            ? 'bg-blue-50 border border-blue-200' 
+                            : 'hover:bg-gray-50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={selectedJobs.includes(job.id)}
+                            readOnly
+                            className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                          />
+                          <span className="text-sm text-gray-700">{job.title}</span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
 
-{/* Departments */}
-<div>
-  <div className="flex justify-between items-center mb-2">
-    <div className="flex items-center gap-2">
-      <span className="text-lg"><i className="fa-solid fa-layer-group"></i></span>
-      <h3 className="font-semibold text-gray-900">Departments</h3>
-    </div>
-    {selectedDepartments.length > 0 && (
-      <button onClick={() => setSelectedDepartments([])} className="text-sm text-blue-600 hover:text-blue-700">Clear</button>
-    )}
-  </div>
-  <div className="space-y-2 max-h-32 overflow-y-auto">
-    {departments.length === 0 ? (
-      <span className="text-xs text-gray-400">No departments</span>
-    ) : (
-      departments.map(dep => (
-        <div
-          key={dep.id}
-          className={`flex items-center gap-2 text-sm px-2 py-1 rounded cursor-pointer ${selectedDepartments.includes(dep.id) ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-700 hover:bg-blue-50'}`}
-          onClick={() => {
-            setSelectedDepartments(selectedDepartments.includes(dep.id)
-              ? selectedDepartments.filter(d => d !== dep.id)
-              : [...selectedDepartments, dep.id]);
-          }}
-        >
-          <input
-            type="checkbox"
-            checked={selectedDepartments.includes(dep.id)}
-            readOnly
-          />
-          {dep.name}
-        </div>
-      ))
-    )}
-  </div>
-</div>
+              {/* Locations */}
+              <div>
+                <div className="flex justify-between items-center mb-4">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-5 h-5 text-gray-600" />
+                    <h3 className="font-semibold text-gray-900">Office Locations</h3>
+                  </div>
+                  {selectedLocations.length > 0 && (
+                    <button 
+                      onClick={() => setSelectedLocations([])} 
+                      className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+                
+                <div className="space-y-2">
+                  {locations.length === 0 ? (
+                    <span className="text-xs text-gray-400">No locations</span>
+                  ) : (
+                    locations.map(location => (
+                      <div
+                        key={location.id}
+                        onClick={() => toggleLocation(location.id)}
+                        className={`flex items-center justify-between p-2 rounded cursor-pointer transition-colors ${
+                          selectedLocations.includes(location.id) 
+                            ? 'bg-blue-50 border border-blue-200' 
+                            : 'hover:bg-gray-50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={selectedLocations.includes(location.id)}
+                            readOnly
+                            className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                          />
+                          <span className="text-sm text-gray-700">{location.name}</span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Departments */}
+              <div>
+                <div className="flex justify-between items-center mb-4">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="w-5 h-5 text-gray-600" />
+                    <h3 className="font-semibold text-gray-900">Departments</h3>
+                  </div>
+                  {selectedDepartments.length > 0 && (
+                    <button 
+                      onClick={() => setSelectedDepartments([])} 
+                      className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+                
+                <div className="space-y-2">
+                  {departments.length === 0 ? (
+                    <span className="text-xs text-gray-400">No departments</span>
+                  ) : (
+                    departments.map(dep => (
+                      <div
+                        key={dep.id}
+                        onClick={() => toggleDepartment(dep.id)}
+                        className={`flex items-center justify-between p-2 rounded cursor-pointer transition-colors ${
+                          selectedDepartments.includes(dep.id) 
+                            ? 'bg-blue-50 border border-blue-200' 
+                            : 'hover:bg-gray-50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={selectedDepartments.includes(dep.id)}
+                            readOnly
+                            className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                          />
+                          <span className="text-sm text-gray-700">{dep.name}</span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Contenu principal */}
           <div className="lg:col-span-3">
             <div className="bg-white rounded-xl shadow-sm border">
-               
-
-              {/* Liste des candidats */}
               <div className="p-6">
                 {loading ? (
                   <div className="text-center py-12">
@@ -648,114 +772,142 @@ const totalPages = Math.ceil(filteredCandidates.length / candidatesPerPage);
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {paginatedCandidates.map(candidate => (
-                      <div 
-                        key={candidate.id} 
-                        onClick={() => handleCandidateClick(candidate.id)} 
-                        className="border rounded-lg p-4 hover:shadow-md transition-all cursor-pointer hover:border-blue-200"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-4">
-                            <input 
-                              type="checkbox" 
-                              className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" 
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                            <div className="flex items-center space-x-4">
-                              <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-lg">
-                                {getInitials(candidate.firstName, candidate.lastName)}
-                              </div>
-                              <div>
-                                <div className="font-semibold text-gray-900">
-                                  {candidate.firstName} {candidate.lastName}
-                                </div>
-                                <div className="text-sm text-gray-600">
-                                  {candidate.applications[0]?.jobTitle || 'No Job'}
-                                </div>
-                                <div className="text-xs text-gray-500">
-                                  {timeSince(candidate.createdAt)}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center space-x-4">
-                            <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getStageColor(candidate.applications[0]?.status || 'NEW')}`}>
-                              {candidate.applications[0]?.status || 'Leads'}
-                            </span>
-                            <div className="flex items-center space-x-2">
-                              <button 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  console.log('Disqualify:', candidate.id);
-                                }}
-                                className="text-gray-500 hover:text-red-600 text-sm transition-colors"
-                              >
-                                Disqualify
-                              </button>
-                              <div className="relative">
-  <button
-    onClick={e => {
-      e.stopPropagation();
-      setOpenAdvanceDropdown(openAdvanceDropdown === candidate.id ? null : candidate.id);
-    }}
-    className="border border-blue-600 text-blue-600 px-4 py-1 rounded-lg text-sm hover:bg-blue-50 transition-colors"
-  >
-    Advance <ChevronDown className="inline w-4 h-4 ml-1" />
-  </button>
-  {openAdvanceDropdown === candidate.id && (
-    <div className="absolute right-0 mt-2 w-48 bg-white border rounded shadow-lg z-10">
-      <div className="p-2 text-xs text-gray-500">Move to:</div>
-      {[
-        { key: 'Leads', label: 'Leads', icon: <i className="fa-regular fa-table-cells"></i> },
-        { key: 'Applicants', label: 'Applicants', icon: <i className="fa-regular fa-user-plus"></i> },
-        { key: 'Short List', label: 'Short List', icon: <i className="fa-regular fa-list"></i> },
-        { key: 'Screening Call', label: 'Screening Call', icon: <i className="fa-regular fa-phone"></i> },
-        { key: 'Interview', label: 'Interview', icon: <i className="fa-regular fa-comments"></i> },
-        { key: 'Final review', label: 'Final review', icon: <i className="fa-regular fa-star"></i> },
-        { key: 'Offer', label: 'Offer', icon: <i className="fa-regular fa-gift"></i> },
-        { key: 'Hired', label: 'Hired', icon: <i className="fa-regular fa-check"></i> },
-        { key: 'Disqualified', label: 'Disqualified', icon: <i className="fa-regular fa-xmark"></i> },
-        { key: 'Archived', label: 'Archived', icon: <i className="fa-regular fa-archive"></i> }
-      ].map(stage => (
-        <div
-          key={stage.key}
-          className="flex items-center gap-2 px-4 py-2 hover:bg-blue-50 cursor-pointer"
-          onClick={async e => {
-            e.stopPropagation();
-            setOpenAdvanceDropdown(null);
-            // Appelle ton backend ici pour changer le statut
-            await cvService.updateCandidateStage(candidate.id, stage.key);
-            fetchCandidates();
-          }}
-        >
-          {stage.icon}
-          <span>{stage.label}</span>
+  {paginatedCandidates.map(candidate => (
+    <div 
+      key={candidate.id} 
+      onClick={() => handleCandidateClick(candidate.id)} 
+      className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg hover:shadow-sm cursor-pointer"
+    >
+      <div className="flex items-center gap-4">
+        <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+          <span className="text-orange-600 font-semibold text-sm">
+            {getInitials(candidate.firstName, candidate.lastName)}
+          </span>
         </div>
-      ))}
+        <div>
+          <h3 className="font-medium text-gray-900">
+            {candidate.firstName} {candidate.lastName}
+          </h3>
+          <div className="flex items-center gap-2 text-sm text-gray-500">
+            <Briefcase className="w-4 h-4" />
+            <span>data scientist</span>
+            <span className="mx-2">•</span>
+            <span className="bg-blue-50 text-blue-600 px-2 py-1 rounded text-xs font-medium">
+              {candidate.applications && candidate.applications[0] ? candidate.applications[0].status : 'Leads'}
+            </span>
+          </div>
+        </div>
+      </div>
+      
+      <div className="flex items-center gap-4">
+        <button className="text-red-500 hover:text-red-700">
+          <X className="w-4 h-4" />
+          <span className="text-sm ml-1">Disqualify</span>
+        </button>
+       <div className="relative">
+  <button 
+    onClick={(e) => {
+      e.stopPropagation();
+      setShowAdvanceDropdown(showAdvanceDropdown === candidate.id ? null : candidate.id);
+    }}
+    className="bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-emerald-600 flex items-center gap-1"
+  >
+    Advance
+    <ChevronDown className="w-4 h-4" />
+  </button>
+  
+  {showAdvanceDropdown === candidate.id && (
+    <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+      <div className="p-3">
+        <p className="text-sm font-medium text-gray-700 mb-3">Move to:</p>
+        <div className="space-y-2">
+          {[
+            { icon: '👥', label: 'Leads', value: 'leads' },
+            { icon: '📋', label: 'Applicants', value: 'applicants' },
+            { icon: '👤', label: 'Short List', value: 'shortlist' },
+            { icon: '📞', label: 'Screening Call', value: 'screening' },
+            { icon: '💼', label: 'Interview', value: 'interview' },
+            { icon: '👤', label: 'Final review', value: 'final' },
+            { icon: '💰', label: 'Offer', value: 'offer' },
+            { icon: '✅', label: 'Hired', value: 'hired' },
+            { icon: '❌', label: 'Disqualified', value: 'disqualified' },
+            { icon: '📁', label: 'Archived', value: 'archived' }
+          ].map((stage) => (
+            <button
+              key={stage.value}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleStageChange(candidate.id, stage.value);
+                setShowAdvanceDropdown(null);
+              }}
+              className="flex items-center gap-3 w-full p-2 text-left hover:bg-gray-50 rounded text-sm text-gray-700"
+            >
+              <span>{stage.icon}</span>
+              <span>{stage.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   )}
 </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+        <span className="text-sm text-gray-500">
+          <Clock className="w-4 h-4 inline mr-1" />
+          Added {timeSince(candidate.updatedAt || candidate.createdAt)}
+        </span>
+      </div>
+    </div>
+  ))}
+</div>
+                )}
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex justify-center items-center mt-6 space-x-2">
+                    <button
+                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      disabled={currentPage === 1}
+                      className="px-4 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Précédent
+                    </button>
+                    
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNumber;
+                      if (totalPages <= 5) {
+                        pageNumber = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNumber = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNumber = totalPages - 4 + i;
+                      } else {
+                        pageNumber = currentPage - 2 + i;
+                      }
+                      
+                      return (
+                        <button
+                          key={pageNumber}
+                          onClick={() => setCurrentPage(pageNumber)}
+                          className={`px-4 py-2 text-sm font-medium rounded-lg ${
+                            currentPage === pageNumber
+                              ? 'bg-blue-600 text-white'
+                              : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          {pageNumber}
+                        </button>
+                      );
+                    })}
+                    
+                    <button
+                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                      disabled={currentPage === totalPages}
+                      className="px-4 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Suivant
+                    </button>
                   </div>
                 )}
-              </div>
-
-              {/* Pagination */}
-              <div className="flex justify-center mt-6 space-x-2">
-                {Array.from({ length: totalPages }, (_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setCurrentPage(i + 1)}
-                    className={`px-3 py-1 rounded ${currentPage === i + 1 ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
-                  >
-                    {i + 1}
-                  </button>
-                ))}
               </div>
             </div>
           </div>
@@ -766,11 +918,7 @@ const totalPages = Math.ceil(filteredCandidates.length / candidatesPerPage);
       <AddCandidateModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        companyId={companyId}
-        onCandidateAdded={() => {
-          fetchCandidates();  
-          setIsModalOpen(false);
-        }} 
+        onSubmit={addCandidate}
       />
     </div>
   );
