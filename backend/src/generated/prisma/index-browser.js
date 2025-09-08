@@ -176,11 +176,11 @@ exports.Prisma.JobScalarFieldEnum = {
   companyId: 'companyId',
   departmentId: 'departmentId',
   locationId: 'locationId',
-  minYearsExperience: 'minYearsExperience',
-  skills: 'skills',
-  jobBoards: 'jobBoards',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  jobBoards: 'jobBoards',
+  minYearsExperience: 'minYearsExperience',
+  skills: 'skills'
 };
 
 exports.Prisma.DepartmentScalarFieldEnum = {
@@ -234,6 +234,7 @@ exports.Prisma.CandidateScalarFieldEnum = {
   email: 'email',
   phoneNumber: 'phoneNumber',
   resumeUrl: 'resumeUrl',
+  score: 'score',
   coverLetterText: 'coverLetterText',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -249,7 +250,9 @@ exports.Prisma.ApplicationScalarFieldEnum = {
   disqualificationReason: 'disqualificationReason',
   archivedAt: 'archivedAt',
   hiredAt: 'hiredAt',
-  source: 'source'
+  source: 'source',
+  updatedAt: 'updatedAt',
+  createdAt: 'createdAt'
 };
 
 exports.Prisma.CandidateAnswerScalarFieldEnum = {
@@ -336,8 +339,11 @@ exports.Prisma.CandidateRatingScalarFieldEnum = {
   raterId: 'raterId',
   ratingCardTemplateId: 'ratingCardTemplateId',
   overallScore: 'overallScore',
+  candidateId: 'candidateId',
   comments: 'comments',
-  submittedAt: 'submittedAt'
+  submittedAt: 'submittedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 };
 
 exports.Prisma.CategoryScoreScalarFieldEnum = {
@@ -355,15 +361,53 @@ exports.Prisma.MessageThreadScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.CommentScalarFieldEnum = {
+  id: 'id',
+  candidateId: 'candidateId',
+  authorId: 'authorId',
+  content: 'content',
+  visibility: 'visibility',
+  mentionedUsers: 'mentionedUsers',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.CandidateFileScalarFieldEnum = {
+  id: 'id',
+  candidateId: 'candidateId',
+  fileName: 'fileName',
+  filePath: 'filePath',
+  fileType: 'fileType',
+  fileSize: 'fileSize',
+  visibility: 'visibility',
+  uploadedBy: 'uploadedBy',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.ActivityScalarFieldEnum = {
+  id: 'id',
+  candidateId: 'candidateId',
+  type: 'type',
+  description: 'description',
+  performedBy: 'performedBy',
+  metadata: 'metadata',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.MessageScalarFieldEnum = {
   id: 'id',
-  threadId: 'threadId',
   senderId: 'senderId',
+  recipientId: 'recipientId',
+  threadId: 'threadId',
+  subject: 'subject',
   content: 'content',
-  sentAt: 'sentAt',
-  isInternalNote: 'isInternalNote',
-  visibility: 'visibility',
-  attachments: 'attachments'
+  type: 'type',
+  status: 'status',
+  scheduledFor: 'scheduledFor',
+  templateId: 'templateId',
+  attachments: 'attachments',
+  createdAt: 'createdAt',
+  readAt: 'readAt'
 };
 
 exports.Prisma.MeetingScalarFieldEnum = {
@@ -372,26 +416,26 @@ exports.Prisma.MeetingScalarFieldEnum = {
   description: 'description',
   startTime: 'startTime',
   endTime: 'endTime',
-  type: 'type',
   location: 'location',
   videoCallLink: 'videoCallLink',
+  organizerId: 'organizerId',
+  candidateId: 'candidateId',
   jobId: 'jobId',
   applicationId: 'applicationId',
-  organizerId: 'organizerId',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  meetingTemplateId: 'meetingTemplateId'
+  status: 'status',
+  meetingTemplateId: 'meetingTemplateId',
+  createdAt: 'createdAt'
 };
 
 exports.Prisma.MeetingAttendeeScalarFieldEnum = {
   id: 'id',
   meetingId: 'meetingId',
   userId: 'userId',
-  candidateId: 'candidateId',
   email: 'email',
   name: 'name',
+  isCandidate: 'isCandidate',
   status: 'status',
-  isCandidate: 'isCandidate'
+  responseAt: 'responseAt'
 };
 
 exports.Prisma.MeetingTemplateScalarFieldEnum = {
@@ -449,9 +493,7 @@ exports.Prisma.AINoteTakingConfigScalarFieldEnum = {
   id: 'id',
   meetingId: 'meetingId',
   isEnabled: 'isEnabled',
-  transcript: 'transcript',
-  summary: 'summary',
-  actionItems: 'actionItems',
+  createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
 
@@ -513,8 +555,8 @@ exports.Prisma.MessageTemplateScalarFieldEnum = {
   name: 'name',
   subject: 'subject',
   content: 'content',
-  description: 'description',
-  isRequired: 'isRequired',
+  type: 'type',
+  isActive: 'isActive',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -544,6 +586,11 @@ exports.Prisma.QuestionSetScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.QuestionToQuestionSetScalarFieldEnum = {
+  A: 'A',
+  B: 'B'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -551,6 +598,10 @@ exports.Prisma.SortOrder = {
 
 exports.Prisma.NullableJsonNullValueInput = {
   DbNull: Prisma.DbNull,
+  JsonNull: Prisma.JsonNull
+};
+
+exports.Prisma.JsonNullValueInput = {
   JsonNull: Prisma.JsonNull
 };
 
@@ -640,7 +691,13 @@ exports.ApplicationStatus = exports.$Enums.ApplicationStatus = {
   DISQUALIFIED: 'DISQUALIFIED',
   ARCHIVED: 'ARCHIVED',
   HIRED: 'HIRED',
-  WITHDRAWN: 'WITHDRAWN'
+  WITHDRAWN: 'WITHDRAWN',
+  LEAD: 'LEAD',
+  APPLICANT: 'APPLICANT',
+  SCREENING: 'SCREENING',
+  INTERVIEW: 'INTERVIEW',
+  FINAL_REVIEW: 'FINAL_REVIEW',
+  OFFER: 'OFFER'
 };
 
 exports.StageType = exports.$Enums.StageType = {
@@ -668,11 +725,44 @@ exports.CommentVisibility = exports.$Enums.CommentVisibility = {
   CONFIDENTIAL: 'CONFIDENTIAL'
 };
 
-exports.MeetingType = exports.$Enums.MeetingType = {
-  PHONE_CALL: 'PHONE_CALL',
-  VIDEO_CALL: 'VIDEO_CALL',
-  IN_PERSON: 'IN_PERSON',
-  OTHER: 'OTHER'
+exports.FileVisibility = exports.$Enums.FileVisibility = {
+  PUBLIC: 'PUBLIC',
+  PRIVATE: 'PRIVATE'
+};
+
+exports.ActivityType = exports.$Enums.ActivityType = {
+  CANDIDATE_CREATED: 'CANDIDATE_CREATED',
+  CANDIDATE_UPDATED: 'CANDIDATE_UPDATED',
+  STAGE_CHANGE: 'STAGE_CHANGE',
+  COMMENT_ADDED: 'COMMENT_ADDED',
+  EMAIL_SENT: 'EMAIL_SENT',
+  MEETING_SCHEDULED: 'MEETING_SCHEDULED',
+  FILE_UPLOADED: 'FILE_UPLOADED',
+  FILE_DELETED: 'FILE_DELETED',
+  RATING_ADDED: 'RATING_ADDED'
+};
+
+exports.MessageType = exports.$Enums.MessageType = {
+  EMAIL: 'EMAIL',
+  SMS: 'SMS',
+  INTERNAL_NOTE: 'INTERNAL_NOTE'
+};
+
+exports.MessageStatus = exports.$Enums.MessageStatus = {
+  DRAFT: 'DRAFT',
+  SCHEDULED: 'SCHEDULED',
+  SENT: 'SENT',
+  DELIVERED: 'DELIVERED',
+  READ: 'READ',
+  FAILED: 'FAILED'
+};
+
+exports.MeetingStatus = exports.$Enums.MeetingStatus = {
+  SCHEDULED: 'SCHEDULED',
+  IN_PROGRESS: 'IN_PROGRESS',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED',
+  NO_SHOW: 'NO_SHOW'
 };
 
 exports.AttendeeStatus = exports.$Enums.AttendeeStatus = {
@@ -680,6 +770,13 @@ exports.AttendeeStatus = exports.$Enums.AttendeeStatus = {
   ACCEPTED: 'ACCEPTED',
   DECLINED: 'DECLINED',
   TENTATIVE: 'TENTATIVE'
+};
+
+exports.MeetingType = exports.$Enums.MeetingType = {
+  PHONE_CALL: 'PHONE_CALL',
+  VIDEO_CALL: 'VIDEO_CALL',
+  IN_PERSON: 'IN_PERSON',
+  OTHER: 'OTHER'
 };
 
 exports.NotificationType = exports.$Enums.NotificationType = {
@@ -731,6 +828,9 @@ exports.Prisma.ModelName = {
   CandidateRating: 'CandidateRating',
   CategoryScore: 'CategoryScore',
   MessageThread: 'MessageThread',
+  Comment: 'Comment',
+  CandidateFile: 'CandidateFile',
+  Activity: 'Activity',
   Message: 'Message',
   Meeting: 'Meeting',
   MeetingAttendee: 'MeetingAttendee',
@@ -748,7 +848,8 @@ exports.Prisma.ModelName = {
   MessageTemplate: 'MessageTemplate',
   Question: 'Question',
   QuestionOption: 'QuestionOption',
-  QuestionSet: 'QuestionSet'
+  QuestionSet: 'QuestionSet',
+  QuestionToQuestionSet: 'QuestionToQuestionSet'
 };
 
 /**

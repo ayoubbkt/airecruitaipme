@@ -1468,76 +1468,127 @@ const handleResponse = async (response) => {
 
 export const cvService = {
   getCandidates: async (companyId) => {
-    
-    const response = await axios.get(`candidates/companies/${companyId}/candidates`, {
+    try {
       
-      headers: getAuthHeaders(),
-    });
-    return response.data;
+      const response = await axios.get(`/candidates/companies/${companyId}/candidates`);
+       console.log("response.data",response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching candidates:', error);
+      throw error;
+    }
   },
 
   getCandidateById: async (companyId, id) => {
-    const response = await axios.get(`candidates/companies/${companyId}/candidates/${id}`, {
-       
-      headers: getAuthHeaders(),
-    });
-    console.log("response.data;",response.data);
-    // console.log("response.data;",response.data);
-    return { data: response.data };
+    try {
+      const response = await axios.get(`/candidates/companies/${companyId}/candidates/${id}`);
+      return { data: response.data };
+    } catch (error) {
+      console.error('Error fetching candidate:', error);
+      throw error;
+    }
   },
 
   createCandidate: async (companyId, candidateData) => {
-    const response = await axios.post(`candidates/companies/${companyId}/candidates`, {
-      
-      headers: getAuthHeaders(),
-      body: JSON.stringify(candidateData),
-    });
-    return handleResponse(response);
+    try {
+      const response = await axios.post(
+        `/candidates/companies/${companyId}/candidates`, 
+        candidateData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          }
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error creating candidate:', error);
+      throw error;
+    }
   },
 
   updateCandidate: async (companyId, id, candidateData) => {
-    const response = await axios.put(`candidates/companies/${companyId}/candidates/${id}`, {
-      
-      headers: getAuthHeaders(),
-      body: JSON.stringify(candidateData),
-    });
-    return handleResponse(response);
+    try {
+      const response = await axios.put(
+        `/candidates/companies/${companyId}/candidates/${id}`, 
+        candidateData
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error updating candidate:', error);
+      throw error;
+    }
   },
 
   deleteCandidate: async (companyId, id) => {
-    const response = await axios.delete(`candidates/companies/${companyId}/candidates/${id}`, {
-      
-      headers: getAuthHeaders(),
-    });
-    return handleResponse(response);
+    try {
+      const response = await axios.delete(`/candidates/companies/${companyId}/candidates/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting candidate:', error);
+      throw error;
+    }
   },
 
   downloadCV: async (id) => {
-    const response = await axios.get(`candidates/candidates/${id}/download-cv`, {
-       
-      headers: getAuthHeaders(),
-    });
-    return handleResponse(response);
+    try {
+      const response = await axios.get(`/candidates/candidates/${id}/download-cv`);
+      return response.data.url;
+    } catch (error) {
+      console.error('Error downloading CV:', error);
+      throw error;
+    }
   },
 
-  getCandidatesByJob: async (jobId) => {
-    const response = await axios.get(`candidates/jobs/${jobId}/candidates`, {
-      
-      headers: getAuthHeaders(),
-    });
-    return response.data;
+  
+
+  updateCandidateStage: async (companyId, candidateId, stage) => {
+    try {
+      const response = await axios.put(
+        `/candidates/companies/${companyId}/candidates/${candidateId}/stage`, 
+        { stage }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error updating candidate stage:', error);
+      throw error;
+    }
   },
 
-  updateCandidateStage: async (candidateId, /*stageId*/ stage) => {
-    // const response = await axios.put(`candidates/candidates/${candidateId}/stage`, {
-       
-    //   headers: getAuthHeaders(),
-    //   body: JSON.stringify({ stageId }),
-    // });
-    // return response.data;
+  // NOUVELLE FONCTION: Actions en masse sur les candidats
+  bulkUpdateCandidates: async (companyId, candidateIds, action, stage = null) => {
+    try {
+      const response = await axios.post(
+        `/candidates/companies/${companyId}/candidates/bulk-update`,
+        {
+          candidateIds,
+          action,
+          stage
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error in bulk update:', error);
+      throw error;
+    }
+  },
 
-    const response = await axios.put(`/candidates/candidates/${candidateId}/stage`, { stage });
-    return response.data;
+  // NOUVELLE FONCTION: Envoi d'emails en masse
+  sendBulkEmail: async (companyId, candidateIds, emailData) => {
+    try {
+      const response = await axios.post(
+        `/candidates/companies/${companyId}/candidates/bulk-email`,
+        {
+          candidateIds,
+          subject: emailData.subject,
+          message: emailData.message
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error sending bulk email:', error);
+      throw error;
+    }
   },
 
   disqualifyCandidate: async (candidateId) => {

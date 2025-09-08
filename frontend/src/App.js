@@ -22,7 +22,6 @@ import TalentPool from './pages/talent/TalentPool';
 import CandidateManagement from './pages/talent/CandidateManagement';
 import CandidateKanbanView from './pages/talent/CandidateKanbanView';
 import CandidatePipelineView from './pages/talent/CandidatePipelineView';
-import CandidateDetail from './pages/talent/CandidateDetail';
 import JobListings from './pages/jobs/JobListings';
 import JobManagement from './pages/jobs/JobManagement';
 import JobDetail from './pages/jobs/JobDetail';
@@ -33,7 +32,6 @@ import Reports from './pages/reports/Reports';
 import ATSIntegration from './pages/settings/ATSIntegration';
 import Settings from './pages/settings/Settings';
 import CandidateInbox from './pages/messages/CandidateInbox';
-
 import RecruitingSettings from './pages/settings/RecruitingSettings';
 import RecruitingWorkflows from './pages/settings/RecruitingWorkflows';
 import ComingSoon from './components/common/ComingSoon';
@@ -46,6 +44,7 @@ import CompanyProfile from './pages/settings/company/CompanyProfile';
 import CompanyLocations from './pages/settings/company/CompanyLocations';
 import Departments from './pages/settings/company/Departments';
 import CandidatesPage from './pages/talent/CandidatesPage'; // Ajoute cet import
+import CandidateDetailPage from './pages/talent/CandidateDetailPage'; // Ajoute cet import
 
 // Auth Guard
 import PrivateRoute from './components/auth/PrivateRoute';
@@ -81,7 +80,7 @@ function App() {
                   {/* Talent Management */}
                   <Route path="/talent-pool" element={<TalentPool />} />
                   <Route path="/candidates" element={<CandidateManagement />} />
-                  <Route path="/candidates/:candidateId" element={<CandidateDetail />} />
+                  <Route path="/candidates/:candidateId" element={<CandidateDetailPage />} />
                   <Route path="/candidates/kanban" element={<CandidateKanbanView />} />
                   <Route path="/candidates/kanban/:jobId" element={<CandidateKanbanView />} />
                   <Route path="/candidates/pipeline" element={<CandidatePipelineView />} />
