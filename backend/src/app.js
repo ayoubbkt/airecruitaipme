@@ -17,7 +17,8 @@ import messagingRoutes from './api/messaging/messaging.routes.js';
 import schedulingRoutes from './api/scheduling/scheduling.routes.js';
 import careersPageRoutes from './api/careersPage/careersPage.routes.js';
 import notificationRoutes from './api/notifications/notification.routes.js';
-import aiMeganRoutes from './api/aiMegan/aiMegan.routes.js';
+// import aiMeganRoutes from './api/aiMegan/aiMegan.routes.js';
+import aiMeganRoutes, { publicRouter as aiMeganPublicRoutes } from './api/aiMegan/aiMegan.routes.js';
 import integrationRoutes from './api/integrations/integration.routes.js';
 import CompanyController from './api/companies/company.controller.js'; // Ajouté
 import messageTemplateRoutes from './api/messaging/messageTemplate.routes.js';
@@ -59,6 +60,10 @@ app.use('/api/v1/scheduling', schedulingRoutes);
 app.use('/api/v1/careers-page', careersPageRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
 app.use('/api/v1/ai-megan', aiMeganRoutes);
+app.use('/api/v1/ai-megan/webhook/intercom', express.raw({type: 'application/json'}));
+
+
+
 app.use('/api/v1/integrations', integrationRoutes);
 app.use('/api/v1/messagingTemplate', messageTemplateRoutes);
 app.use('/api/v1/questions', questionRoutes);
