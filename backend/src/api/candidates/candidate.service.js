@@ -39,8 +39,10 @@ class CandidateService {
       sortBy = 'createdAt',
       sortOrder = 'desc'
     } = queryParams;
-    
-    const skip = (page - 1) * limit;
+    // Coerce pagination to integers (req.query provides strings)
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = parseInt(limit, 10) || 10;
+    const skip = (pageNum - 1) * limitNum;
     const whereClause = {
       applications: {
         some: {
@@ -67,7 +69,7 @@ class CandidateService {
     const candidates = await prisma.candidate.findMany({
       where: whereClause,
       skip,
-      take: limit,
+      take: limitNum,
       orderBy: { [sortBy]: sortOrder },
       include: {
         applications: {
@@ -110,11 +112,11 @@ class CandidateService {
         counts: candidate._count
       })),
       pagination: {
-        currentPage: page,
-        totalPages: Math.ceil(totalCandidates / limit),
+        currentPage: pageNum,
+        totalPages: Math.ceil(totalCandidates / limitNum),
         totalCount: totalCandidates,
-        hasNext: page < Math.ceil(totalCandidates / limit),
-        hasPrev: page > 1
+        hasNext: pageNum < Math.ceil(totalCandidates / limitNum),
+        hasPrev: pageNum > 1
       }
     };
   }
@@ -215,7 +217,7 @@ class CandidateService {
           }
         }
       },
-      orderBy: { updatedAt: 'desc' }
+  orderBy: { updatedAt: 'desc' }
     });
 
     return candidates.map(candidate => ({
@@ -236,13 +238,17 @@ class CandidateService {
     const application = await prisma.application.findFirst({
       where: {
         candidateId,
-        job: { companyId }
+        job: { companyId },
       },
       include: {
         candidate: true,
-        job: true,
-        currentStage: true
-      }
+        job: {
+          include: {
+            jobWorkflow: true,
+          },
+        },
+        currentStage: true,
+      },
     });
 
     if (!application) {
@@ -251,14 +257,119 @@ class CandidateService {
       throw error;
     }
 
-   
-    console.log("moveCandidateToStage - stageId: ",stageId);
-    const newStage = await prisma.jobWorkflowStage.findUnique({ 
-      where: { id: stageId } 
-    });
+    // Check if job workflow exists, if not create one
+    let jobWorkflow = application.job.jobWorkflow;
+    
+    if (!jobWorkflow) {
+      console.log('Creating job workflow for job:', application.job.id);
+      jobWorkflow = await prisma.jobWorkflow.create({
+        data: {
+          jobId: application.job.id,
+          name: `Workflow for ${application.job.title || 'Untitled Job'}`,
+        }
+      });
+    }
+    
+    console.log('moveCandidateToStage - stageId: ', stageId);
+    const isNumericOrder = typeof stageId === 'number' || (/^\d+$/.test(String(stageId)));
+    let newStage = null;
+
+    if (isNumericOrder) {
+      // Legacy path: stageId represents an order index
+      newStage = await prisma.jobWorkflowStage.findFirst({
+        where: {
+          jobWorkflowId: jobWorkflow.id,
+          order: Number(stageId),
+        },
+      });
+
+      // If stage doesn't exist, check if any stages exist or create default stages
+      if (!newStage) {
+        console.log('Stage (by order) not found, checking for existing stages');
+
+        const existingStages = await prisma.jobWorkflowStage.findMany({
+          where: { jobWorkflowId: jobWorkflow.id }
+        });
+
+        if (existingStages.length === 0) {
+          console.log('No stages found, creating default stages');
+          const defaultStages = [
+            { name: 'Initial Review', type: 'AI_SCREENING', order: 0 },
+            { name: 'Phone Screen', type: 'INTERVIEW', order: 1 },
+            { name: 'Interview', type: 'INTERVIEW', order: 2 },
+            { name: 'Offer', type: 'OFFER', order: 3 },
+            { name: 'Hired', type: 'HIRED', order: 4 }
+          ];
+          for (const stage of defaultStages) {
+            try {
+              await prisma.jobWorkflowStage.create({
+                data: { jobWorkflowId: jobWorkflow.id, name: stage.name, type: stage.type, order: stage.order }
+              });
+            } catch (error) {
+              console.log(`Error creating stage with order ${stage.order}:`, error.message);
+            }
+          }
+        } else {
+          console.log('Found existing stages, not creating defaults');
+          // Ensure any missing default orders exist (legacy safety)
+          const defaultStages = [
+            { name: 'Initial Review', type: 'AI_SCREENING', order: 0 },
+            { name: 'Phone Screen', type: 'INTERVIEW', order: 1 },
+            { name: 'Interview', type: 'INTERVIEW', order: 2 },
+            { name: 'Offer', type: 'OFFER', order: 3 },
+            { name: 'Hired', type: 'HIRED', order: 4 }
+          ];
+          const existingOrders = new Set(existingStages.map(s => s.order));
+          for (const stage of defaultStages) {
+            if (!existingOrders.has(stage.order)) {
+              try {
+                console.log(`Creating missing stage order=${stage.order} name=${stage.name}`);
+                await prisma.jobWorkflowStage.create({
+                  data: { jobWorkflowId: jobWorkflow.id, name: stage.name, type: stage.type, order: stage.order }
+                });
+              } catch (err) {
+                console.log(`Skipped creating missing stage order ${stage.order}:`, err.message);
+              }
+            }
+          }
+        }
+
+        // Try to find the requested stage again by order
+        newStage = await prisma.jobWorkflowStage.findFirst({
+          where: { jobWorkflowId: jobWorkflow.id, order: Number(stageId) },
+        });
+
+        // Final fallback: pick closest by order
+        if (!newStage) {
+          const allStages = await prisma.jobWorkflowStage.findMany({
+            where: { jobWorkflowId: jobWorkflow.id },
+            orderBy: { order: 'asc' },
+          });
+          if (allStages.length > 0) {
+            if (Number(stageId) >= allStages.length) newStage = allStages[allStages.length - 1];
+            else newStage = allStages[Math.min(Number(stageId), allStages.length - 1)];
+            console.log(`Using stage with order ${newStage.order} as fallback`);
+          }
+        }
+      }
+    } else {
+      // Preferred path: stageId is the actual stage row id (UUID/ID)
+      newStage = await prisma.jobWorkflowStage.findFirst({
+        where: {
+          id: String(stageId),
+          jobWorkflowId: jobWorkflow.id,
+        },
+      });
+
+      if (!newStage) {
+        const error = new Error('Stage not found for given stageId');
+        error.statusCode = 404;
+        throw error;
+      }
+    }
     
     if (!newStage) {
-      const error = new Error('Stage not found.');
+      const error = new Error('No workflow stages found for this job.');
       error.statusCode = 404;
       throw error;
     }
@@ -267,10 +378,10 @@ class CandidateService {
       // Mettre à jour l'application
       const updatedApplication = await tx.application.update({
         where: { id: application.id },
-        data: { 
-          currentStageId: stageId,
-          updatedAt: new Date()
-        }
+        data: {
+          currentStageId: newStage.id,
+          updatedAt: new Date(),
+        },
       });
 
       // Créer une activité
@@ -283,11 +394,11 @@ class CandidateService {
           metadata: {
             fromStageId: application.currentStageId,
             fromStageName: application.currentStage?.name,
-            toStageId: stageId,
+            toStageId: newStage.id,
             toStageName: newStage.name,
-            comment
-          }
-        }
+            comment,
+          },
+        },
       });
 
       // Ajouter un commentaire si fourni
@@ -849,7 +960,7 @@ class CandidateService {
   async createCandidate(userId, companyId, candidateData) {
     await checkCandidatePermission(userId, companyId);
 
-    const { firstName, lastName, email, phone, job, comment, resume } = candidateData;
+  const { firstName, lastName, email, phone, job, comment, resume, stageId } = candidateData;
 
     if (!firstName || !lastName || !email || !job) {
       throw new Error('First name, last name, email, and job are required for a candidate.');
@@ -869,6 +980,79 @@ class CandidateService {
       resumeUrl = await this.saveResumeFile(resume);
     }
 
+    // We may need to assign a currentStage at creation if stageId provided
+    // Fetch or create job workflow and stage upfront when stageId is present
+    let resolvedStageId = null;
+    if (stageId !== undefined && stageId !== null && stageId !== '') {
+      // Ensure job belongs to company and has a workflow
+      const jobRecord = await prisma.job.findUnique({
+        where: { id: String(job) },
+        include: { jobWorkflow: true },
+      });
+      if (!jobRecord || jobRecord.companyId !== companyId) {
+        const err = new Error('Job not found or access denied.');
+        err.statusCode = 404;
+        throw err;
+      }
+      let jobWorkflow = jobRecord.jobWorkflow;
+      if (!jobWorkflow) {
+        jobWorkflow = await prisma.jobWorkflow.create({
+          data: { jobId: jobRecord.id, name: `Workflow for ${jobRecord.title || 'Untitled Job'}` },
+        });
+      }
+
+      // Try resolving stage by id first
+      let stage = await prisma.jobWorkflowStage.findFirst({
+        where: { jobWorkflowId: jobWorkflow.id, id: String(stageId) },
+      });
+      if (!stage) {
+        // If not a direct id, try by numeric order
+        const numeric = parseInt(stageId, 10);
+        if (!isNaN(numeric)) {
+          stage = await prisma.jobWorkflowStage.findFirst({
+            where: { jobWorkflowId: jobWorkflow.id, order: numeric },
+          });
+        }
+      }
+      if (!stage) {
+        // Create default stages if none exist for this workflow (mirrors moveCandidateToStage)
+        const existingStages = await prisma.jobWorkflowStage.findMany({
+          where: { jobWorkflowId: jobWorkflow.id },
+        });
+        if (existingStages.length === 0) {
+          const defaults = [
+            { name: 'Initial Review', type: 'AI_SCREENING', order: 0 },
+            { name: 'Phone Screen', type: 'INTERVIEW', order: 1 },
+            { name: 'Interview', type: 'INTERVIEW', order: 2 },
+            { name: 'Offer', type: 'OFFER', order: 3 },
+            { name: 'Hired', type: 'HIRED', order: 4 },
+          ];
+          for (const s of defaults) {
+            try {
+              await prisma.jobWorkflowStage.create({
+                data: { jobWorkflowId: jobWorkflow.id, name: s.name, type: s.type, order: s.order },
+              });
+            } catch (_) { /* ignore */ }
+          }
+        }
+        // Try resolving again
+        const numeric = parseInt(stageId, 10);
+        stage = await prisma.jobWorkflowStage.findFirst({
+          where: {
+            jobWorkflowId: jobWorkflow.id,
+            ...(isNaN(numeric) ? {} : { order: numeric }),
+          },
+          orderBy: isNaN(numeric) ? { order: 'asc' } : undefined,
+        });
+        // If still not found and not numeric, fallback to first stage
+        if (!stage) {
+          const all = await prisma.jobWorkflowStage.findMany({ where: { jobWorkflowId: jobWorkflow.id }, orderBy: { order: 'asc' } });
+          if (all.length > 0) stage = all[0];
+        }
+      }
+      resolvedStageId = stage?.id || null;
+    }
+
     const candidate = await prisma.candidate.create({
       data: {
         firstName,
@@ -881,6 +1065,7 @@ class CandidateService {
           create: {
             job: { connect: { id: String(job) } },
             status: 'ACTIVE',
+            ...(resolvedStageId ? { currentStage: { connect: { id: resolvedStageId } } } : {}),
           },
         },
       },

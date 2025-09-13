@@ -44,6 +44,7 @@ class CandidateController {
     try {
       const { companyId, candidateId } = req.params;
       const { stageId, comment } = req.body;
+      console.log("stageId, comment,companyId, candidateId",stageId, comment,companyId, candidateId)
       const result = await CandidateService.moveCandidateToStage(
         req.user.id, 
         companyId, 
@@ -246,7 +247,9 @@ class CandidateController {
         phone: req.body.phone,
         job: String(req.body.job),
         comment: req.body.comment,
-        resume: resumeFile,
+  resume: resumeFile,
+  // Optional: allow creating directly in a specific stage (either stage id or order)
+  stageId: req.body.stageId,
       };
 
       const candidate = await CandidateService.createCandidate(req.user.id, companyId, candidateData);

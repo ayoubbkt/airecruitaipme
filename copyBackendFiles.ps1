@@ -1,9 +1,8 @@
-# Chemin du dossier frontend
-$frontendPath = ".\frontend\src"
-
+# Chemin du dossier backend
+$backendPath = ".\backend\src"
 
 # Fichier de sortie
-$outputFile = "frontend.txt"
+$outputFile = "backend.txt"
 
 # Vider le fichier de sortie s'il existe déjà
 if (Test-Path $outputFile) { Clear-Content $outputFile }
@@ -28,11 +27,11 @@ function Copy-FileContents {
     }
 }
 
-# Vérifier si le dossier frontend existe
-if (Test-Path $frontendPath) {
-    Write-Output "Extraction du contenu des fichiers du frontend vers $outputFile..."
-    Copy-FileContents -Path $frontendPath
+# Vérifier si le dossier backend existe
+if (Test-Path $backendPath) {
+    Write-Output "Extraction du contenu des fichiers du backend vers $outputFile..."
+    Copy-FileContents -Path $backendPath
     Write-Output "Terminé ! Consultez $outputFile."
 } else {
-    Write-Output "Le dossier 'frontend' n'a pas été trouvé."
+    Write-Output "Le dossier 'backend' n'a pas été trouvé."
 }

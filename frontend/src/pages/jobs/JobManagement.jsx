@@ -41,13 +41,18 @@ const JobManagement = () => {
     fetchJobs();
   }, [companyId]);
 
+  const normalizeJobs = (resp) => {
+    if (Array.isArray(resp)) return resp;
+    if (resp && Array.isArray(resp.data)) return resp.data;
+    return [];
+  };
+
   const fetchJobs = async () => {
     try {
       setLoading(true);
       setError(null);
-      const jobsData = await jobService.getJobs(companyId);
-       
-      setJobs(jobsData || []);
+      const jobsResp = await jobService.getJobs(companyId);
+      setJobs(normalizeJobs(jobsResp));
     } catch (error) {
       
       setError('Erreur lors de la récupération des offres d\'emploi.');

@@ -54,6 +54,37 @@ class WorkflowController {
     }
   }
 
+  async addStageToTemplate(req, res, next) {
+    try {
+      const { companyId, templateId } = req.params;
+      const stage = await WorkflowService.addStageToTemplate(req.user.id, companyId, templateId, req.body);
+      res.status(201).json({ message: 'Stage added to template.', data: stage });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async reorderTemplateStages(req, res, next) {
+    try {
+      const { companyId, templateId } = req.params;
+      const { order } = req.body; // array of stage IDs in new order
+      const stages = await WorkflowService.reorderTemplateStages(req.user.id, companyId, templateId, order);
+      res.status(200).json({ message: 'Stages reordered.', data: stages });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async ensureAndGetDefaultTemplate(req, res, next) {
+    try {
+      const { companyId } = req.params;
+      const template = await WorkflowService.ensureAndGetDefaultTemplate(req.user.id, companyId);
+      res.status(200).json({ data: template });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // Job Workflow Instance
   async assignWorkflowToJob(req, res, next) {
     try {

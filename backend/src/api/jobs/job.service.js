@@ -36,51 +36,80 @@ class JobService {
     if (!Object.values(WorkType).includes(workType)) throw new Error(`Invalid work type: ${workType}`);
     if (!Object.values(JobStatus).includes(status)) throw new Error(`Invalid job status: ${status}`);
 
-    const job = await prisma.job.create({
-      data: {
-        title,
-        description,
-        employmentType,
-        workType,
-        salaryMin: salaryMin ? parseFloat(salaryMin) : null,
-        salaryMax: salaryMax ? parseFloat(salaryMax) : null,
-        currency,
-        payPeriod,
-        displaySalary,
-        status,
-        jobCode,
-        companyId,
-        departmentId,
-        locationId,
-        minYearsExperience: minYearsExperience ? parseInt(minYearsExperience) : null,
-        applicationForm: {
-          create: applicationFormFields ? applicationFormFields.map((field, index) => ({
-            fieldName: field.name,
-            label: field.name.charAt(0).toUpperCase() + field.name.slice(1),
-            fieldType: ['resume', 'coverLetter'].includes(field.name) ? 'FILE' : 'TEXT',
-            isRequired: field.required,
-            order: index,
-          })) : [],
+    return prisma.$transaction(async (tx) => {
+      const job = await tx.job.create({
+        data: {
+          title,
+          description,
+          employmentType,
+          workType,
+          salaryMin: salaryMin ? parseFloat(salaryMin) : null,
+          salaryMax: salaryMax ? parseFloat(salaryMax) : null,
+          currency,
+          payPeriod,
+          displaySalary,
+          status,
+          jobCode,
+          companyId,
+          departmentId,
+          locationId,
+          minYearsExperience: minYearsExperience ? parseInt(minYearsExperience) : null,
+          applicationForm: {
+            create: applicationFormFields ? applicationFormFields.map((field, index) => ({
+              fieldName: field.name,
+              label: field.name.charAt(0).toUpperCase() + field.name.slice(1),
+              fieldType: ['resume', 'coverLetter'].includes(field.name) ? 'FILE' : 'TEXT',
+              isRequired: field.required,
+              order: index,
+            })) : [],
+          },
+          hiringTeam: {
+            create: hiringTeam.map(member => ({
+              userId: member.userId,
+              role: member.role,
+              isExternalRecruiter: member.isExternalRecruiter || false,
+            })),
+          },
         },
-        hiringTeam: {
-          create: hiringTeam.map(member => ({
-            userId: member.userId || `temp-${Date.now()}`,
-            role: member.role,
-            isExternalRecruiter: member.isExternalRecruiter || false,
-          })),
+      });
+
+      if (workflowId) {
+        const template = await tx.workflowTemplate.findUnique({
+          where: { id: workflowId },
+          include: { stages: true },
+        });
+
+        if (template) {
+          const jobWorkflow = await tx.jobWorkflow.create({
+            data: {
+              jobId: job.id,
+              workflowTemplateId: workflowId,
+              name: `Workflow for ${title}`,
+              stages: {
+                create: template.stages.map(stage => ({
+                  name: stage.name,
+                  type: stage.type,
+                  order: stage.order,
+                  settings: stage.settings,
+                })),
+              },
+            },
+          });
+        }
+      }
+
+      return tx.job.findUnique({
+        where: { id: job.id },
+        include: {
+          company: { select: { id: true, name: true } },
+          department: true,
+          location: true,
+          hiringTeam: { include: { user: true } },
+          jobWorkflow: { include: { stages: true } },
+          applicationForm: { include: { customQuestion: true } },
         },
-        jobWorkflow: workflowId ? { create: { workflowTemplateId: workflowId, name: `Workflow for ${title}` } } : undefined,
-      },
-      include: {
-        company: { select: { id: true, name: true } },
-        department: true,
-        location: true,
-        hiringTeam: { include: { user: true } },
-        jobWorkflow: { include: { stages: true } },
-        applicationForm: { include: { customQuestion: true } },
-      },
+      });
     });
-    return job;
   }
 
   async getJobById(userId, jobId) {
@@ -108,10 +137,16 @@ class JobService {
   }
 
   async getJobsByCompany(userId, companyId, queryParams) {
+    console.log("queryParams in service:", queryParams);
+    console.log("companyId in service:", companyId);
+    console.log("userId in service:", userId);
     await checkCompanyAccess(userId, companyId, [CompanyMemberRole.RECRUITING_ADMIN, CompanyMemberRole.HIRING_MANAGER, CompanyMemberRole.REVIEWER]);
 
-    const { status, departmentId, locationId, page = 1, limit = 10 } = queryParams;
-    const skip = (page - 1) * limit;
+  // Coerce pagination to integers (req.query provides strings)
+  let { status, departmentId, locationId, page = 1, limit = 10 } = queryParams;
+  const pageNum = parseInt(page, 10) || 1;
+  const limitNum = parseInt(limit, 10) || 10;
+  const skip = (pageNum - 1) * limitNum;
     
     const whereClause = { companyId };
     if (status && Object.values(JobStatus).includes(status)) whereClause.status = status;
@@ -120,23 +155,65 @@ class JobService {
 
     const jobs = await prisma.job.findMany({
       where: whereClause,
-      skip,
-      take: limit,
+  skip,
+  take: limitNum,
       include: {
-        department: { select: { name: true } },
-        location: { select: { city: true, country: true } },
-        _count: { select: { applications: true } },
+        department: { select: { id: true, name: true } },
+        location: { select: { id: true, city: true, country: true } },
+        applications: {
+          select: {
+            id: true,
+            status: true,
+            currentStage: { select: { id: true, name: true, order: true } }
+          }
+        }
       },
       orderBy: { createdAt: 'desc' },
     });
 
-    const totalJobs = await prisma.job.count({ where: whereClause });
+  const totalJobs = await prisma.job.count({ where: whereClause });
+
+    // Build stats per job
+    const data = jobs.map(job => {
+      const apps = job.applications || [];
+      const total = apps.length;
+      const inReview = apps.filter(a => (a.currentStage?.name || '').toLowerCase() === 'initial review').length;
+      const inProgress = apps.filter(a => ['phone screen','interview','offer'].includes((a.currentStage?.name || '').toLowerCase())).length;
+      const hired = apps.filter(a => (a.currentStage?.name || '').toLowerCase() === 'hired').length;
+      return {
+        id: job.id,
+        title: job.title,
+        status: job.status,
+        department: job.department ? { id: job.department.id, name: job.department.name } : null,
+        location: job.location ? { id: job.location.id, city: job.location.city, country: job.location.country } : null,
+        createdAt: job.createdAt,
+        updatedAt: job.updatedAt,
+        stats: { inReview, inProgress, hired, total },
+      };
+    });
+
+    // Meta lists (distinct)
+    const departmentsMeta = [];
+    const depSeen = new Set();
+    const locationsMeta = [];
+    const locSeen = new Set();
+    const statusesMeta = new Set();
+    data.forEach(j => {
+      if (j.department && !depSeen.has(j.department.id)) { depSeen.add(j.department.id); departmentsMeta.push(j.department); }
+      if (j.location && !locSeen.has(j.location.id)) { locSeen.add(j.location.id); locationsMeta.push(j.location); }
+      statusesMeta.add(j.status);
+    });
 
     return {
-      data: jobs,
-      currentPage: page,
-      totalPages: Math.ceil(totalJobs / limit),
+      data,
+  currentPage: pageNum,
+  totalPages: Math.ceil(totalJobs / limitNum),
       totalJobs,
+      meta: {
+        departments: departmentsMeta,
+        locations: locationsMeta,
+        statuses: Array.from(statusesMeta)
+      }
     };
   }
 
@@ -161,49 +238,74 @@ class JobService {
     if (workType && !Object.values(WorkType).includes(workType)) throw new Error(`Invalid work type: ${workType}`);
     if (status && !Object.values(JobStatus).includes(status)) throw new Error(`Invalid job status: ${status}`);
 
-    const updatedJob = await prisma.job.update({
-      where: { id: jobId },
-      data: {
-        title,
-        description,
-        employmentType,
-        workType,
-        salaryMin: salaryMin ? parseFloat(salaryMin) : null,
-        salaryMax: salaryMax ? parseFloat(salaryMax) : null,
-        currency,
-        payPeriod,
-        displaySalary,
-        status,
-        jobCode,
-        departmentId,
-        locationId,
-        minYearsExperience: minYearsExperience ? parseInt(minYearsExperience) : null,
-        applicationForm: {
-          upsert: applicationFormFields ? applicationFormFields.map((field, index) => ({
-            where: { id: field.id || '' },
-            update: { isRequired: field.required },
-            create: { fieldName: field.name, label: field.name.charAt(0).toUpperCase() + field.name.slice(1), fieldType: ['resume', 'coverLetter'].includes(field.name) ? 'FILE' : 'TEXT', isRequired: field.required, order: index },
-          })) : [],
+    return prisma.$transaction(async (tx) => {
+      // Update base job fields and application form
+      await tx.job.update({
+        where: { id: jobId },
+        data: {
+          title,
+          description,
+          employmentType,
+          workType,
+          salaryMin: salaryMin ? parseFloat(salaryMin) : null,
+          salaryMax: salaryMax ? parseFloat(salaryMax) : null,
+          currency,
+          payPeriod,
+          displaySalary,
+          status,
+          jobCode,
+          departmentId,
+          locationId,
+          minYearsExperience: minYearsExperience ? parseInt(minYearsExperience) : null,
+          applicationForm: {
+            upsert: applicationFormFields ? applicationFormFields.map((field, index) => ({
+              where: { id: field.id || '' },
+              update: { isRequired: field.required },
+              create: { fieldName: field.name, label: field.name.charAt(0).toUpperCase() + field.name.slice(1), fieldType: ['resume', 'coverLetter'].includes(field.name) ? 'FILE' : 'TEXT', isRequired: field.required, order: index },
+            })) : [],
+          },
         },
-        hiringTeam: {
-          upsert: hiringTeam.map(member => ({
-            where: { jobId_userId: { jobId, userId: member.userId || `temp-${Date.now()}` } },
-            update: { role: member.role, isExternalRecruiter: member.isExternalRecruiter || false },
-            create: { userId: member.userId || `temp-${Date.now()}`, role: member.role, isExternalRecruiter: member.isExternalRecruiter || false },
-          })),
+      });
+
+      // Replace hiring team safely: only existing users, no placeholder IDs
+      if (Array.isArray(hiringTeam)) {
+        const ids = Array.from(new Set(hiringTeam.map(m => m.userId).filter(Boolean)));
+        // Validate user existence
+        const existingUsers = ids.length ? await tx.user.findMany({ where: { id: { in: ids } }, select: { id: true } }) : [];
+        const valid = new Set(existingUsers.map(u => u.id));
+        const validMembers = hiringTeam.filter(m => m.userId && valid.has(m.userId));
+
+        // Clear and recreate
+        await tx.jobHiringMember.deleteMany({ where: { jobId } });
+        if (validMembers.length) {
+          await tx.jobHiringMember.createMany({
+            data: validMembers.map(m => ({ jobId, userId: m.userId, role: m.role, isExternalRecruiter: !!m.isExternalRecruiter }))
+          });
+        }
+      }
+
+      // Upsert job workflow assignment if provided
+      if (workflowId) {
+        await tx.jobWorkflow.upsert({
+          where: { jobId },
+          update: { workflowTemplateId: workflowId },
+          create: { jobId, workflowTemplateId: workflowId, name: `Workflow for ${title || existingJob.title}` },
+        });
+      }
+
+      // Return full job with relations
+      return tx.job.findUnique({
+        where: { id: jobId },
+        include: {
+          company: { select: { id: true, name: true } },
+          department: true,
+          location: true,
+          hiringTeam: { include: { user: true } },
+          jobWorkflow: { include: { stages: true } },
+          applicationForm: { include: { customQuestion: true } },
         },
-        jobWorkflow: workflowId ? { upsert: { where: { jobId }, update: { workflowTemplateId: workflowId }, create: { workflowTemplateId: workflowId, name: `Workflow for ${title}` } } } : undefined,
-      },
-      include: {
-        company: { select: { id: true, name: true } },
-        department: true,
-        location: true,
-        hiringTeam: { include: { user: true } },
-        jobWorkflow: { include: { stages: true } },
-        applicationForm: { include: { customQuestion: true } },
-      },
+      });
     });
-    return updatedJob;
   }
 
   async deleteJob(userId, jobId) {

@@ -3,9 +3,8 @@
 import express from 'express';
 import CandidateController from './candidate.controller.js';
 import { protect } from '../../middleware/auth.middleware.js';
-import multer from 'multer';
+import { uploadMiddleware as upload } from '../../utils/fileUpload.js';
 
-const upload = multer({ storage: multer.memoryStorage() });
 const router = express.Router();
 
 router.use(protect);
@@ -20,8 +19,8 @@ router.get('/candidates/:id/download-cv', CandidateController.downloadCV);
 
 // Nouvelles routes pour la gestion des candidats par stage
 router.get('/companies/:companyId/stages/:stageId/candidates', CandidateController.getCandidatesByStage);
-router.post('/companies/:companyId/candidates/:candidateId/move-to-stage', CandidateController.moveCandidateToStage);
-
+router.post('/companies/:companyId/candidates/:candidateId/move-to-stage', protect, CandidateController.moveCandidateToStage);
+ 
 // Routes pour les commentaires
 router.post('/companies/:companyId/candidates/:candidateId/comments', CandidateController.addComment);
 router.get('/companies/:companyId/candidates/:candidateId/comments', CandidateController.getComments);

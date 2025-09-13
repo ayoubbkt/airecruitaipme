@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { PlusCircle, Filter, BriefcaseBusiness, User, MapPin, Clock } from 'lucide-react';
 import { jobService } from '../../services/api';
+// Deprecated component: consider replacing with JobsPage
 import { toast } from 'react-toastify';
 import { useAuth } from '../../contexts/AuthContext';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -11,7 +12,7 @@ const JobListings = () => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [statusFilter, setStatusFilter] = useState('ACTIVE');
+  const [statusFilter, setStatusFilter] = useState('PUBLISHED');
 
   useEffect(() => {
     fetchJobs();

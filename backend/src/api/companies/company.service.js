@@ -1,37 +1,68 @@
 import prisma from '../../config/db.js';
 import pkg from '../../generated/prisma/index.js';
-const { CompanyMemberRole, UserRole } = pkg;
+const { CompanyMemberRole, UserRole, StageType } = pkg;
 
 class CompanyService {
   async createCompany(userId, companyData) {
     const { name, website, phoneNumber, description } = companyData;
     // TODO: Validate companyData
 
-    const company = await prisma.company.create({
-      data: {
-        name,
-        website,
-        phoneNumber,
-        description,
-        ownerId: userId,
-        members: { // Automatically add the creator as a company admin
-          create: {
-            userId: userId,
-            role: CompanyMemberRole.RECRUITING_ADMIN // Or a more encompassing "OWNER" role if you add it
-          }
+    const company = await prisma.$transaction(async (tx) => {
+      const created = await tx.company.create({
+        data: {
+          name,
+          website,
+          phoneNumber,
+          description,
+          ownerId: userId,
+          members: {
+            // Automatically add the creator as a company admin
+            create: {
+              userId: userId,
+              role: CompanyMemberRole.RECRUITING_ADMIN,
+            },
+          },
+          // Create default careers page settings
+          careersPageSettings: {
+            create: {}, // Empty object, will use defaults from schema or can be populated
+          },
         },
-        // Create default careers page settings
-        careersPageSettings: {
-          create: {} // Empty object, will use defaults from schema or can be populated
-        }
-      },
+      });
+
+  // Also create a default workflow template with common stages
+      await tx.workflowTemplate.create({
+        data: {
+          name: 'Workflow par défaut',
+          companyId: created.id,
+          isDefault: true,
+          stages: {
+            create: [
+      { name: 'Leads', type: StageType.LEADS, order: 0, isDefault: true, canBeDeleted: false, visibilityToReviewers: false, settings: {} },
+      { name: 'Applicants', type: StageType.APPLIED, order: 1, isDefault: true, canBeDeleted: false, visibilityToReviewers: false, settings: {} },
+      { name: 'Short List Review', type: StageType.REVIEW, order: 2, isDefault: false, canBeDeleted: true, visibilityToReviewers: false, settings: {} },
+      { name: 'Screening Call', type: StageType.INTERVIEW, order: 3, isDefault: false, canBeDeleted: true, visibilityToReviewers: false, settings: {} },
+      { name: 'Initial Interview', type: StageType.INTERVIEW, order: 4, isDefault: false, canBeDeleted: true, visibilityToReviewers: false, settings: {} },
+      { name: 'Review', type: StageType.REVIEW, order: 5, isDefault: false, canBeDeleted: true, visibilityToReviewers: false, settings: {} },
+      { name: 'Offer', type: StageType.OFFER, order: 6, isDefault: false, canBeDeleted: true, visibilityToReviewers: false, settings: {} },
+      { name: 'Disqualified', type: StageType.DISQUALIFIED, order: 7, isDefault: true, canBeDeleted: false, visibilityToReviewers: false, settings: {} },
+      { name: 'Archived', type: StageType.ARCHIVED, order: 8, isDefault: true, canBeDeleted: false, visibilityToReviewers: false, settings: {} },
+            ],
+          },
+        },
+      });
+
+      return created;
+    });
+
+    // Return with includes to keep previous behavior
+    return prisma.company.findUnique({
+      where: { id: company.id },
       include: {
         owner: { select: { id: true, email: true, firstName: true, lastName: true } },
         members: { include: { user: { select: { id: true, email: true } } } },
-        careersPageSettings: true
-      }
+        careersPageSettings: true,
+      },
     });
-    return company;
   }
 
   async getCompanyById(companyId, userId, userRole) {

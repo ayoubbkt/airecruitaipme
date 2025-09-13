@@ -16,11 +16,19 @@ import {
   Upload
 } from 'lucide-react';
 import { cvService, createCandidate , jobService, companyService } from '../../services/api';
+import candidateService from '../../services/candidateService';
 
 import { useAuth } from '../../contexts/AuthContext'; // Import AuthContext
 import axios from 'axios';
 import { toast } from 'react-toastify';
  
+
+// Helper pour normaliser la réponse jobs (peut être un array direct ou { data, meta })
+const normalizeJobsResponse = (resp) => {
+  if (Array.isArray(resp)) return resp;
+  if (Array.isArray(resp?.data)) return resp.data;
+  return [];
+};
 
 const AddCandidateModal = ({ isOpen, onClose, companyId, onCandidateAdded }) => {
   const [formData, setFormData] = useState({
@@ -46,7 +54,7 @@ const AddCandidateModal = ({ isOpen, onClose, companyId, onCandidateAdded }) => 
           setLoadingJobs(true);
           const activeJobs = await jobService.getJobs(companyId, { status: 'PUBLISHED' });
           console.log("Offres d'emploi récupérées :", activeJobs);
-          setJobs(activeJobs || []);
+          setJobs(normalizeJobsResponse(activeJobs));
         } catch (error) {
           toast.error("Erreur lors du chargement des offres d'emploi.");
         } finally {
@@ -367,11 +375,12 @@ const CandidateManagement = () => {
   const [sortOrder, setSortOrder] = useState('desc');
   const [currentPage, setCurrentPage] = useState(1);
   
-  // États pour les filtres
+  // États pour les filtres (nouvelles étapes du workflow)
   const [selectedFilters, setSelectedFilters] = useState({
-    leads: false,
-    applicants: false,
-    inProgress: false,
+    initial: false,
+    phone: false,
+    interview: false,
+    offer: false,
     hired: false,
     disqualified: false
   });
@@ -405,7 +414,7 @@ const CandidateManagement = () => {
       setLoading(true);
       
       // Charger toutes les données en parallèle
-      const [candidatesData, jobsData, locationsData, departmentsData] = await Promise.all([
+  const [candidatesData, jobsData, locationsData, departmentsData] = await Promise.all([
         cvService.getCandidates(companyId),
         
         jobService.getJobs(companyId),
@@ -415,9 +424,9 @@ const CandidateManagement = () => {
 
      
       const { data: list, pagination } =candidatesData; 
-      setCandidates(Array.isArray(list) ? list : []);
-      
-      setJobs(jobsData || []);
+  setCandidates(Array.isArray(list) ? list : []);
+  // Normalisation jobs
+  setJobs(normalizeJobsResponse(jobsData));
       setLocations(locationsData || []);
       setDepartments(departmentsData || []);
       
@@ -521,15 +530,48 @@ const CandidateManagement = () => {
     }
   };
 
-  // Changement de stage individuel avec API
+  // Normalisation label étape
+  const normalizeStageLabel = (val) => {
+    if (val === 0 || val === '0' || /initial/i.test(val)) return 'Initial Review';
+    if (val === 1 || val === '1' || /phone/i.test(val)) return 'Phone Screen';
+    if (val === 2 || val === '2' || /interview/i.test(val)) return 'Interview';
+    if (val === 3 || val === '3' || /offer/i.test(val)) return 'Offer';
+    if (val === 4 || val === '4' || /hired/i.test(val)) return 'Hired';
+    if (/disqual/i.test(val)) return 'Disqualified';
+    return 'Initial Review';
+  };
+
+  // Changement de stage individuel avec API + rollback si échec
   const handleStageChange = async (candidateId, newStage) => {
+    let previousStageName = null;
     try {
-      await cvService.updateCandidateStage(companyId, candidateId, newStage);
-      toast.success('Stage mis à jour avec succès');
-      await fetchData();
+      setCandidates(prev => prev.map(c => {
+        if (c.id !== candidateId) return c;
+        const clone = { ...c };
+        if (clone.applications && clone.applications[0]) {
+          previousStageName = clone.applications[0].currentStage?.name || clone.applications[0].status;
+          const label = normalizeStageLabel(newStage);
+          clone.applications = [{ ...clone.applications[0], currentStage: { ...(clone.applications[0].currentStage||{}), name: label } }];
+        }
+        return clone;
+      }));
+      await candidateService.updateCandidateStage(companyId, candidateId, newStage);
+      toast.success('Stage mis à jour');
+      fetchData();
     } catch (error) {
       console.error('Erreur lors du changement de stage:', error);
       toast.error('Erreur lors du changement de stage');
+      // rollback
+      if (previousStageName) {
+        setCandidates(prev => prev.map(c => {
+          if (c.id !== candidateId) return c;
+          const clone = { ...c };
+          if (clone.applications && clone.applications[0]) {
+            clone.applications = [{ ...clone.applications[0], currentStage: { ...(clone.applications[0].currentStage||{}), name: previousStageName } }];
+          }
+          return clone;
+        }));
+      }
     }
   };
 
@@ -565,13 +607,20 @@ const filteredCandidates = list.filter(candidate => {
       .includes((searchTerm ?? '').toLowerCase())
     || (candidate.email ?? '').toLowerCase().includes((searchTerm ?? '').toLowerCase());
 
-  const status = candidate.applications?.[0]?.status ?? 'LEAD';
+  let stageName = candidate.applications?.[0]?.currentStage?.name || candidate.applications?.[0]?.status || 'Initial Review';
+  if (stageName === 'LEAD') stageName = 'Initial Review';
+  if (['APPLICANT','SCREENING'].includes(stageName)) stageName = 'Phone Screen';
+  if (stageName === 'INTERVIEW') stageName = 'Interview';
+  if (stageName === 'HIRED') stageName = 'Hired';
+  if (stageName === 'DISQUALIFIED') stageName = 'Disqualified';
+
   const phaseMap = {
-    leads: status === 'LEAD',
-    applicants: status === 'APPLICANT',
-    inProgress: ['SCREENING', 'INTERVIEW'].includes(status),
-    hired: status === 'HIRED',
-    disqualified: status === 'DISQUALIFIED',
+    initial: stageName === 'Initial Review',
+    phone: stageName === 'Phone Screen',
+    interview: stageName === 'Interview',
+    offer: stageName === 'Offer',
+    hired: stageName === 'Hired',
+    disqualified: stageName === 'Disqualified'
   };
 
   const anyPhaseSelected = Object.values(selectedFilters || {}).some(Boolean);
@@ -814,7 +863,7 @@ const timeSince = (date) => {
                 </label>
               </div>
 
-              {/* Phase de recrutement */}
+              {/* Phase de recrutement (nouvelles étapes) */}
               <div className="mb-6">
                 <h3 className="font-semibold text-gray-800 mb-4 flex items-center">
                   <Users className="w-5 h-5 mr-2 text-blue-600" />
@@ -822,27 +871,37 @@ const timeSince = (date) => {
                 </h3>
                 <div className="space-y-3">
                   {[
-                    { key: 'leads', label: 'Leads', count: candidates.filter(c => (c.applications?.[0]?.status || 'LEAD') === 'LEAD').length },
-                    { key: 'applicants', label: 'Candidatures', count: candidates.filter(c => c.applications?.[0]?.status === 'APPLICANT').length },
-                    { key: 'inProgress', label: 'En cours', count: candidates.filter(c => ['SCREENING', 'INTERVIEW'].includes(c.applications?.[0]?.status)).length },
-                    { key: 'hired', label: 'Embauchés', count: candidates.filter(c => c.applications?.[0]?.status === 'HIRED').length },
-                    { key: 'disqualified', label: 'Disqualifiés', count: candidates.filter(c => c.applications?.[0]?.status === 'DISQUALIFIED').length }
-                  ].map((filter) => (
-                    <label key={filter.key} className="flex items-center justify-between cursor-pointer group hover:bg-gray-50 p-2 rounded-lg transition-colors">
-                      <div className="flex items-center space-x-3">
-                        <input
-                          type="checkbox"
-                          checked={selectedFilters[filter.key]}
-                          onChange={(e) => setSelectedFilters(prev => ({ ...prev, [filter.key]: e.target.checked }))}
-                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                        />
-                        <span className="text-gray-700 group-hover:text-gray-900">{filter.label}</span>
-                      </div>
-                      <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                        {filter.count}
-                      </span>
-                    </label>
-                  ))}
+                    { key: 'initial', label: 'Initial Review', test: (s) => s === 'Initial Review' },
+                    { key: 'phone', label: 'Phone Screen', test: (s) => s === 'Phone Screen' },
+                    { key: 'interview', label: 'Interview', test: (s) => s === 'Interview' },
+                    { key: 'offer', label: 'Offer', test: (s) => s === 'Offer' },
+                    { key: 'hired', label: 'Hired', test: (s) => s === 'Hired' },
+                    { key: 'disqualified', label: 'Disqualified', test: (s) => s === 'Disqualified' }
+                  ].map(f => {
+                    const count = candidates.filter(c => {
+                      let sn = c.applications?.[0]?.currentStage?.name || c.applications?.[0]?.status || 'Initial Review';
+                      if (sn === 'LEAD') sn = 'Initial Review';
+                      if (['APPLICANT','SCREENING'].includes(sn)) sn = 'Phone Screen';
+                      if (sn === 'INTERVIEW') sn = 'Interview';
+                      if (sn === 'HIRED') sn = 'Hired';
+                      if (sn === 'DISQUALIFIED') sn = 'Disqualified';
+                      return f.test(sn);
+                    }).length;
+                    return (
+                      <label key={f.key} className="flex items-center justify-between cursor-pointer group hover:bg-gray-50 p-2 rounded-lg transition-colors">
+                        <div className="flex items-center space-x-3">
+                          <input
+                            type="checkbox"
+                            checked={selectedFilters[f.key]}
+                            onChange={(e) => setSelectedFilters(prev => ({ ...prev, [f.key]: e.target.checked }))}
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          <span className="text-gray-700 group-hover:text-gray-900">{f.label}</span>
+                        </div>
+                        <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">{count}</span>
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -972,17 +1031,24 @@ const timeSince = (date) => {
               <div className="space-y-4">
                 {paginatedCandidates.map((candidate) => {
                   const isSelected = selectedCandidates.includes(candidate.id);
-                  const status = candidate.applications?.[0]?.status || 'LEAD';
+                  // Get the actual stage name from currentStage if available or use status
+                  let stageName = candidate.applications?.[0]?.currentStage?.name || candidate.applications?.[0]?.status || 'Initial Review';
+                  if (stageName === 'LEAD') stageName = 'Initial Review';
+                  if (stageName === 'APPLICANT' || stageName === 'SCREENING') stageName = 'Phone Screen';
+                  if (stageName === 'INTERVIEW') stageName = 'Interview';
+                  if (stageName === 'HIRED') stageName = 'Hired';
+                  if (stageName === 'DISQUALIFIED') stageName = 'Disqualified';
+                  const status = stageName;
                   const jobTitle = candidate.applications?.[0]?.jobTitle || 'Poste non défini';
                   
                   return (
                     <div 
                       key={candidate.id}
-                      className={`bg-white/90 backdrop-blur-md rounded-2xl shadow-lg border transition-all duration-200 hover:shadow-xl hover:-translate-y-1 cursor-pointer ${
+                      className={`relative bg-white/90 backdrop-blur-md rounded-2xl shadow-lg border transition-all duration-200 hover:shadow-xl hover:-translate-y-1 cursor-pointer ${
                         isSelected 
                           ? 'border-blue-500 bg-blue-50/50' 
                           : 'border-white/20 hover:border-blue-300'
-                      }`}
+                      } ${showAdvanceDropdown === candidate.id ? 'z-40' : 'z-0'}`}
                       onClick={() => navigate(`/candidates/${candidate.id}`)}
                     >
                       <div className="p-6 flex items-center justify-between">
@@ -1017,20 +1083,15 @@ const timeSince = (date) => {
                             <div className="flex items-center space-x-4 text-sm text-gray-600 mt-1">
                               <span>{jobTitle}</span>
                               <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                status === 'LEAD' ? 'bg-blue-100 text-blue-800' :
-                                status === 'APPLICANT' ? 'bg-green-100 text-green-800' :
-                                status === 'SCREENING' ? 'bg-yellow-100 text-yellow-800' :
-                                status === 'INTERVIEW' ? 'bg-orange-100 text-orange-800' :
-                                status === 'HIRED' ? 'bg-emerald-100 text-emerald-800' :
-                                status === 'DISQUALIFIED' ? 'bg-red-100 text-red-800' :
+                                status === 'Initial Review' ? 'bg-blue-100 text-blue-800' :
+                                status === 'Phone Screen' ? 'bg-yellow-100 text-yellow-800' :
+                                status === 'Interview' ? 'bg-orange-100 text-orange-800' :
+                                status === 'Offer' ? 'bg-indigo-100 text-indigo-800' :
+                                status === 'Hired' ? 'bg-emerald-100 text-emerald-800' :
+                                status === 'DISQUALIFIED' || status === 'Disqualified' ? 'bg-red-100 text-red-800' :
                                 'bg-gray-100 text-gray-800'
                               }`}>
-                                {status === 'LEAD' ? 'Lead' : 
-                                 status === 'APPLICANT' ? 'Candidature' :
-                                 status === 'SCREENING' ? 'Entretien téléphonique' :
-                                 status === 'INTERVIEW' ? 'Entretien' :
-                                 status === 'HIRED' ? 'Embauché' :
-                                 status === 'DISQUALIFIED' ? 'Disqualifié' : status}
+                                {status}
                               </span>
                             </div>
                           </div>
@@ -1064,21 +1125,18 @@ const timeSince = (date) => {
                             </button>
                             
                             {showAdvanceDropdown === candidate.id && (
-                              <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 z-50">
+                              <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 z-50 md:z-[60]">
                                 <div className="p-3">
                                   <p className="text-sm font-medium text-gray-700 mb-3">Déplacer vers:</p>
                                   <div className="space-y-2">
+                                    {/* Map des étapes internes -> ordre numérique attendu par backend */}
                                     {[
-                                      { icon: '👥', label: 'Leads', value: 'leads' },
-                                      { icon: '📋', label: 'Candidatures', value: 'applicants' },
-                                      { icon: '👤', label: 'Sélection', value: 'shortlist' },
-                                      { icon: '📞', label: 'Entretien téléphonique', value: 'screening' },
-                                      { icon: '💼', label: 'Entretien', value: 'interview' },
-                                      { icon: '👤', label: 'Examen final', value: 'final' },
-                                      { icon: '💰', label: 'Offre', value: 'offer' },
-                                      { icon: '✅', label: 'Embauché', value: 'hired' },
-                                      { icon: '❌', label: 'Disqualifié', value: 'disqualified' },
-                                      { icon: '📁', label: 'Archivé', value: 'archived' }
+                                      { icon: '📝', label: 'Initial Review', value: 0 },
+                                      { icon: '📞', label: 'Phone Screen', value: 1 },
+                                      { icon: '💼', label: 'Interview', value: 2 },
+                                      { icon: '💰', label: 'Offer', value: 3 },
+                                      { icon: '✅', label: 'Hired', value: 4 },
+                                      { icon: '❌', label: 'Disqualified', value: 'disqualified' }
                                     ].map((stage) => (
                                       <button
                                         key={stage.value}
@@ -1087,7 +1145,11 @@ const timeSince = (date) => {
                                           handleStageChange(candidate.id, stage.value);
                                           setShowAdvanceDropdown(null);
                                         }}
-                                        className="flex items-center space-x-3 w-full p-2 text-left hover:bg-gray-50 rounded-lg text-sm text-gray-700 transition-colors"
+                                        className={`flex items-center space-x-3 w-full p-2 text-left hover:bg-gray-50 rounded-lg text-sm transition-colors ${
+                                          (typeof status === 'string' && (status.toLowerCase() === stage.label.toLowerCase()))
+                                           ? 'bg-blue-50 text-blue-700 font-medium'
+                                           : 'text-gray-700'
+                                        }`}
                                       >
                                         <span>{stage.icon}</span>
                                         <span>{stage.label}</span>

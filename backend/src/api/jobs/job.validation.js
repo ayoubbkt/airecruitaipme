@@ -65,6 +65,14 @@ export const createJobSchema = z.object({
 
 export const updateJobSchema = createJobSchema.partial();
 
+// For routes using :jobId in params, ensure Zod validates correct param name when used
+export const jobIdParamSchema = z.object({
+  params: z.object({
+    companyId: z.string(),
+    jobId: z.string(),
+  })
+});
+
 export const getJobsSchema = z.object({
   query: z.object({
     page: z.string().regex(/^\d+$/).transform(Number).optional(),

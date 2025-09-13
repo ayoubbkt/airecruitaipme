@@ -1,5 +1,5 @@
 // backend/src/utils/accessControl.js
-import prisma from '../config/database.js';
+import prisma from '../config/db.js';
 
 /**
  * Utilitaires de contrôle d'accès et de permissions
@@ -69,18 +69,16 @@ export const checkCompanyAccess = async (userId, companyId, requiredRole = null)
     }
 
     // Récupérer le membership de l'utilisateur dans l'entreprise
-    const membership = await prisma.companyMembership.findFirst({
+    const membership = await prisma.companyMember.findFirst({
       where: {
         userId,
-        companyId,
-        status: 'ACTIVE'
+        companyId
       },
       include: {
         company: {
           select: {
             id: true,
-            name: true,
-            status: true
+            name: true
           }
         },
         user: {
@@ -96,13 +94,6 @@ export const checkCompanyAccess = async (userId, companyId, requiredRole = null)
 
     if (!membership) {
       const error = new Error('Accès non autorisé à cette entreprise');
-      error.statusCode = 403;
-      throw error;
-    }
-
-    // Vérifier que l'entreprise est active
-    if (membership.company.status !== 'ACTIVE') {
-      const error = new Error('Cette entreprise est désactivée');
       error.statusCode = 403;
       throw error;
     }

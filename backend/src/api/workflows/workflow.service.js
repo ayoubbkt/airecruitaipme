@@ -18,25 +18,66 @@ async function checkCompanyAdminAccess(userId, companyId) {
   return true;
 }
 
+// Helper to check company access for non-admin features
+async function checkCompanyAccess(userId, companyId, allowedRoles) {
+  const membership = await prisma.companyMember.findUnique({
+    where: { companyId_userId: { companyId, userId } },
+  });
+  const platformUser = await prisma.user.findUnique({ where: { id: userId } });
+  if (platformUser?.role === UserRole.MEGA_ADMIN) return true;
+  if (!membership || !allowedRoles.includes(membership.role)) {
+    const error = new Error('Forbidden: You do not have access to this company.');
+    error.statusCode = 403;
+    throw error;
+  }
+  return true;
+}
+
 class WorkflowService {
   // --- Workflow Templates (Company Level) ---
   async createWorkflowTemplate(userId, companyId, templateData) {
     await checkCompanyAdminAccess(userId, companyId);
-    const { name, stages, isDefault = false } = templateData; // stages: [{ name, type, order, settings, visibilityToReviewers }]
+  let { name, stages, isDefault = false } = templateData; // stages: [{ name, type, order, settings, visibilityToReviewers }]
 
     if (!name) {
         const error = new Error('Template name is required.');
         error.statusCode = 400;
         throw error;
     }
+    // If no stages provided, copy from company's default or use preset
     if (!stages || !Array.isArray(stages) || stages.length === 0) {
-        const error = new Error('At least one stage is required for the template.');
-        error.statusCode = 400;
-        throw error;
+      const defaultTpl = await prisma.workflowTemplate.findFirst({
+        where: { companyId, isDefault: true },
+        include: { stages: { orderBy: { order: 'asc' } } },
+      });
+  if (defaultTpl && defaultTpl.stages.length >= 9) {
+        stages = defaultTpl.stages.map((s) => ({
+          name: s.name,
+          type: s.type,
+          order: s.order,
+          settings: s.settings || {},
+          visibilityToReviewers: s.visibilityToReviewers || false,
+          isDefault: s.isDefault || false,
+          canBeDeleted: s.canBeDeleted,
+        }));
+      } else {
+        // fallback preset matching requested UI
+        stages = [
+          { name: 'Leads', type: StageType.LEADS, order: 0, isDefault: true, canBeDeleted: false },
+          { name: 'Applicants', type: StageType.APPLIED, order: 1, isDefault: true, canBeDeleted: false },
+          { name: 'Short List Review', type: StageType.REVIEW, order: 2, canBeDeleted: true },
+          { name: 'Screening Call', type: StageType.INTERVIEW, order: 3, canBeDeleted: true },
+          { name: 'Initial Interview', type: StageType.INTERVIEW, order: 4, canBeDeleted: true },
+          { name: 'Review', type: StageType.REVIEW, order: 5, canBeDeleted: true },
+          { name: 'Offer', type: StageType.OFFER, order: 6, canBeDeleted: true },
+          { name: 'Disqualified', type: StageType.DISQUALIFIED, order: 7, isDefault: true, canBeDeleted: false },
+          { name: 'Archived', type: StageType.ARCHIVED, order: 8, isDefault: true, canBeDeleted: false },
+        ];
+      }
     }
     
     // Validate stage types and order
-    stages.forEach(stage => {
+  stages.forEach(stage => {
         if (!stage.name || !stage.type || stage.order === undefined) {
             const error = new Error('Each stage must have a name, type, and order.');
             error.statusCode = 400;
@@ -49,10 +90,10 @@ class WorkflowService {
         }
     });
 
-
-    return prisma.workflowTemplate.create({
+    // Attempt to create; if duplicate name for the company, append a number suffix automatically
+    const attemptCreate = async (templateName) => prisma.workflowTemplate.create({
       data: {
-        name,
+        name: templateName,
         companyId,
         isDefault,
         stages: {
@@ -62,13 +103,32 @@ class WorkflowService {
             order: s.order,
             settings: s.settings || {},
             visibilityToReviewers: s.visibilityToReviewers || false,
-            isDefault: s.isDefault || false, // e.g. Applied, Hired
+            isDefault: s.isDefault || false,
             canBeDeleted: s.canBeDeleted === undefined ? true : s.canBeDeleted
           }))
         }
       },
       include: { stages: { orderBy: { order: 'asc' } } }
     });
+
+    try {
+      return await attemptCreate(name);
+    } catch (e) {
+      if (e.code === 'P2002' && e.meta?.target?.includes('companyId') && e.meta?.target?.includes('name')) {
+        // generate a unique name by appending an incrementing suffix
+        let suffix = 2;
+        while (true) {
+          const candidate = `${name} ${suffix}`;
+          const exists = await prisma.workflowTemplate.findFirst({ where: { companyId, name: candidate }, select: { id: true } });
+          if (!exists) {
+            return await attemptCreate(candidate);
+          }
+          suffix += 1;
+          if (suffix > 100) throw e; // safety break
+        }
+      }
+      throw e;
+    }
   }
 
   async getWorkflowTemplateById(userId, companyId, templateId) {
@@ -171,6 +231,111 @@ class WorkflowService {
         }
         throw e;
     }
+  }
+
+  async addStageToTemplate(userId, companyId, templateId, stageData) {
+    await checkCompanyAdminAccess(userId, companyId);
+    const { name, type, order, settings, visibilityToReviewers, isDefault, canBeDeleted } = stageData;
+    if (!name || !type) {
+      const error = new Error('Stage name and type are required.');
+      error.statusCode = 400;
+      throw error;
+    }
+    if (!Object.values(StageType).includes(type)) {
+      const error = new Error(`Invalid stage type: ${type}`);
+      error.statusCode = 400;
+      throw error;
+    }
+    // Determine order: next after max
+    const last = await prisma.workflowStageTemplate.findFirst({
+      where: { workflowTemplateId: templateId },
+      orderBy: { order: 'desc' },
+      select: { order: true },
+    });
+    const nextOrder = order ?? ((last?.order ?? -1) + 1);
+    const created = await prisma.workflowStageTemplate.create({
+      data: {
+        workflowTemplateId: templateId,
+        name,
+        type,
+        order: nextOrder,
+        settings: settings || {},
+        visibilityToReviewers: visibilityToReviewers ?? false,
+        isDefault: !!isDefault,
+        canBeDeleted: canBeDeleted === undefined ? true : !!canBeDeleted,
+      },
+    });
+    return created;
+  }
+
+  async reorderTemplateStages(userId, companyId, templateId, orderArray) {
+    await checkCompanyAdminAccess(userId, companyId);
+    if (!Array.isArray(orderArray) || orderArray.length === 0) {
+      const error = new Error('Order array is required.');
+      error.statusCode = 400;
+      throw error;
+    }
+    // Validate that all IDs belong to the template and arrays match exactly
+    const stages = await prisma.workflowStageTemplate.findMany({ where: { workflowTemplateId: templateId }, select: { id: true, order: true } });
+    const currentIds = stages.map(s => s.id);
+    const stageIdsSet = new Set(currentIds);
+    if (orderArray.length !== currentIds.length) {
+      const error = new Error('Order array must include all stage IDs.');
+      error.statusCode = 400;
+      throw error;
+    }
+    for (const id of orderArray) {
+      if (!stageIdsSet.has(id)) {
+        const error = new Error(`Stage ${id} does not belong to template.`);
+        error.statusCode = 400;
+        throw error;
+      }
+    }
+    // Two-phase update to avoid unique (workflowTemplateId, order) conflicts
+    await prisma.$transaction(async (tx) => {
+      // Phase 1: assign unique temporary orders to all current stages
+      for (let i = 0; i < currentIds.length; i += 1) {
+        const id = currentIds[i];
+        await tx.workflowStageTemplate.update({ where: { id }, data: { order: 1000 + i } });
+      }
+      // Phase 2: set final normalized order based on the requested array
+      for (let idx = 0; idx < orderArray.length; idx += 1) {
+        const id = orderArray[idx];
+        await tx.workflowStageTemplate.update({ where: { id }, data: { order: idx } });
+      }
+    });
+    return prisma.workflowStageTemplate.findMany({ where: { workflowTemplateId: templateId }, orderBy: { order: 'asc' } });
+  }
+
+  async ensureAndGetDefaultTemplate(userId, companyId) {
+    await checkCompanyAdminAccess(userId, companyId);
+    const existing = await prisma.workflowTemplate.findFirst({
+      where: { companyId, isDefault: true },
+      include: { stages: { orderBy: { order: 'asc' } } },
+    });
+    if (existing) return existing;
+    // Create default with requested stages
+    return prisma.workflowTemplate.create({
+      data: {
+        name: 'Workflow par défaut',
+        companyId,
+        isDefault: true,
+        stages: {
+          create: [
+            { name: 'Leads', type: StageType.LEADS, order: 0, isDefault: true, canBeDeleted: false },
+            { name: 'Applicants', type: StageType.APPLIED, order: 1, isDefault: true, canBeDeleted: false },
+            { name: 'Short List Review', type: StageType.REVIEW, order: 2 },
+            { name: 'Screening Call', type: StageType.INTERVIEW, order: 3 },
+            { name: 'Initial Interview', type: StageType.INTERVIEW, order: 4 },
+            { name: 'Review', type: StageType.REVIEW, order: 5 },
+            { name: 'Offer', type: StageType.OFFER, order: 6 },
+            { name: 'Disqualified', type: StageType.DISQUALIFIED, order: 7, isDefault: true, canBeDeleted: false },
+            { name: 'Archived', type: StageType.ARCHIVED, order: 8, isDefault: true, canBeDeleted: false },
+          ],
+        },
+      },
+      include: { stages: { orderBy: { order: 'asc' } } },
+    });
   }
 
   // --- Job Workflow Instance ---

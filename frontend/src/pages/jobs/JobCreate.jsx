@@ -113,7 +113,7 @@ const JobCreate = () => {
 
         let workflows = await workflowService.getWorkflows(companyId);
 
-        let defaultWorkflow = workflows.find(w => w.name.toLowerCase() === 'workflow par défaut');
+  let defaultWorkflow = workflows.find(w => w.name?.toLowerCase() === 'workflow par défaut');
         if (!defaultWorkflow) {
           defaultWorkflow = await workflowService.createWorkflow(companyId, {
             name: 'Workflow par défaut',
@@ -372,8 +372,9 @@ Le candidat idéal possède une solide expérience dans ${formData.requiredSkill
         }
         return isValid;
       });
-
+       
       if (!allStepsValid) {
+       
         setIsSubmitting(false);
         return;
       }
@@ -383,6 +384,25 @@ Le candidat idéal possède une solide expérience dans ${formData.requiredSkill
         setIsSubmitting(false);
         return;
       }
+     
+      
+
+      // Resolve hiring team emails to user IDs (avoid FK violations)
+      const hiringTeamWithUserIds = await Promise.all(
+        (formData.hiringTeam || []).map(async (member) => {
+          const userId = await userService.getUserIdByEmail(member.email?.trim());
+          const roleRaw = member.role ? member.role.toUpperCase() : 'REVIEWER';
+          // Normalize to valid enum values
+          const role = roleRaw.replace('RECRUITING_ADMIN', 'RECRUITING_ADMIN')
+                              .replace('HIRING_MANAGER', 'HIRING_MANAGER')
+                              .replace('REVIEWER', 'REVIEWER');
+          return {
+            userId,
+            role: ['RECRUITING_ADMIN','HIRING_MANAGER','REVIEWER'].includes(role) ? role : 'REVIEWER',
+            isExternalRecruiter: false,
+          };
+        })
+      );
 
       const jobData = {
         title: formData.title?.trim() || null,
@@ -391,14 +411,20 @@ Le candidat idéal possède une solide expérience dans ${formData.requiredSkill
         preferredSkills: formData.preferredSkills || [],
         employmentType: formData.employmentType ? formData.employmentType.toUpperCase().replace('-', '_') : null,
         workType: formData.workType ? formData.workType.toUpperCase().replace('-', '_') : 'ON_SITE',
-        minYearsExperience: parseInt(formData.minYearsExperience) || 0,
-        salaryMin: formData.displaySalary ? parseFloat(formData.salaryFrom) || 0 : 0,
-        salaryMax: formData.displaySalary ? parseFloat(formData.salaryTo) || 0 : 0,
+        minYearsExperience: formData.minYearsExperience !== '' && formData.minYearsExperience != null
+          ? parseInt(formData.minYearsExperience)
+          : null,
+        // Send null when salary is hidden or invalid so it passes schema (optional/nullable)
+        salaryMin: formData.displaySalary ? (Number.isFinite(parseFloat(formData.salaryFrom)) ? parseFloat(formData.salaryFrom) : null) : null,
+        salaryMax: formData.displaySalary ? (Number.isFinite(parseFloat(formData.salaryTo)) ? parseFloat(formData.salaryTo) : null) : null,
         currency: formData.currency || 'EUR',
         payPeriod: formData.payPeriod ? formData.payPeriod.toUpperCase() : 'ANNUAL',
         displaySalary: formData.displaySalary || false,
-        departmentId: departmentOptions.find(d => d.name.toLowerCase() === formData.department?.toLowerCase())?.id || null,
-        locationId: locationOptions.find(l => l.name.toLowerCase() === formData.location?.toLowerCase())?.id || null,
+        // Avoid sending null for optional strings (schema allows undefined, not null)
+        departmentId: departmentOptions.find(d => d.name?.toLowerCase() === formData.department?.toLowerCase())?.id || undefined,
+        locationId: locationOptions.find(l => 
+          (l.city + ', ' + l.country).toLowerCase().replace(/\s/g, '') === formData.location?.toLowerCase().replace(/\s/g, '')
+        )?.id || undefined,
         jobCode: formData.jobCode?.trim() || null,
         status: 'DRAFT',
         applicationFields: Object.fromEntries(
@@ -415,10 +441,7 @@ Le candidat idéal possède une solide expérience dans ${formData.requiredSkill
           options: question.options || [],
           isOptional: question.isOptional || false
         })),
-        hiringTeam: (formData.hiringTeam || []).map(member => ({
-          userId: member.email?.trim() || null,
-          role: member.role ? member.role.toUpperCase().replace('recruiting_admin', 'RECRUITING_ADMIN') : 'REVIEWER'
-        })),
+  hiringTeam: hiringTeamWithUserIds.filter(m => !!m.userId),
         workflowId: formData.workflowId || null,
   requiredSkills: formData.requiredSkills || [], // Changement ici
   preferredSkills: formData.preferredSkills || [], // Changement ici
@@ -428,6 +451,7 @@ Le candidat idéal possède une solide expérience dans ${formData.requiredSkill
   }))
       };
 
+      console.log('Données de l\'offre à sauvegarder en brouillon:', jobData);
       
 
       if (isNaN(jobData.minYearsExperience) || (jobData.displaySalary && (isNaN(jobData.salaryMin) || isNaN(jobData.salaryMax)))) {

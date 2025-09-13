@@ -24,7 +24,8 @@ import CandidateKanbanView from './pages/talent/CandidateKanbanView';
 import CandidatePipelineView from './pages/talent/CandidatePipelineView';
 import JobListings from './pages/jobs/JobListings';
 import JobManagement from './pages/jobs/JobManagement';
-import JobDetail from './pages/jobs/JobDetail';
+import JobsPage from './pages/jobs/JobsPage';
+import JobEdit from './pages/jobs/JobEdit';
 import JobCreate from './pages/jobs/JobCreate';
 import Interviews from './pages/interviews/Interviews';
 import InterviewDetail from './pages/interviews/InterviewDetail';
@@ -45,6 +46,10 @@ import CompanyLocations from './pages/settings/company/CompanyLocations';
 import Departments from './pages/settings/company/Departments';
 import CandidatesPage from './pages/talent/CandidatesPage'; // Ajoute cet import
 import CandidateDetailPage from './pages/talent/CandidateDetailPage'; // Ajoute cet import
+import JobCandidateKanbanView from './pages/jobs/JobCandidateKanbanView';
+import JobCandidatePipelineView from './pages/jobs/JobCandidatePipelineView';
+import JobListetemp from './pages/jobs/JobListetemp.jsx';
+import WorkflowManager from './pages/settings/WorkflowManager.jsx';
 
 // Auth Guard
 import PrivateRoute from './components/auth/PrivateRoute';
@@ -87,10 +92,14 @@ function App() {
                   <Route path="/candidates/pipeline/:jobId" element={<CandidatePipelineView />} />
 
                   {/* Job Management */}
-                  <Route path="/jobs" element={<JobManagement />} />
+                  <Route path="/jobs" element={<JobsPage />} />
                   <Route path="/jobs/listings" element={<JobListings />} />
                   <Route path="/jobs/create" element={<JobCreate />} />
-                  <Route path="/jobs/:id" element={<JobDetail />} />
+                  <Route path="/jobs/:id" element={<JobCandidatePipelineView />} />
+                  <Route path="/jobs/:id/list" element={<JobListetemp />} />
+                  <Route path="/jobs/:id/edit" element={<JobEdit />} />
+                  <Route path="/jobs/:id/candidates/kanban" element={< JobCandidateKanbanView  />} />
+                  <Route path="/jobs/:id/candidates/pipeline" element={<JobCandidatePipelineView />} />
 
                   {/* Interviews */}
                   <Route path="/interviews" element={<Interviews />} />
@@ -111,7 +120,7 @@ function App() {
                     <Route path="departments" element={<Departments  title="Départements" />} />
                   </Route>
                   <Route path="/settings/recruiting" element={<RecruitingSettings />}>
-                    <Route path="workflows" element={<RecruitingWorkflows />} />
+                    <Route path="workflows" element={<WorkflowManager />} />
                     <Route path="meeting-templates" element={<MeetingTemplates title="Meeting Templates" />} />
                     <Route path="message-templates" element={<MessageTemplates  title="Message Templates" />} />
                     <Route path="questions" element={<RecruitingQuestions title="Questions" />} />

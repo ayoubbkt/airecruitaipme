@@ -24,6 +24,12 @@ router.get('/companies/:companyId/templates', WorkflowController.getWorkflowTemp
 router.get('/companies/:companyId/templates/:templateId', WorkflowController.getWorkflowTemplateById);
 router.put('/companies/:companyId/templates/:templateId', WorkflowController.updateWorkflowTemplate);
 router.delete('/companies/:companyId/templates/:templateId', WorkflowController.deleteWorkflowTemplate);
+// Add a new stage to a template
+router.post('/companies/:companyId/templates/:templateId/stages', WorkflowController.addStageToTemplate);
+// Reorder stages of a template
+router.put('/companies/:companyId/templates/:templateId/reorder', WorkflowController.reorderTemplateStages);
+// Ensure and get default template
+router.post('/companies/:companyId/templates/default/ensure', WorkflowController.ensureAndGetDefaultTemplate);
 
 // Job Workflow Instances
 // Assign template to a job (companyId helps scope)

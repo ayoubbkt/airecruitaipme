@@ -134,10 +134,16 @@ export const authService = {
 
 
 
-export const getCandidates = async (companyId) => {
+export const getCandidates = async (companyId, params = {}) => {
   try {
+    // Use standard parameters without custom includes that might cause issues
+    const queryParams = {
+      ...params
+    };
         
-    const response = await axios.get(`/candidates/companies/${companyId}/candidates`);
+    const response = await axios.get(`/candidates/companies/${companyId}/candidates`, {
+      params: queryParams
+    });
     
     return response.data;
   } catch (error) {
@@ -208,10 +214,11 @@ export const jobService = {
 
   getJobs: async (companyId, params = {}) => {
     try {
+      console.log("companyId in getJobs:", companyId);
+      console.log("params in getJobs:", params);
       const response = await axios.get(`/jobs/companies/${companyId}/jobs`, { params });
-    
-      // Le backend renvoie { data: jobs, currentPage, totalPages, totalJobs }
-      return response.data.data; // On retourne uniquement le tableau des jobs
+      console.log("response in getJobs:", response.data);
+      return response.data; // conserve data + meta + pagination
     } catch (error) {
       console.error('Erreur lors de la récupération des jobs:', error.response?.data || error.message);
       throw error;
@@ -444,6 +451,29 @@ export const workflowService = {
     }
   },
 
+  // Job-specific workflow (instance) endpoints
+  getJobWorkflow: async (jobId) => {
+    try {
+      if (!jobId) throw new Error('jobId est requis');
+      const response = await axios.get(`/workflows/jobs/${jobId}/workflow`);
+      return response.data.data; // { id, name, workflowTemplateId, stages: [...] }
+    } catch (error) {
+      console.error('Error fetching job workflow:', error);
+      throw error.response?.data || error;
+    }
+  },
+
+  updateJobWorkflowStageSettings: async (jobId, stageId, settings) => {
+    try {
+      if (!jobId || !stageId) throw new Error('jobId et stageId sont requis');
+      const response = await axios.patch(`/workflows/jobs/${jobId}/workflow/stages/${stageId}/settings`, { settings });
+      return response.data.data; // updated stage
+    } catch (error) {
+      console.error('Error updating job workflow stage settings:', error);
+      throw error.response?.data || error;
+    }
+  },
+
   // Créer un nouveau workflow
 
   
@@ -451,24 +481,9 @@ export const workflowService = {
   createWorkflow: async (companyId, data) => {
     try {
       if (!companyId) throw new Error('companyId est requis pour createWorkflow');
-      if (!data.name) throw new Error('Le nom du workflow est requis');
-      
-      
-
-      const payload = {
-        name: data.name,
-        type: 'RECRUITMENT', // Valeur par défaut
-        stages: [
-          {
-            name: 'Initial Review',
-            type: 'AI_SCREENING', // Valeur par défaut, doit correspondre à StageType
-            order: 0,
-            settings: {},
-          },
-        ],
-      };
-
-      const response = await axios.post(`/workflows/companies/${companyId}/templates`, payload);
+      // If no name provided, use a sensible default; backend will ensure uniqueness and clone default template
+  const payload = { name: data.name || 'New Workflow' };
+  const response = await axios.post(`/workflows/companies/${companyId}/templates`, payload);
       console.log("response.data.data",response.data.data);
       return response.data.data;
     } catch (error) {
@@ -499,14 +514,12 @@ export const workflowService = {
         throw new Error('companyId et workflowId sont requis');
       }
 
-      const response2 = await axios.get(`/workflows/companies/${companyId}/templates`)
-      console.log("getWorkflows",response2);
+  // Optional debug fetch of all templates
+  // const response2 = await axios.get(`/workflows/companies/${companyId}/templates`)
+  // console.log("getWorkflows",response2);
 
       const response1 = await axios.get(
-        `workflows/companies/${companyId}/templates/${workflowId}`,
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-        }
+  `/workflows/companies/${companyId}/templates/${workflowId}`
       );
       const stages = response1.data.data.stages || [];
       console.log('Fetched stages response1:', stages); // Débogage
@@ -533,15 +546,29 @@ export const workflowService = {
       }
       const templateResponse = await axios.get(`/workflows/companies/${companyId}/templates/${workflowId}`);
       const currentStages = templateResponse.data.data.stages || [];
+      const desiredOrder = typeof stageData.order === 'number' ? stageData.order : currentStages.length;
       const newStage = {
         name: stageData.name,
         type: stageData.type || 'AI_SCREENING',
-        order: stageData.order || currentStages.length,
+        order: desiredOrder,
         settings: stageData.settings || {},
       };
-      const updatedStages = [...currentStages, newStage];
+      // Insert new stage at desired position
+      const updatedStages = [...currentStages]
+        .sort((a, b) => a.order - b.order)
+        .reduce((acc, s) => {
+          if (acc.length === desiredOrder) acc.push(newStage);
+          acc.push({ ...s });
+          return acc;
+        }, []);
+      if (updatedStages.length === currentStages.length) {
+        // append at end if not inserted during reduce
+        updatedStages.push(newStage);
+      }
+      // Reassign sequential order
+      const normalized = updatedStages.map((s, idx) => ({ ...s, order: idx }));
       const response = await axios.put(`/workflows/companies/${companyId}/templates/${workflowId}`, {
-        stages: updatedStages,
+        stages: normalized,
       });
       return response.data.data.stages.find((stage) => stage.name === newStage.name);
     } catch (error) {
@@ -557,8 +584,7 @@ export const workflowService = {
         throw new Error('companyId, workflowId et stageId sont requis');
       }
       const templateResponse = await axios.get(
-        `http://localhost:5000/api/v1/workflows/companies/${companyId}/templates/${workflowId}`, // Ajoute le port si nécessaire
-        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+        `/workflows/companies/${companyId}/templates/${workflowId}`
       );
       console.log('Template response:', templateResponse.data); // Débogage
       const currentStages = templateResponse.data.data.stages || [];
@@ -566,9 +592,8 @@ export const workflowService = {
         stage.id === stageId ? { ...stage, ...stageData } : stage
       );
       const response = await axios.put(
-        `http://localhost:5000/api/v1/workflows/companies/${companyId}/templates/${workflowId}`,
-        { stages: updatedStages },
-        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+        `/workflows/companies/${companyId}/templates/${workflowId}`,
+        { stages: updatedStages }
       );
       console.log('PUT response:', response.data); // Débogage
       const updatedStage = response.data.data?.stages?.find((stage) => stage.id === stageId) || updatedStages.find((stage) => stage.id === stageId);
@@ -599,6 +624,33 @@ export const workflowService = {
       return response.data.data;
     } catch (error) {
       console.error('Error deleting workflow stage:', error);
+      throw error.response?.data || error;
+    }
+  },
+
+  // Reorder stages by sending array of stage IDs
+  reorderWorkflowStages: async (companyId, workflowId, orderedIds) => {
+    try {
+      if (!companyId || !workflowId || !Array.isArray(orderedIds)) {
+        throw new Error('companyId, workflowId et orderedIds sont requis');
+      }
+      const response = await axios.put(`/workflows/companies/${companyId}/templates/${workflowId}/reorder`, {
+        order: orderedIds,
+      });
+      return response.data.data; // staged list
+    } catch (error) {
+      console.error('Error reordering workflow stages:', error);
+      throw error.response?.data || error;
+    }
+  },
+
+  // Ensure default workflow exists and return it
+  ensureDefaultWorkflow: async (companyId) => {
+    try {
+      const response = await axios.post(`/workflows/companies/${companyId}/templates/default/ensure`);
+      return response.data.data;
+    } catch (error) {
+      console.error('Error ensuring default workflow:', error);
       throw error.response?.data || error;
     }
   },
@@ -765,7 +817,15 @@ export const messageTemplateService = {
   getMessageTemplates: async (companyId) => {
     try {
       const response = await axios.get(`/messagingTemplate/companies/${companyId}/message-templates`);
-      return response.data;
+      const body = response.data;
+      // Support both shapes: { data: { required, custom } } or { required, custom } or array
+      const payload = body?.data ?? body;
+      if (Array.isArray(payload)) {
+        return { required: [], custom: [], all: payload };
+      }
+      const required = Array.isArray(payload?.required) ? payload.required : [];
+      const custom = Array.isArray(payload?.custom) ? payload.custom : [];
+      return { required, custom, all: [...required, ...custom] };
     } catch (error) {
       console.error('Erreur lors de la récupération des templates de messages:', error);
       throw error;
@@ -1467,11 +1527,9 @@ const handleResponse = async (response) => {
 };
 
 export const cvService = {
-  getCandidates: async (companyId) => {
+  getCandidates: async (companyId, params = {}) => {
     try {
-      
-      const response = await axios.get(`/candidates/companies/${companyId}/candidates`);
-       console.log("response.data",response.data);
+      const response = await axios.get(`/candidates/companies/${companyId}/candidates`, { params });
       return response.data;
     } catch (error) {
       console.error('Error fetching candidates:', error);
@@ -1542,11 +1600,12 @@ export const cvService = {
 
   
 
-  updateCandidateStage: async (companyId, candidateId, stage) => {
+  updateCandidateStage: async (companyId, candidateId, stageId, comment = '') => {
     try {
-      const response = await axios.put(
-        `/candidates/companies/${companyId}/candidates/${candidateId}/stage`, 
-        { stage }
+      // Envoyer exactement l'ID du stage du workflow du job (ex: UUID/ID réel)
+      const response = await axios.post(
+        `/candidates/companies/${companyId}/candidates/${candidateId}/move-to-stage`,
+        { stageId, comment }
       );
       return response.data;
     } catch (error) {
