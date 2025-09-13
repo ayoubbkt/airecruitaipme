@@ -16,6 +16,7 @@ import {
     MessageCircle
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import MeganAssistant from '../components/aiMegan/MeganAssistant';
 
 const DashboardLayout = () => {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -317,6 +318,8 @@ const DashboardLayout = () => {
                 <main className="flex-1 overflow-auto p-6">
                     <Outlet />
                 </main>
+                {/* Megan AI assistant floating widget */}
+                <MeganAssistant />
             </div>
         </div>
     );
