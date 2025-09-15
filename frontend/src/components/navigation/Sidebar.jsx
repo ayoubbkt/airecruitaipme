@@ -19,6 +19,7 @@ const Sidebar = ({ collapsed }) => {
     { path: '/talent-pool', label: 'Base de talents', icon: <Users size={20} /> },
     { path: '/jobs', label: 'Offres d\'emploi', icon: <BriefcaseBusiness size={20} /> },
     { path: '/interviews', label: 'Entretiens', icon: <Calendar size={20} /> },
+    { path: '/megan', label: 'Megan AI', icon: <Brain size={20} /> },
     { path: '/reports', label: 'Rapports', icon: <BarChart2 size={20} /> },
     { path: '/settings', label: 'Paramètres', icon: <Settings size={20} /> },
   ];

@@ -9,6 +9,9 @@ const config = {
   databaseUrlTest: process.env.DATABASE_URL_TEST, // Ajoutez ceci
   nodeEnv: process.env.NODE_ENV || 'development',
   encryptionKey: process.env.ENCRYPTION_KEY,
+  gemini: {
+    apiKey: process.env.GEMINI_API_KEY,
+  },
 
 };
 

@@ -3,14 +3,26 @@ import axios from '../utils/axios';
 
 class MeganService {
   constructor() {
-    this.baseURL = '/api/v1/ai-megan';
+    this.baseURL = '/ai-megan';
   }
 
   // Chat avec Megan
   async sendMessage(message, context = {}) {
+    console.log("Envoi du message à Megan:", message, context);
     const response = await axios.post(`${this.baseURL}/chat`, {
       message,
       context
+    });
+    console.log("Réponse de Megan:", response.data);
+    return response.data;
+  }
+
+  // Note Taking (nouvelle fonction pour utiliser la route /note-taking)
+  async generateNotes(transcription, meetingContext = {}) {
+    const response = await axios.post(`${this.baseURL}/note-taking`, {
+      transcript: transcription,
+      candidateId: meetingContext.candidateId,
+      jobId: meetingContext.jobId
     });
     return response.data;
   }

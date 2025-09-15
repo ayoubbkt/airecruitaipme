@@ -380,6 +380,11 @@ class JobService {
       orderBy: { user: { firstName: 'asc' } },
     });
   }
+
+  async findByTitle(title)  {
+  // Votre logique pour trouver un poste par son titre
+  return db.job.findFirst({ where: { title: { contains: title, mode: 'insensitive' } } });
+};
 }
 
 export default new JobService();

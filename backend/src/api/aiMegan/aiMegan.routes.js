@@ -1,6 +1,7 @@
 // backend/src/api/aiMegan/aiMegan.routes.js (REMPLACER COMPLÈTEMENT)
 import express from 'express';
 import AiMeganController from './aiMegan.controller.js';
+import { handleChat, handleNoteTaking } from './aiMegan.controller.js';
 import { protect } from '../../middleware/auth.middleware.js';
 
 const router = express.Router();
@@ -35,6 +36,10 @@ router.get('/conversations/:conversationId', AiMeganController.getConversationSt
 //   req.skipAuth = true;
 //   next();
 // }, AiMeganController.handleIntercomWebhook);
+
+router.post('/chat', protect, handleChat);
+router.post('/note-taking', protect, handleNoteTaking);
+
 
 const publicRouter = express.Router();
 publicRouter.post('/webhook/intercom', AiMeganController.handleIntercomWebhook);

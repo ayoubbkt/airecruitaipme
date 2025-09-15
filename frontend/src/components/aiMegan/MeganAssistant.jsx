@@ -1,6 +1,6 @@
 // frontend/src/components/aiMegan/MeganAssistant.jsx (REMPLACER COMPLÈTEMENT)
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, MessageCircle, Loader2 } from 'lucide-react';
+import { X, Send, MessageCircle, Loader2, NotebookPen, MessageSquare } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import MeganService from '../../services/meganService';
 
@@ -10,18 +10,23 @@ const MeganAssistant = () => {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [mode, setMode] = useState('chat'); // 'chat' ou 'notes'
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
     if (open && messages.length === 0) {
+      const greeting = mode === 'chat' 
+        ? `Bonjour ${user?.firstName || 'là'} ! Je suis Megan, votre assistante IA RH. Comment puis-je vous aider aujourd'hui ?`
+        : `Mode prise de notes activé. Collez ici une transcription de réunion et je génèrerai des notes structurées pour vous.`;
+      
       setMessages([{
         id: 'greeting',
         role: 'assistant',
-        content: `Bonjour ${user?.firstName || 'là'} ! Je suis Megan, votre assistante IA RH. Comment puis-je vous aider aujourd'hui ?`,
+        content: greeting,
         timestamp: new Date()
       }]);
     }
-  }, [open, user]);
+  }, [open, user, mode]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -53,21 +58,35 @@ const MeganAssistant = () => {
     }]);
 
     try {
-      const response = await MeganService.sendMessage(userMessage, { type: 'general' });
+      let response;
+      
+      if (mode === 'chat') {
+        // Utilise la route /chat
+        response = await MeganService.sendMessage(userMessage, { type: 'general' });
+        console.log("Réponse de Megan:", response);
+        console.log("Tresponse.success:", response.success);
+      } else {
+        // Utilise la route /note-taking
+        response = await MeganService.generateNotes(userMessage, { 
+          meetingType: 'interview',
+          userId: user?.id 
+        });
+      }
 
       if (response.success) {
-        // Simuler une réponse (en réalité elle viendrait d'Intercom)
         setTimeout(() => {
           setMessages(prev => prev.map(msg => 
             msg.id === loadingId 
               ? {
                   ...msg,
-                  content: `Votre demande est en cours de traitement. Conversation ID: ${response.data.conversationId}. Je vous fournirai une réponse détaillée dans quelques instants.`,
+                  content: mode === 'chat' 
+                    ? `${response.data.message}\n\n${response.data.source ? `🔍 Source: ${response.data.source}` : ''}` 
+                    : `**Notes générées :**\n\n**Résumé :** ${response.data.notes.summary}\n\n**Points clés :**\n${response.data.notes.keyPoints.map(point => `• ${point}`).join('\n')}\n\n**Actions à suivre :**\n${response.data.notes.actionItems.map(action => `• ${action}`).join('\n')}\n\n${response.data.source ? `🔍 Source: ${response.data.source}` : ''}`,
                   isLoading: false
                 }
               : msg
           ));
-        }, 2000);
+        }, 1000);
       }
 
     } catch (error) {
@@ -93,6 +112,11 @@ const MeganAssistant = () => {
     }
   };
 
+  const switchMode = (newMode) => {
+    setMode(newMode);
+    setMessages([]); // Reset messages when switching mode
+  };
+
   return (
     <>
       {/* Bouton flottant */}
@@ -113,16 +137,40 @@ const MeganAssistant = () => {
             <div className="flex items-center justify-between">
               <div>
                 <div className="font-semibold">Megan AI</div>
-                <div className="text-purple-100 text-sm">Assistant RH</div>
+                <div className="text-purple-100 text-sm">
+                  {mode === 'chat' ? 'Assistant RH' : 'Prise de notes'}
+                </div>
               </div>
               <button onClick={() => setOpen(false)} className="text-white hover:text-purple-200">
                 <X size={20} />
               </button>
             </div>
+            
+            {/* Mode selector */}
+            <div className="flex mt-2 bg-white/20 rounded-lg p-1">
+              <button
+                onClick={() => switchMode('chat')}
+                className={`flex-1 flex items-center justify-center gap-1 px-3 py-1 rounded text-xs transition-colors ${
+                  mode === 'chat' ? 'bg-white text-purple-600' : 'text-white/80 hover:text-white'
+                }`}
+              >
+                <MessageSquare size={14} />
+                Chat
+              </button>
+              <button
+                onClick={() => switchMode('notes')}
+                className={`flex-1 flex items-center justify-center gap-1 px-3 py-1 rounded text-xs transition-colors ${
+                  mode === 'notes' ? 'bg-white text-purple-600' : 'text-white/80 hover:text-white'
+                }`}
+              >
+                <NotebookPen size={14} />
+                Notes
+              </button>
+            </div>
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 h-64 space-y-3">
+          <div className="flex-1 overflow-y-auto p-4 h-52 space-y-3">
             {messages.map((message) => (
               <div key={message.id} className={`flex ${message.role === 'assistant' ? 'justify-start' : 'justify-end'}`}>
                 <div className={`max-w-xs px-3 py-2 rounded-lg text-sm ${
@@ -143,18 +191,19 @@ const MeganAssistant = () => {
           {/* Input */}
           <div className="p-3 border-t">
             <div className="flex gap-2">
-              <input
+              <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Tapez votre message..."
-                className="flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-200"
+                placeholder={mode === 'chat' ? "Tapez votre message..." : "Collez la transcription de réunion..."}
+                className="flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-200 resize-none"
+                rows={mode === 'notes' ? 3 : 1}
                 disabled={isLoading}
               />
               <button
                 onClick={handleSend}
                 disabled={!input.trim() || isLoading}
-                className="px-4 py-2 bg-purple-500 text-white rounded-lg text-sm hover:bg-purple-600 disabled:opacity-50 flex items-center gap-1"
+                className="px-4 py-2 bg-purple-500 text-white rounded-lg text-sm hover:bg-purple-600 disabled:opacity-50 flex items-center gap-1 self-end"
               >
                 {isLoading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
               </button>

@@ -2,6 +2,7 @@
 
 import CandidateService from './candidate.service.js';
 import multer from 'multer';
+import { performAiScreening } from '../../services/ai/megan.service.js';
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -253,6 +254,14 @@ class CandidateController {
       };
 
       const candidate = await CandidateService.createCandidate(req.user.id, companyId, candidateData);
+
+      // Lancer le processus de screening AI
+       
+       if (candidateData.job && candidate) {
+       performAiScreening(candidate.id, candidateData.job, req.user.id)
+       .catch(err => console.error(`Erreur du screening IA pour le candidat ${candidate.id}:`, err));
+    }
+
       res.status(201).json({ message: 'Candidate created.', data: candidate });
     } catch (error) {
       next(error);

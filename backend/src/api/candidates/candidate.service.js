@@ -1164,6 +1164,29 @@ class CandidateService {
 
     return candidate.resumeUrl;
   }
+
+   
+async findByJobAndStage(jobTitle, stageName) {
+  // Recherche tous les candidats ayant une application pour le job et le stage demandés
+  const candidates = await prisma.candidate.findMany({
+    where: {
+      applications: {
+        some: {
+          job: { title: { contains: jobTitle, mode: 'insensitive' } },
+          currentStage: { name: { contains: stageName, mode: 'insensitive' } }
+        }
+      }
+    },
+    select: {
+      firstName: true,
+      lastName: true,
+      email: true
+    }
+  });
+  return candidates;
+}
+ 
+
 }
 
 export default new CandidateService();

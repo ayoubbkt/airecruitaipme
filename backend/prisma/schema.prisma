@@ -199,6 +199,10 @@ model Candidate {
   phoneNumber      String?
   resumeUrl        String?
   score          Int?  
+  ai_screening_score    Int?     // Score de 0 à 100
+  ai_screening_summary  String?  @db.Text // Résumé par l'IA
+  ai_screening_pros     String?  @db.Text // Points forts identifiés
+  ai_screening_cons     String?  @db.Text // Points faibles identifiés
   coverLetterText  String?
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
@@ -208,9 +212,21 @@ model Candidate {
   files          CandidateFile[]
   activities     Activity[]
   meetings       Meeting[]
+  interviewNotes InterviewNote[]
   ratings        CandidateRating[]   @relation("CandidateRatings")
 
   @@map("candidates")
+}
+
+model InterviewNote {
+  id           String   @id @default(cuid())
+  candidateId  String
+  jobId        String
+  content      String   @db.Text
+  createdAt    DateTime @default(now())
+
+  candidate    Candidate @relation(fields: [candidateId], references: [id])
+  // Ajoutez une relation au Job si nécessaire
 }
 
 model Application {
@@ -854,6 +870,7 @@ enum ActivityType {
   FILE_UPLOADED
   FILE_DELETED
   RATING_ADDED
+  AI_SCREENING
 }
 
 enum MessageType {

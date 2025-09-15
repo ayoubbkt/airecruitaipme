@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Calendar, User, Briefcase, CheckCircle, Star, Play, Users } from 'lucide-react';
 import { dashboardService } from '../../services/api';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import MeganAssistant from '../../components/aiMegan/MeganAssistant';
 
 const DashboardCard = ({ children, className = "" }) => (
     <div className={`bg-white rounded-xl shadow-sm p-5 ${className}`}>
@@ -271,6 +272,11 @@ const Dashboard = () => {
                   <img src="/api/placeholder/40/40" alt="User" className="w-full h-full object-cover" />
                 </div>
               </div>
+            </DashboardCard>
+
+            {/* Megan Chat */}
+            <DashboardCard className="col-span-12 md:col-span-4">
+              <MeganAssistant />
             </DashboardCard>
           </div>
         </div>

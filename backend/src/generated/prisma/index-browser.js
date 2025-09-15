@@ -235,9 +235,21 @@ exports.Prisma.CandidateScalarFieldEnum = {
   phoneNumber: 'phoneNumber',
   resumeUrl: 'resumeUrl',
   score: 'score',
+  ai_screening_score: 'ai_screening_score',
+  ai_screening_summary: 'ai_screening_summary',
+  ai_screening_pros: 'ai_screening_pros',
+  ai_screening_cons: 'ai_screening_cons',
   coverLetterText: 'coverLetterText',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
+};
+
+exports.Prisma.InterviewNoteScalarFieldEnum = {
+  id: 'id',
+  candidateId: 'candidateId',
+  jobId: 'jobId',
+  content: 'content',
+  createdAt: 'createdAt'
 };
 
 exports.Prisma.ApplicationScalarFieldEnum = {
@@ -739,7 +751,8 @@ exports.ActivityType = exports.$Enums.ActivityType = {
   MEETING_SCHEDULED: 'MEETING_SCHEDULED',
   FILE_UPLOADED: 'FILE_UPLOADED',
   FILE_DELETED: 'FILE_DELETED',
-  RATING_ADDED: 'RATING_ADDED'
+  RATING_ADDED: 'RATING_ADDED',
+  AI_SCREENING: 'AI_SCREENING'
 };
 
 exports.MessageType = exports.$Enums.MessageType = {
@@ -816,6 +829,7 @@ exports.Prisma.ModelName = {
   ApplicationFormField: 'ApplicationFormField',
   CustomQuestion: 'CustomQuestion',
   Candidate: 'Candidate',
+  InterviewNote: 'InterviewNote',
   Application: 'Application',
   CandidateAnswer: 'CandidateAnswer',
   WorkflowTemplate: 'WorkflowTemplate',

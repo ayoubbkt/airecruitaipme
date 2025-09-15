@@ -1,6 +1,60 @@
 // backend/src/api/aiMegan/aiMegan.controller.js (REMPLACER COMPLÈTEMENT)
 import AiMeganService from './aiMegan.service.js';
-import MeganAiService from '../../services/meganAi.service.js';
+import { handleChatInteraction, handleNoteTaking as aiNoteTakingService } from '../../services/ai/megan.service.js';
+import prisma from '../../config/db.js';
+
+
+// export const handleChat = async (req, res, next) => {
+//     try {
+//         const { message } = req.body;
+//         console.log("User ID dans handleChat:", req.user?.id);
+//         const userId = req.user.id;
+//         if (!message) {
+//             return res.status(400).json({ error: 'Message manquant' });
+//         }
+        
+//         console.log("Message reçu dans handleChat:", message);
+//         const response = await handleChatInteraction(message, userId);
+//         res.status(200).json(response);
+//     } catch (error) {
+//         next(error);
+//     }
+// };
+
+export const handleChat = async (req, res, next) => {
+    try {
+        const { message } = req.body;
+        const userId = req.user.id; // Récupéré depuis votre middleware `protect`
+        console.log("User ID dans handleChat:", userId);
+        if (!message) {
+            return res.status(400).json({ error: 'Message manquant' });
+        }
+        if (!userId) {
+            return res.status(401).json({ error: 'Utilisateur non authentifié' });
+        }
+
+        const response = await handleChatInteraction(message, userId);
+        res.status(200).json(response);
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const handleNoteTaking = async (req, res, next) => {
+    try {
+        const { transcript } = req.body;
+        if (!transcript) {
+            return res.status(400).json({ error: 'Transcript manquant pour la prise de notes' });
+        }
+        
+        const response = await aiNoteTakingService(transcript);
+        res.status(200).json(response);
+    } catch (error) {
+        next(error);
+    }
+};
+
+
 
 class AiMeganController {
   // === FONCTIONS EXISTANTES (garder) ===
@@ -134,12 +188,9 @@ class AiMeganController {
         return res.status(400).json({ error: 'Message requis' });
       }
 
-      const result = await MeganAiService.chatWithMegan(req.user.id, message.trim(), context);
+      const result = await handleChatInteraction(message.trim(),req.user.id);
 
-      res.status(200).json({
-        success: true,
-        data: result
-      });
+      res.status(200).json(result);
 
     } catch (error) {
       next(error);
@@ -152,11 +203,9 @@ class AiMeganController {
       const { jobId, candidateId } = req.params;
       const { candidateData } = req.body;
 
-      const result = await MeganAiService.performAiScreening(req.user.id, jobId, candidateData);
-
-      res.status(200).json({
-        success: true,
-        data: result
+      // TODO: Implémenter avec les services du dossier /ai/
+      res.status(501).json({
+        error: 'Service temporairement indisponible - en cours d\'implémentation'
       });
 
     } catch (error) {
@@ -170,11 +219,9 @@ class AiMeganController {
       const { jobId, candidateId } = req.params;
       const schedulingData = req.body;
 
-      const result = await MeganAiService.performAiScheduling(req.user.id, jobId, candidateId, schedulingData);
-
-      res.status(200).json({
-        success: true,
-        data: result
+      // TODO: Implémenter avec les services du dossier /ai/
+      res.status(501).json({
+        error: 'Service temporairement indisponible - en cours d\'implémentation'
       });
 
     } catch (error) {
@@ -192,12 +239,9 @@ class AiMeganController {
         return res.status(400).json({ error: 'Transcription requise' });
       }
 
-      const result = await MeganAiService.performAiNoteTaking(req.user.id, meetingId, transcription.trim());
+      const result = await aiNoteTakingService(transcription.trim());
 
-      res.status(200).json({
-        success: true,
-        data: result
-      });
+      res.status(200).json(result);
 
     } catch (error) {
       next(error);
@@ -205,45 +249,22 @@ class AiMeganController {
   }
 
   // Webhook Intercom
-  // backend/src/api/aiMegan/aiMegan.controller.js
-async handleIntercomWebhook(req, res, next) {
-  try {
-    console.log('📨 Webhook reçu:', req.body);
-    
-    // SKIP validation signature en développement
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🔓 Mode développement - validation signature ignorée');
-    } else {
-      // Validation normale en production
-      const signature = req.headers['x-hub-signature-256'];
-      if (!this.validateWebhookSignature(req)) {
-        return res.status(401).json({ error: 'Signature webhook invalide' });
-      }
+  async handleIntercomWebhook(req, res, next) {
+    try {
+      console.log('📨 Webhook reçu:', req.body);
+      
+      // TODO: Implémenter avec les services du dossier /ai/
+      res.status(200).json({ 
+        received: true, 
+        timestamp: new Date().toISOString(),
+        status: 'webhook reçu mais traitement temporairement désactivé'
+      });
+
+    } catch (error) {
+      console.error('❌ Erreur webhook:', error);
+      res.status(500).json({ error: 'Erreur serveur' });
     }
-
-    const webhookData = req.body;
-    
-    // Traitement asynchrone
-    setImmediate(async () => {
-      try {
-        await MeganAiService.processWebhookResponse(webhookData);
-        console.log('✅ Webhook traité avec succès');
-      } catch (error) {
-        console.error('❌ Erreur traitement webhook:', error);
-      }
-    });
-
-    res.status(200).json({ 
-      received: true, 
-      timestamp: new Date().toISOString(),
-      dev_mode: process.env.NODE_ENV === 'development'
-    });
-
-  } catch (error) {
-    console.error('❌ Erreur webhook:', error);
-    res.status(500).json({ error: 'Erreur serveur' });
   }
-}
 
   // Conversations
   async getConversations(req, res, next) {

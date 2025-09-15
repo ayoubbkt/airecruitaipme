@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { 
   User, Mail, Phone, MapPin, Calendar, FileText, MessageSquare, 
   Star, Activity, Upload, Send, Clock, Users, ExternalLink,
-  ChevronLeft, Edit, MoreVertical, Download, Eye, EyeOff, Trash2, Pin,ChevronDown
+  ChevronLeft, Edit, MoreVertical, Download, Eye, EyeOff, Trash2, Pin, ChevronDown, Brain
 } from 'lucide-react';
 import { 
   useCandidateManagement,
@@ -143,6 +143,7 @@ const CandidateDetailPage = () => {
         case 'MEETING_SCHEDULED': return { icon: Calendar, color: 'bg-orange-100 text-orange-600' };
         case 'FILE_UPLOADED': return { icon: Upload, color: 'bg-indigo-100 text-indigo-600' };
         case 'RATING_ADDED': return { icon: Star, color: 'bg-yellow-100 text-yellow-600' };
+        case 'AI_SCREENING': return { icon: Brain, color: 'bg-purple-100 text-purple-600' };
         default: return { icon: Activity, color: 'bg-gray-100 text-gray-600' };
       }
     };
@@ -295,7 +296,7 @@ const CandidateDetailPage = () => {
                   <div className="text-sm text-gray-500">In stage 2d</div>
                 </div>
                 <div className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
-                  {stageCandidate.score || 85}
+                  {stageCandidate.ai_screening_score || stageCandidate.score || 'N/A'}
                 </div>
               </div>
             ))}
@@ -320,7 +321,7 @@ const CandidateDetailPage = () => {
                         {candidateData.firstName} {candidateData.lastName}
                       </h1>
                       <div className="px-2 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">
-                        {candidateData.score || 85}
+                        {candidateData.ai_screening_score || candidateData.score || 'N/A'}
                       </div>
                     </div>
                     <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">

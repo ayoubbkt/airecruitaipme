@@ -64,6 +64,11 @@ export type CustomQuestion = $Result.DefaultSelection<Prisma.$CustomQuestionPayl
  */
 export type Candidate = $Result.DefaultSelection<Prisma.$CandidatePayload>
 /**
+ * Model InterviewNote
+ * 
+ */
+export type InterviewNote = $Result.DefaultSelection<Prisma.$InterviewNotePayload>
+/**
  * Model Application
  * 
  */
@@ -396,7 +401,8 @@ export const ActivityType: {
   MEETING_SCHEDULED: 'MEETING_SCHEDULED',
   FILE_UPLOADED: 'FILE_UPLOADED',
   FILE_DELETED: 'FILE_DELETED',
-  RATING_ADDED: 'RATING_ADDED'
+  RATING_ADDED: 'RATING_ADDED',
+  AI_SCREENING: 'AI_SCREENING'
 };
 
 export type ActivityType = (typeof ActivityType)[keyof typeof ActivityType]
@@ -848,6 +854,16 @@ export class PrismaClient<
     * ```
     */
   get candidate(): Prisma.CandidateDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.interviewNote`: Exposes CRUD operations for the **InterviewNote** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more InterviewNotes
+    * const interviewNotes = await prisma.interviewNote.findMany()
+    * ```
+    */
+  get interviewNote(): Prisma.InterviewNoteDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.application`: Exposes CRUD operations for the **Application** model.
@@ -1638,6 +1654,7 @@ export namespace Prisma {
     ApplicationFormField: 'ApplicationFormField',
     CustomQuestion: 'CustomQuestion',
     Candidate: 'Candidate',
+    InterviewNote: 'InterviewNote',
     Application: 'Application',
     CandidateAnswer: 'CandidateAnswer',
     WorkflowTemplate: 'WorkflowTemplate',
@@ -1690,7 +1707,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "user" | "userProfile" | "company" | "companyMember" | "job" | "department" | "jobLocation" | "applicationFormField" | "customQuestion" | "candidate" | "application" | "candidateAnswer" | "workflowTemplate" | "workflowStageTemplate" | "jobWorkflow" | "jobWorkflowStage" | "jobHiringMember" | "ratingCardTemplate" | "ratingCategory" | "candidateRating" | "categoryScore" | "messageThread" | "comment" | "candidateFile" | "activity" | "message" | "meeting" | "meetingAttendee" | "meetingTemplate" | "careersPageSetting" | "notification" | "aIScreeningConfig" | "aISchedulingConfig" | "aINoteTakingConfig" | "aIInteractionLog" | "aIBusinessPreference" | "aICommunicationPreference" | "calendarIntegration" | "jobBoardIntegration" | "messageTemplate" | "question" | "questionOption" | "questionSet" | "questionToQuestionSet"
+      modelProps: "user" | "userProfile" | "company" | "companyMember" | "job" | "department" | "jobLocation" | "applicationFormField" | "customQuestion" | "candidate" | "interviewNote" | "application" | "candidateAnswer" | "workflowTemplate" | "workflowStageTemplate" | "jobWorkflow" | "jobWorkflowStage" | "jobHiringMember" | "ratingCardTemplate" | "ratingCategory" | "candidateRating" | "categoryScore" | "messageThread" | "comment" | "candidateFile" | "activity" | "message" | "meeting" | "meetingAttendee" | "meetingTemplate" | "careersPageSetting" | "notification" | "aIScreeningConfig" | "aISchedulingConfig" | "aINoteTakingConfig" | "aIInteractionLog" | "aIBusinessPreference" | "aICommunicationPreference" | "calendarIntegration" | "jobBoardIntegration" | "messageTemplate" | "question" | "questionOption" | "questionSet" | "questionToQuestionSet"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -2431,6 +2448,80 @@ export namespace Prisma {
           count: {
             args: Prisma.CandidateCountArgs<ExtArgs>
             result: $Utils.Optional<CandidateCountAggregateOutputType> | number
+          }
+        }
+      }
+      InterviewNote: {
+        payload: Prisma.$InterviewNotePayload<ExtArgs>
+        fields: Prisma.InterviewNoteFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.InterviewNoteFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InterviewNotePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.InterviewNoteFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InterviewNotePayload>
+          }
+          findFirst: {
+            args: Prisma.InterviewNoteFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InterviewNotePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.InterviewNoteFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InterviewNotePayload>
+          }
+          findMany: {
+            args: Prisma.InterviewNoteFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InterviewNotePayload>[]
+          }
+          create: {
+            args: Prisma.InterviewNoteCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InterviewNotePayload>
+          }
+          createMany: {
+            args: Prisma.InterviewNoteCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.InterviewNoteCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InterviewNotePayload>[]
+          }
+          delete: {
+            args: Prisma.InterviewNoteDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InterviewNotePayload>
+          }
+          update: {
+            args: Prisma.InterviewNoteUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InterviewNotePayload>
+          }
+          deleteMany: {
+            args: Prisma.InterviewNoteDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.InterviewNoteUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.InterviewNoteUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InterviewNotePayload>[]
+          }
+          upsert: {
+            args: Prisma.InterviewNoteUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InterviewNotePayload>
+          }
+          aggregate: {
+            args: Prisma.InterviewNoteAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateInterviewNote>
+          }
+          groupBy: {
+            args: Prisma.InterviewNoteGroupByArgs<ExtArgs>
+            result: $Utils.Optional<InterviewNoteGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.InterviewNoteCountArgs<ExtArgs>
+            result: $Utils.Optional<InterviewNoteCountAggregateOutputType> | number
           }
         }
       }
@@ -5044,6 +5135,7 @@ export namespace Prisma {
     applicationFormField?: ApplicationFormFieldOmit
     customQuestion?: CustomQuestionOmit
     candidate?: CandidateOmit
+    interviewNote?: InterviewNoteOmit
     application?: ApplicationOmit
     candidateAnswer?: CandidateAnswerOmit
     workflowTemplate?: WorkflowTemplateOmit
@@ -5598,6 +5690,7 @@ export namespace Prisma {
     files: number
     activities: number
     meetings: number
+    interviewNotes: number
     ratings: number
   }
 
@@ -5608,6 +5701,7 @@ export namespace Prisma {
     files?: boolean | CandidateCountOutputTypeCountFilesArgs
     activities?: boolean | CandidateCountOutputTypeCountActivitiesArgs
     meetings?: boolean | CandidateCountOutputTypeCountMeetingsArgs
+    interviewNotes?: boolean | CandidateCountOutputTypeCountInterviewNotesArgs
     ratings?: boolean | CandidateCountOutputTypeCountRatingsArgs
   }
 
@@ -5662,6 +5756,13 @@ export namespace Prisma {
    */
   export type CandidateCountOutputTypeCountMeetingsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: MeetingWhereInput
+  }
+
+  /**
+   * CandidateCountOutputType without action
+   */
+  export type CandidateCountOutputTypeCountInterviewNotesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: InterviewNoteWhereInput
   }
 
   /**
@@ -17278,10 +17379,12 @@ export namespace Prisma {
 
   export type CandidateAvgAggregateOutputType = {
     score: number | null
+    ai_screening_score: number | null
   }
 
   export type CandidateSumAggregateOutputType = {
     score: number | null
+    ai_screening_score: number | null
   }
 
   export type CandidateMinAggregateOutputType = {
@@ -17292,6 +17395,10 @@ export namespace Prisma {
     phoneNumber: string | null
     resumeUrl: string | null
     score: number | null
+    ai_screening_score: number | null
+    ai_screening_summary: string | null
+    ai_screening_pros: string | null
+    ai_screening_cons: string | null
     coverLetterText: string | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -17305,6 +17412,10 @@ export namespace Prisma {
     phoneNumber: string | null
     resumeUrl: string | null
     score: number | null
+    ai_screening_score: number | null
+    ai_screening_summary: string | null
+    ai_screening_pros: string | null
+    ai_screening_cons: string | null
     coverLetterText: string | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -17318,6 +17429,10 @@ export namespace Prisma {
     phoneNumber: number
     resumeUrl: number
     score: number
+    ai_screening_score: number
+    ai_screening_summary: number
+    ai_screening_pros: number
+    ai_screening_cons: number
     coverLetterText: number
     createdAt: number
     updatedAt: number
@@ -17327,10 +17442,12 @@ export namespace Prisma {
 
   export type CandidateAvgAggregateInputType = {
     score?: true
+    ai_screening_score?: true
   }
 
   export type CandidateSumAggregateInputType = {
     score?: true
+    ai_screening_score?: true
   }
 
   export type CandidateMinAggregateInputType = {
@@ -17341,6 +17458,10 @@ export namespace Prisma {
     phoneNumber?: true
     resumeUrl?: true
     score?: true
+    ai_screening_score?: true
+    ai_screening_summary?: true
+    ai_screening_pros?: true
+    ai_screening_cons?: true
     coverLetterText?: true
     createdAt?: true
     updatedAt?: true
@@ -17354,6 +17475,10 @@ export namespace Prisma {
     phoneNumber?: true
     resumeUrl?: true
     score?: true
+    ai_screening_score?: true
+    ai_screening_summary?: true
+    ai_screening_pros?: true
+    ai_screening_cons?: true
     coverLetterText?: true
     createdAt?: true
     updatedAt?: true
@@ -17367,6 +17492,10 @@ export namespace Prisma {
     phoneNumber?: true
     resumeUrl?: true
     score?: true
+    ai_screening_score?: true
+    ai_screening_summary?: true
+    ai_screening_pros?: true
+    ai_screening_cons?: true
     coverLetterText?: true
     createdAt?: true
     updatedAt?: true
@@ -17467,6 +17596,10 @@ export namespace Prisma {
     phoneNumber: string | null
     resumeUrl: string | null
     score: number | null
+    ai_screening_score: number | null
+    ai_screening_summary: string | null
+    ai_screening_pros: string | null
+    ai_screening_cons: string | null
     coverLetterText: string | null
     createdAt: Date
     updatedAt: Date
@@ -17499,6 +17632,10 @@ export namespace Prisma {
     phoneNumber?: boolean
     resumeUrl?: boolean
     score?: boolean
+    ai_screening_score?: boolean
+    ai_screening_summary?: boolean
+    ai_screening_pros?: boolean
+    ai_screening_cons?: boolean
     coverLetterText?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -17508,6 +17645,7 @@ export namespace Prisma {
     files?: boolean | Candidate$filesArgs<ExtArgs>
     activities?: boolean | Candidate$activitiesArgs<ExtArgs>
     meetings?: boolean | Candidate$meetingsArgs<ExtArgs>
+    interviewNotes?: boolean | Candidate$interviewNotesArgs<ExtArgs>
     ratings?: boolean | Candidate$ratingsArgs<ExtArgs>
     _count?: boolean | CandidateCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["candidate"]>
@@ -17520,6 +17658,10 @@ export namespace Prisma {
     phoneNumber?: boolean
     resumeUrl?: boolean
     score?: boolean
+    ai_screening_score?: boolean
+    ai_screening_summary?: boolean
+    ai_screening_pros?: boolean
+    ai_screening_cons?: boolean
     coverLetterText?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -17533,6 +17675,10 @@ export namespace Prisma {
     phoneNumber?: boolean
     resumeUrl?: boolean
     score?: boolean
+    ai_screening_score?: boolean
+    ai_screening_summary?: boolean
+    ai_screening_pros?: boolean
+    ai_screening_cons?: boolean
     coverLetterText?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -17546,12 +17692,16 @@ export namespace Prisma {
     phoneNumber?: boolean
     resumeUrl?: boolean
     score?: boolean
+    ai_screening_score?: boolean
+    ai_screening_summary?: boolean
+    ai_screening_pros?: boolean
+    ai_screening_cons?: boolean
     coverLetterText?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type CandidateOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "firstName" | "lastName" | "email" | "phoneNumber" | "resumeUrl" | "score" | "coverLetterText" | "createdAt" | "updatedAt", ExtArgs["result"]["candidate"]>
+  export type CandidateOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "firstName" | "lastName" | "email" | "phoneNumber" | "resumeUrl" | "score" | "ai_screening_score" | "ai_screening_summary" | "ai_screening_pros" | "ai_screening_cons" | "coverLetterText" | "createdAt" | "updatedAt", ExtArgs["result"]["candidate"]>
   export type CandidateInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     applications?: boolean | Candidate$applicationsArgs<ExtArgs>
     candidateAnswers?: boolean | Candidate$candidateAnswersArgs<ExtArgs>
@@ -17559,6 +17709,7 @@ export namespace Prisma {
     files?: boolean | Candidate$filesArgs<ExtArgs>
     activities?: boolean | Candidate$activitiesArgs<ExtArgs>
     meetings?: boolean | Candidate$meetingsArgs<ExtArgs>
+    interviewNotes?: boolean | Candidate$interviewNotesArgs<ExtArgs>
     ratings?: boolean | Candidate$ratingsArgs<ExtArgs>
     _count?: boolean | CandidateCountOutputTypeDefaultArgs<ExtArgs>
   }
@@ -17574,6 +17725,7 @@ export namespace Prisma {
       files: Prisma.$CandidateFilePayload<ExtArgs>[]
       activities: Prisma.$ActivityPayload<ExtArgs>[]
       meetings: Prisma.$MeetingPayload<ExtArgs>[]
+      interviewNotes: Prisma.$InterviewNotePayload<ExtArgs>[]
       ratings: Prisma.$CandidateRatingPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
@@ -17584,6 +17736,10 @@ export namespace Prisma {
       phoneNumber: string | null
       resumeUrl: string | null
       score: number | null
+      ai_screening_score: number | null
+      ai_screening_summary: string | null
+      ai_screening_pros: string | null
+      ai_screening_cons: string | null
       coverLetterText: string | null
       createdAt: Date
       updatedAt: Date
@@ -17987,6 +18143,7 @@ export namespace Prisma {
     files<T extends Candidate$filesArgs<ExtArgs> = {}>(args?: Subset<T, Candidate$filesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CandidateFilePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     activities<T extends Candidate$activitiesArgs<ExtArgs> = {}>(args?: Subset<T, Candidate$activitiesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ActivityPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     meetings<T extends Candidate$meetingsArgs<ExtArgs> = {}>(args?: Subset<T, Candidate$meetingsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MeetingPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    interviewNotes<T extends Candidate$interviewNotesArgs<ExtArgs> = {}>(args?: Subset<T, Candidate$interviewNotesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$InterviewNotePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     ratings<T extends Candidate$ratingsArgs<ExtArgs> = {}>(args?: Subset<T, Candidate$ratingsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CandidateRatingPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -18024,6 +18181,10 @@ export namespace Prisma {
     readonly phoneNumber: FieldRef<"Candidate", 'String'>
     readonly resumeUrl: FieldRef<"Candidate", 'String'>
     readonly score: FieldRef<"Candidate", 'Int'>
+    readonly ai_screening_score: FieldRef<"Candidate", 'Int'>
+    readonly ai_screening_summary: FieldRef<"Candidate", 'String'>
+    readonly ai_screening_pros: FieldRef<"Candidate", 'String'>
+    readonly ai_screening_cons: FieldRef<"Candidate", 'String'>
     readonly coverLetterText: FieldRef<"Candidate", 'String'>
     readonly createdAt: FieldRef<"Candidate", 'DateTime'>
     readonly updatedAt: FieldRef<"Candidate", 'DateTime'>
@@ -18559,6 +18720,30 @@ export namespace Prisma {
   }
 
   /**
+   * Candidate.interviewNotes
+   */
+  export type Candidate$interviewNotesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the InterviewNote
+     */
+    select?: InterviewNoteSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the InterviewNote
+     */
+    omit?: InterviewNoteOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InterviewNoteInclude<ExtArgs> | null
+    where?: InterviewNoteWhereInput
+    orderBy?: InterviewNoteOrderByWithRelationInput | InterviewNoteOrderByWithRelationInput[]
+    cursor?: InterviewNoteWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: InterviewNoteScalarFieldEnum | InterviewNoteScalarFieldEnum[]
+  }
+
+  /**
    * Candidate.ratings
    */
   export type Candidate$ratingsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -18598,6 +18783,1064 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: CandidateInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model InterviewNote
+   */
+
+  export type AggregateInterviewNote = {
+    _count: InterviewNoteCountAggregateOutputType | null
+    _min: InterviewNoteMinAggregateOutputType | null
+    _max: InterviewNoteMaxAggregateOutputType | null
+  }
+
+  export type InterviewNoteMinAggregateOutputType = {
+    id: string | null
+    candidateId: string | null
+    jobId: string | null
+    content: string | null
+    createdAt: Date | null
+  }
+
+  export type InterviewNoteMaxAggregateOutputType = {
+    id: string | null
+    candidateId: string | null
+    jobId: string | null
+    content: string | null
+    createdAt: Date | null
+  }
+
+  export type InterviewNoteCountAggregateOutputType = {
+    id: number
+    candidateId: number
+    jobId: number
+    content: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type InterviewNoteMinAggregateInputType = {
+    id?: true
+    candidateId?: true
+    jobId?: true
+    content?: true
+    createdAt?: true
+  }
+
+  export type InterviewNoteMaxAggregateInputType = {
+    id?: true
+    candidateId?: true
+    jobId?: true
+    content?: true
+    createdAt?: true
+  }
+
+  export type InterviewNoteCountAggregateInputType = {
+    id?: true
+    candidateId?: true
+    jobId?: true
+    content?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type InterviewNoteAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which InterviewNote to aggregate.
+     */
+    where?: InterviewNoteWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of InterviewNotes to fetch.
+     */
+    orderBy?: InterviewNoteOrderByWithRelationInput | InterviewNoteOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: InterviewNoteWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` InterviewNotes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` InterviewNotes.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned InterviewNotes
+    **/
+    _count?: true | InterviewNoteCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: InterviewNoteMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: InterviewNoteMaxAggregateInputType
+  }
+
+  export type GetInterviewNoteAggregateType<T extends InterviewNoteAggregateArgs> = {
+        [P in keyof T & keyof AggregateInterviewNote]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateInterviewNote[P]>
+      : GetScalarType<T[P], AggregateInterviewNote[P]>
+  }
+
+
+
+
+  export type InterviewNoteGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: InterviewNoteWhereInput
+    orderBy?: InterviewNoteOrderByWithAggregationInput | InterviewNoteOrderByWithAggregationInput[]
+    by: InterviewNoteScalarFieldEnum[] | InterviewNoteScalarFieldEnum
+    having?: InterviewNoteScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: InterviewNoteCountAggregateInputType | true
+    _min?: InterviewNoteMinAggregateInputType
+    _max?: InterviewNoteMaxAggregateInputType
+  }
+
+  export type InterviewNoteGroupByOutputType = {
+    id: string
+    candidateId: string
+    jobId: string
+    content: string
+    createdAt: Date
+    _count: InterviewNoteCountAggregateOutputType | null
+    _min: InterviewNoteMinAggregateOutputType | null
+    _max: InterviewNoteMaxAggregateOutputType | null
+  }
+
+  type GetInterviewNoteGroupByPayload<T extends InterviewNoteGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<InterviewNoteGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof InterviewNoteGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], InterviewNoteGroupByOutputType[P]>
+            : GetScalarType<T[P], InterviewNoteGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type InterviewNoteSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    candidateId?: boolean
+    jobId?: boolean
+    content?: boolean
+    createdAt?: boolean
+    candidate?: boolean | CandidateDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["interviewNote"]>
+
+  export type InterviewNoteSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    candidateId?: boolean
+    jobId?: boolean
+    content?: boolean
+    createdAt?: boolean
+    candidate?: boolean | CandidateDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["interviewNote"]>
+
+  export type InterviewNoteSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    candidateId?: boolean
+    jobId?: boolean
+    content?: boolean
+    createdAt?: boolean
+    candidate?: boolean | CandidateDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["interviewNote"]>
+
+  export type InterviewNoteSelectScalar = {
+    id?: boolean
+    candidateId?: boolean
+    jobId?: boolean
+    content?: boolean
+    createdAt?: boolean
+  }
+
+  export type InterviewNoteOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "candidateId" | "jobId" | "content" | "createdAt", ExtArgs["result"]["interviewNote"]>
+  export type InterviewNoteInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    candidate?: boolean | CandidateDefaultArgs<ExtArgs>
+  }
+  export type InterviewNoteIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    candidate?: boolean | CandidateDefaultArgs<ExtArgs>
+  }
+  export type InterviewNoteIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    candidate?: boolean | CandidateDefaultArgs<ExtArgs>
+  }
+
+  export type $InterviewNotePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "InterviewNote"
+    objects: {
+      candidate: Prisma.$CandidatePayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      candidateId: string
+      jobId: string
+      content: string
+      createdAt: Date
+    }, ExtArgs["result"]["interviewNote"]>
+    composites: {}
+  }
+
+  type InterviewNoteGetPayload<S extends boolean | null | undefined | InterviewNoteDefaultArgs> = $Result.GetResult<Prisma.$InterviewNotePayload, S>
+
+  type InterviewNoteCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<InterviewNoteFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: InterviewNoteCountAggregateInputType | true
+    }
+
+  export interface InterviewNoteDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['InterviewNote'], meta: { name: 'InterviewNote' } }
+    /**
+     * Find zero or one InterviewNote that matches the filter.
+     * @param {InterviewNoteFindUniqueArgs} args - Arguments to find a InterviewNote
+     * @example
+     * // Get one InterviewNote
+     * const interviewNote = await prisma.interviewNote.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends InterviewNoteFindUniqueArgs>(args: SelectSubset<T, InterviewNoteFindUniqueArgs<ExtArgs>>): Prisma__InterviewNoteClient<$Result.GetResult<Prisma.$InterviewNotePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one InterviewNote that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {InterviewNoteFindUniqueOrThrowArgs} args - Arguments to find a InterviewNote
+     * @example
+     * // Get one InterviewNote
+     * const interviewNote = await prisma.interviewNote.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends InterviewNoteFindUniqueOrThrowArgs>(args: SelectSubset<T, InterviewNoteFindUniqueOrThrowArgs<ExtArgs>>): Prisma__InterviewNoteClient<$Result.GetResult<Prisma.$InterviewNotePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first InterviewNote that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {InterviewNoteFindFirstArgs} args - Arguments to find a InterviewNote
+     * @example
+     * // Get one InterviewNote
+     * const interviewNote = await prisma.interviewNote.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends InterviewNoteFindFirstArgs>(args?: SelectSubset<T, InterviewNoteFindFirstArgs<ExtArgs>>): Prisma__InterviewNoteClient<$Result.GetResult<Prisma.$InterviewNotePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first InterviewNote that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {InterviewNoteFindFirstOrThrowArgs} args - Arguments to find a InterviewNote
+     * @example
+     * // Get one InterviewNote
+     * const interviewNote = await prisma.interviewNote.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends InterviewNoteFindFirstOrThrowArgs>(args?: SelectSubset<T, InterviewNoteFindFirstOrThrowArgs<ExtArgs>>): Prisma__InterviewNoteClient<$Result.GetResult<Prisma.$InterviewNotePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more InterviewNotes that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {InterviewNoteFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all InterviewNotes
+     * const interviewNotes = await prisma.interviewNote.findMany()
+     * 
+     * // Get first 10 InterviewNotes
+     * const interviewNotes = await prisma.interviewNote.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const interviewNoteWithIdOnly = await prisma.interviewNote.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends InterviewNoteFindManyArgs>(args?: SelectSubset<T, InterviewNoteFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$InterviewNotePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a InterviewNote.
+     * @param {InterviewNoteCreateArgs} args - Arguments to create a InterviewNote.
+     * @example
+     * // Create one InterviewNote
+     * const InterviewNote = await prisma.interviewNote.create({
+     *   data: {
+     *     // ... data to create a InterviewNote
+     *   }
+     * })
+     * 
+     */
+    create<T extends InterviewNoteCreateArgs>(args: SelectSubset<T, InterviewNoteCreateArgs<ExtArgs>>): Prisma__InterviewNoteClient<$Result.GetResult<Prisma.$InterviewNotePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many InterviewNotes.
+     * @param {InterviewNoteCreateManyArgs} args - Arguments to create many InterviewNotes.
+     * @example
+     * // Create many InterviewNotes
+     * const interviewNote = await prisma.interviewNote.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends InterviewNoteCreateManyArgs>(args?: SelectSubset<T, InterviewNoteCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many InterviewNotes and returns the data saved in the database.
+     * @param {InterviewNoteCreateManyAndReturnArgs} args - Arguments to create many InterviewNotes.
+     * @example
+     * // Create many InterviewNotes
+     * const interviewNote = await prisma.interviewNote.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many InterviewNotes and only return the `id`
+     * const interviewNoteWithIdOnly = await prisma.interviewNote.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends InterviewNoteCreateManyAndReturnArgs>(args?: SelectSubset<T, InterviewNoteCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$InterviewNotePayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a InterviewNote.
+     * @param {InterviewNoteDeleteArgs} args - Arguments to delete one InterviewNote.
+     * @example
+     * // Delete one InterviewNote
+     * const InterviewNote = await prisma.interviewNote.delete({
+     *   where: {
+     *     // ... filter to delete one InterviewNote
+     *   }
+     * })
+     * 
+     */
+    delete<T extends InterviewNoteDeleteArgs>(args: SelectSubset<T, InterviewNoteDeleteArgs<ExtArgs>>): Prisma__InterviewNoteClient<$Result.GetResult<Prisma.$InterviewNotePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one InterviewNote.
+     * @param {InterviewNoteUpdateArgs} args - Arguments to update one InterviewNote.
+     * @example
+     * // Update one InterviewNote
+     * const interviewNote = await prisma.interviewNote.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends InterviewNoteUpdateArgs>(args: SelectSubset<T, InterviewNoteUpdateArgs<ExtArgs>>): Prisma__InterviewNoteClient<$Result.GetResult<Prisma.$InterviewNotePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more InterviewNotes.
+     * @param {InterviewNoteDeleteManyArgs} args - Arguments to filter InterviewNotes to delete.
+     * @example
+     * // Delete a few InterviewNotes
+     * const { count } = await prisma.interviewNote.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends InterviewNoteDeleteManyArgs>(args?: SelectSubset<T, InterviewNoteDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more InterviewNotes.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {InterviewNoteUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many InterviewNotes
+     * const interviewNote = await prisma.interviewNote.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends InterviewNoteUpdateManyArgs>(args: SelectSubset<T, InterviewNoteUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more InterviewNotes and returns the data updated in the database.
+     * @param {InterviewNoteUpdateManyAndReturnArgs} args - Arguments to update many InterviewNotes.
+     * @example
+     * // Update many InterviewNotes
+     * const interviewNote = await prisma.interviewNote.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more InterviewNotes and only return the `id`
+     * const interviewNoteWithIdOnly = await prisma.interviewNote.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends InterviewNoteUpdateManyAndReturnArgs>(args: SelectSubset<T, InterviewNoteUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$InterviewNotePayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one InterviewNote.
+     * @param {InterviewNoteUpsertArgs} args - Arguments to update or create a InterviewNote.
+     * @example
+     * // Update or create a InterviewNote
+     * const interviewNote = await prisma.interviewNote.upsert({
+     *   create: {
+     *     // ... data to create a InterviewNote
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the InterviewNote we want to update
+     *   }
+     * })
+     */
+    upsert<T extends InterviewNoteUpsertArgs>(args: SelectSubset<T, InterviewNoteUpsertArgs<ExtArgs>>): Prisma__InterviewNoteClient<$Result.GetResult<Prisma.$InterviewNotePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of InterviewNotes.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {InterviewNoteCountArgs} args - Arguments to filter InterviewNotes to count.
+     * @example
+     * // Count the number of InterviewNotes
+     * const count = await prisma.interviewNote.count({
+     *   where: {
+     *     // ... the filter for the InterviewNotes we want to count
+     *   }
+     * })
+    **/
+    count<T extends InterviewNoteCountArgs>(
+      args?: Subset<T, InterviewNoteCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], InterviewNoteCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a InterviewNote.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {InterviewNoteAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends InterviewNoteAggregateArgs>(args: Subset<T, InterviewNoteAggregateArgs>): Prisma.PrismaPromise<GetInterviewNoteAggregateType<T>>
+
+    /**
+     * Group by InterviewNote.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {InterviewNoteGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends InterviewNoteGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: InterviewNoteGroupByArgs['orderBy'] }
+        : { orderBy?: InterviewNoteGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, InterviewNoteGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetInterviewNoteGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the InterviewNote model
+   */
+  readonly fields: InterviewNoteFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for InterviewNote.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__InterviewNoteClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    candidate<T extends CandidateDefaultArgs<ExtArgs> = {}>(args?: Subset<T, CandidateDefaultArgs<ExtArgs>>): Prisma__CandidateClient<$Result.GetResult<Prisma.$CandidatePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the InterviewNote model
+   */
+  interface InterviewNoteFieldRefs {
+    readonly id: FieldRef<"InterviewNote", 'String'>
+    readonly candidateId: FieldRef<"InterviewNote", 'String'>
+    readonly jobId: FieldRef<"InterviewNote", 'String'>
+    readonly content: FieldRef<"InterviewNote", 'String'>
+    readonly createdAt: FieldRef<"InterviewNote", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * InterviewNote findUnique
+   */
+  export type InterviewNoteFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the InterviewNote
+     */
+    select?: InterviewNoteSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the InterviewNote
+     */
+    omit?: InterviewNoteOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InterviewNoteInclude<ExtArgs> | null
+    /**
+     * Filter, which InterviewNote to fetch.
+     */
+    where: InterviewNoteWhereUniqueInput
+  }
+
+  /**
+   * InterviewNote findUniqueOrThrow
+   */
+  export type InterviewNoteFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the InterviewNote
+     */
+    select?: InterviewNoteSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the InterviewNote
+     */
+    omit?: InterviewNoteOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InterviewNoteInclude<ExtArgs> | null
+    /**
+     * Filter, which InterviewNote to fetch.
+     */
+    where: InterviewNoteWhereUniqueInput
+  }
+
+  /**
+   * InterviewNote findFirst
+   */
+  export type InterviewNoteFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the InterviewNote
+     */
+    select?: InterviewNoteSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the InterviewNote
+     */
+    omit?: InterviewNoteOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InterviewNoteInclude<ExtArgs> | null
+    /**
+     * Filter, which InterviewNote to fetch.
+     */
+    where?: InterviewNoteWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of InterviewNotes to fetch.
+     */
+    orderBy?: InterviewNoteOrderByWithRelationInput | InterviewNoteOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for InterviewNotes.
+     */
+    cursor?: InterviewNoteWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` InterviewNotes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` InterviewNotes.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of InterviewNotes.
+     */
+    distinct?: InterviewNoteScalarFieldEnum | InterviewNoteScalarFieldEnum[]
+  }
+
+  /**
+   * InterviewNote findFirstOrThrow
+   */
+  export type InterviewNoteFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the InterviewNote
+     */
+    select?: InterviewNoteSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the InterviewNote
+     */
+    omit?: InterviewNoteOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InterviewNoteInclude<ExtArgs> | null
+    /**
+     * Filter, which InterviewNote to fetch.
+     */
+    where?: InterviewNoteWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of InterviewNotes to fetch.
+     */
+    orderBy?: InterviewNoteOrderByWithRelationInput | InterviewNoteOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for InterviewNotes.
+     */
+    cursor?: InterviewNoteWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` InterviewNotes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` InterviewNotes.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of InterviewNotes.
+     */
+    distinct?: InterviewNoteScalarFieldEnum | InterviewNoteScalarFieldEnum[]
+  }
+
+  /**
+   * InterviewNote findMany
+   */
+  export type InterviewNoteFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the InterviewNote
+     */
+    select?: InterviewNoteSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the InterviewNote
+     */
+    omit?: InterviewNoteOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InterviewNoteInclude<ExtArgs> | null
+    /**
+     * Filter, which InterviewNotes to fetch.
+     */
+    where?: InterviewNoteWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of InterviewNotes to fetch.
+     */
+    orderBy?: InterviewNoteOrderByWithRelationInput | InterviewNoteOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing InterviewNotes.
+     */
+    cursor?: InterviewNoteWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` InterviewNotes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` InterviewNotes.
+     */
+    skip?: number
+    distinct?: InterviewNoteScalarFieldEnum | InterviewNoteScalarFieldEnum[]
+  }
+
+  /**
+   * InterviewNote create
+   */
+  export type InterviewNoteCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the InterviewNote
+     */
+    select?: InterviewNoteSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the InterviewNote
+     */
+    omit?: InterviewNoteOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InterviewNoteInclude<ExtArgs> | null
+    /**
+     * The data needed to create a InterviewNote.
+     */
+    data: XOR<InterviewNoteCreateInput, InterviewNoteUncheckedCreateInput>
+  }
+
+  /**
+   * InterviewNote createMany
+   */
+  export type InterviewNoteCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many InterviewNotes.
+     */
+    data: InterviewNoteCreateManyInput | InterviewNoteCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * InterviewNote createManyAndReturn
+   */
+  export type InterviewNoteCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the InterviewNote
+     */
+    select?: InterviewNoteSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the InterviewNote
+     */
+    omit?: InterviewNoteOmit<ExtArgs> | null
+    /**
+     * The data used to create many InterviewNotes.
+     */
+    data: InterviewNoteCreateManyInput | InterviewNoteCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InterviewNoteIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * InterviewNote update
+   */
+  export type InterviewNoteUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the InterviewNote
+     */
+    select?: InterviewNoteSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the InterviewNote
+     */
+    omit?: InterviewNoteOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InterviewNoteInclude<ExtArgs> | null
+    /**
+     * The data needed to update a InterviewNote.
+     */
+    data: XOR<InterviewNoteUpdateInput, InterviewNoteUncheckedUpdateInput>
+    /**
+     * Choose, which InterviewNote to update.
+     */
+    where: InterviewNoteWhereUniqueInput
+  }
+
+  /**
+   * InterviewNote updateMany
+   */
+  export type InterviewNoteUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update InterviewNotes.
+     */
+    data: XOR<InterviewNoteUpdateManyMutationInput, InterviewNoteUncheckedUpdateManyInput>
+    /**
+     * Filter which InterviewNotes to update
+     */
+    where?: InterviewNoteWhereInput
+    /**
+     * Limit how many InterviewNotes to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * InterviewNote updateManyAndReturn
+   */
+  export type InterviewNoteUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the InterviewNote
+     */
+    select?: InterviewNoteSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the InterviewNote
+     */
+    omit?: InterviewNoteOmit<ExtArgs> | null
+    /**
+     * The data used to update InterviewNotes.
+     */
+    data: XOR<InterviewNoteUpdateManyMutationInput, InterviewNoteUncheckedUpdateManyInput>
+    /**
+     * Filter which InterviewNotes to update
+     */
+    where?: InterviewNoteWhereInput
+    /**
+     * Limit how many InterviewNotes to update.
+     */
+    limit?: number
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InterviewNoteIncludeUpdateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * InterviewNote upsert
+   */
+  export type InterviewNoteUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the InterviewNote
+     */
+    select?: InterviewNoteSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the InterviewNote
+     */
+    omit?: InterviewNoteOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InterviewNoteInclude<ExtArgs> | null
+    /**
+     * The filter to search for the InterviewNote to update in case it exists.
+     */
+    where: InterviewNoteWhereUniqueInput
+    /**
+     * In case the InterviewNote found by the `where` argument doesn't exist, create a new InterviewNote with this data.
+     */
+    create: XOR<InterviewNoteCreateInput, InterviewNoteUncheckedCreateInput>
+    /**
+     * In case the InterviewNote was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<InterviewNoteUpdateInput, InterviewNoteUncheckedUpdateInput>
+  }
+
+  /**
+   * InterviewNote delete
+   */
+  export type InterviewNoteDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the InterviewNote
+     */
+    select?: InterviewNoteSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the InterviewNote
+     */
+    omit?: InterviewNoteOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InterviewNoteInclude<ExtArgs> | null
+    /**
+     * Filter which InterviewNote to delete.
+     */
+    where: InterviewNoteWhereUniqueInput
+  }
+
+  /**
+   * InterviewNote deleteMany
+   */
+  export type InterviewNoteDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which InterviewNotes to delete
+     */
+    where?: InterviewNoteWhereInput
+    /**
+     * Limit how many InterviewNotes to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * InterviewNote without action
+   */
+  export type InterviewNoteDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the InterviewNote
+     */
+    select?: InterviewNoteSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the InterviewNote
+     */
+    omit?: InterviewNoteOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: InterviewNoteInclude<ExtArgs> | null
   }
 
 
@@ -56778,12 +58021,27 @@ export namespace Prisma {
     phoneNumber: 'phoneNumber',
     resumeUrl: 'resumeUrl',
     score: 'score',
+    ai_screening_score: 'ai_screening_score',
+    ai_screening_summary: 'ai_screening_summary',
+    ai_screening_pros: 'ai_screening_pros',
+    ai_screening_cons: 'ai_screening_cons',
     coverLetterText: 'coverLetterText',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
 
   export type CandidateScalarFieldEnum = (typeof CandidateScalarFieldEnum)[keyof typeof CandidateScalarFieldEnum]
+
+
+  export const InterviewNoteScalarFieldEnum: {
+    id: 'id',
+    candidateId: 'candidateId',
+    jobId: 'jobId',
+    content: 'content',
+    createdAt: 'createdAt'
+  };
+
+  export type InterviewNoteScalarFieldEnum = (typeof InterviewNoteScalarFieldEnum)[keyof typeof InterviewNoteScalarFieldEnum]
 
 
   export const ApplicationScalarFieldEnum: {
@@ -58487,6 +59745,10 @@ export namespace Prisma {
     phoneNumber?: StringNullableFilter<"Candidate"> | string | null
     resumeUrl?: StringNullableFilter<"Candidate"> | string | null
     score?: IntNullableFilter<"Candidate"> | number | null
+    ai_screening_score?: IntNullableFilter<"Candidate"> | number | null
+    ai_screening_summary?: StringNullableFilter<"Candidate"> | string | null
+    ai_screening_pros?: StringNullableFilter<"Candidate"> | string | null
+    ai_screening_cons?: StringNullableFilter<"Candidate"> | string | null
     coverLetterText?: StringNullableFilter<"Candidate"> | string | null
     createdAt?: DateTimeFilter<"Candidate"> | Date | string
     updatedAt?: DateTimeFilter<"Candidate"> | Date | string
@@ -58496,6 +59758,7 @@ export namespace Prisma {
     files?: CandidateFileListRelationFilter
     activities?: ActivityListRelationFilter
     meetings?: MeetingListRelationFilter
+    interviewNotes?: InterviewNoteListRelationFilter
     ratings?: CandidateRatingListRelationFilter
   }
 
@@ -58507,6 +59770,10 @@ export namespace Prisma {
     phoneNumber?: SortOrderInput | SortOrder
     resumeUrl?: SortOrderInput | SortOrder
     score?: SortOrderInput | SortOrder
+    ai_screening_score?: SortOrderInput | SortOrder
+    ai_screening_summary?: SortOrderInput | SortOrder
+    ai_screening_pros?: SortOrderInput | SortOrder
+    ai_screening_cons?: SortOrderInput | SortOrder
     coverLetterText?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -58516,6 +59783,7 @@ export namespace Prisma {
     files?: CandidateFileOrderByRelationAggregateInput
     activities?: ActivityOrderByRelationAggregateInput
     meetings?: MeetingOrderByRelationAggregateInput
+    interviewNotes?: InterviewNoteOrderByRelationAggregateInput
     ratings?: CandidateRatingOrderByRelationAggregateInput
   }
 
@@ -58530,6 +59798,10 @@ export namespace Prisma {
     phoneNumber?: StringNullableFilter<"Candidate"> | string | null
     resumeUrl?: StringNullableFilter<"Candidate"> | string | null
     score?: IntNullableFilter<"Candidate"> | number | null
+    ai_screening_score?: IntNullableFilter<"Candidate"> | number | null
+    ai_screening_summary?: StringNullableFilter<"Candidate"> | string | null
+    ai_screening_pros?: StringNullableFilter<"Candidate"> | string | null
+    ai_screening_cons?: StringNullableFilter<"Candidate"> | string | null
     coverLetterText?: StringNullableFilter<"Candidate"> | string | null
     createdAt?: DateTimeFilter<"Candidate"> | Date | string
     updatedAt?: DateTimeFilter<"Candidate"> | Date | string
@@ -58539,6 +59811,7 @@ export namespace Prisma {
     files?: CandidateFileListRelationFilter
     activities?: ActivityListRelationFilter
     meetings?: MeetingListRelationFilter
+    interviewNotes?: InterviewNoteListRelationFilter
     ratings?: CandidateRatingListRelationFilter
   }, "id" | "email">
 
@@ -58550,6 +59823,10 @@ export namespace Prisma {
     phoneNumber?: SortOrderInput | SortOrder
     resumeUrl?: SortOrderInput | SortOrder
     score?: SortOrderInput | SortOrder
+    ai_screening_score?: SortOrderInput | SortOrder
+    ai_screening_summary?: SortOrderInput | SortOrder
+    ai_screening_pros?: SortOrderInput | SortOrder
+    ai_screening_cons?: SortOrderInput | SortOrder
     coverLetterText?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -58571,9 +59848,68 @@ export namespace Prisma {
     phoneNumber?: StringNullableWithAggregatesFilter<"Candidate"> | string | null
     resumeUrl?: StringNullableWithAggregatesFilter<"Candidate"> | string | null
     score?: IntNullableWithAggregatesFilter<"Candidate"> | number | null
+    ai_screening_score?: IntNullableWithAggregatesFilter<"Candidate"> | number | null
+    ai_screening_summary?: StringNullableWithAggregatesFilter<"Candidate"> | string | null
+    ai_screening_pros?: StringNullableWithAggregatesFilter<"Candidate"> | string | null
+    ai_screening_cons?: StringNullableWithAggregatesFilter<"Candidate"> | string | null
     coverLetterText?: StringNullableWithAggregatesFilter<"Candidate"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"Candidate"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Candidate"> | Date | string
+  }
+
+  export type InterviewNoteWhereInput = {
+    AND?: InterviewNoteWhereInput | InterviewNoteWhereInput[]
+    OR?: InterviewNoteWhereInput[]
+    NOT?: InterviewNoteWhereInput | InterviewNoteWhereInput[]
+    id?: StringFilter<"InterviewNote"> | string
+    candidateId?: StringFilter<"InterviewNote"> | string
+    jobId?: StringFilter<"InterviewNote"> | string
+    content?: StringFilter<"InterviewNote"> | string
+    createdAt?: DateTimeFilter<"InterviewNote"> | Date | string
+    candidate?: XOR<CandidateScalarRelationFilter, CandidateWhereInput>
+  }
+
+  export type InterviewNoteOrderByWithRelationInput = {
+    id?: SortOrder
+    candidateId?: SortOrder
+    jobId?: SortOrder
+    content?: SortOrder
+    createdAt?: SortOrder
+    candidate?: CandidateOrderByWithRelationInput
+  }
+
+  export type InterviewNoteWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: InterviewNoteWhereInput | InterviewNoteWhereInput[]
+    OR?: InterviewNoteWhereInput[]
+    NOT?: InterviewNoteWhereInput | InterviewNoteWhereInput[]
+    candidateId?: StringFilter<"InterviewNote"> | string
+    jobId?: StringFilter<"InterviewNote"> | string
+    content?: StringFilter<"InterviewNote"> | string
+    createdAt?: DateTimeFilter<"InterviewNote"> | Date | string
+    candidate?: XOR<CandidateScalarRelationFilter, CandidateWhereInput>
+  }, "id">
+
+  export type InterviewNoteOrderByWithAggregationInput = {
+    id?: SortOrder
+    candidateId?: SortOrder
+    jobId?: SortOrder
+    content?: SortOrder
+    createdAt?: SortOrder
+    _count?: InterviewNoteCountOrderByAggregateInput
+    _max?: InterviewNoteMaxOrderByAggregateInput
+    _min?: InterviewNoteMinOrderByAggregateInput
+  }
+
+  export type InterviewNoteScalarWhereWithAggregatesInput = {
+    AND?: InterviewNoteScalarWhereWithAggregatesInput | InterviewNoteScalarWhereWithAggregatesInput[]
+    OR?: InterviewNoteScalarWhereWithAggregatesInput[]
+    NOT?: InterviewNoteScalarWhereWithAggregatesInput | InterviewNoteScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"InterviewNote"> | string
+    candidateId?: StringWithAggregatesFilter<"InterviewNote"> | string
+    jobId?: StringWithAggregatesFilter<"InterviewNote"> | string
+    content?: StringWithAggregatesFilter<"InterviewNote"> | string
+    createdAt?: DateTimeWithAggregatesFilter<"InterviewNote"> | Date | string
   }
 
   export type ApplicationWhereInput = {
@@ -61887,6 +63223,10 @@ export namespace Prisma {
     phoneNumber?: string | null
     resumeUrl?: string | null
     score?: number | null
+    ai_screening_score?: number | null
+    ai_screening_summary?: string | null
+    ai_screening_pros?: string | null
+    ai_screening_cons?: string | null
     coverLetterText?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -61896,6 +63236,7 @@ export namespace Prisma {
     files?: CandidateFileCreateNestedManyWithoutCandidateInput
     activities?: ActivityCreateNestedManyWithoutCandidateInput
     meetings?: MeetingCreateNestedManyWithoutCandidateInput
+    interviewNotes?: InterviewNoteCreateNestedManyWithoutCandidateInput
     ratings?: CandidateRatingCreateNestedManyWithoutCandidateInput
   }
 
@@ -61907,6 +63248,10 @@ export namespace Prisma {
     phoneNumber?: string | null
     resumeUrl?: string | null
     score?: number | null
+    ai_screening_score?: number | null
+    ai_screening_summary?: string | null
+    ai_screening_pros?: string | null
+    ai_screening_cons?: string | null
     coverLetterText?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -61916,6 +63261,7 @@ export namespace Prisma {
     files?: CandidateFileUncheckedCreateNestedManyWithoutCandidateInput
     activities?: ActivityUncheckedCreateNestedManyWithoutCandidateInput
     meetings?: MeetingUncheckedCreateNestedManyWithoutCandidateInput
+    interviewNotes?: InterviewNoteUncheckedCreateNestedManyWithoutCandidateInput
     ratings?: CandidateRatingUncheckedCreateNestedManyWithoutCandidateInput
   }
 
@@ -61927,6 +63273,10 @@ export namespace Prisma {
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
     resumeUrl?: NullableStringFieldUpdateOperationsInput | string | null
     score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_summary?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_pros?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_cons?: NullableStringFieldUpdateOperationsInput | string | null
     coverLetterText?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -61936,6 +63286,7 @@ export namespace Prisma {
     files?: CandidateFileUpdateManyWithoutCandidateNestedInput
     activities?: ActivityUpdateManyWithoutCandidateNestedInput
     meetings?: MeetingUpdateManyWithoutCandidateNestedInput
+    interviewNotes?: InterviewNoteUpdateManyWithoutCandidateNestedInput
     ratings?: CandidateRatingUpdateManyWithoutCandidateNestedInput
   }
 
@@ -61947,6 +63298,10 @@ export namespace Prisma {
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
     resumeUrl?: NullableStringFieldUpdateOperationsInput | string | null
     score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_summary?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_pros?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_cons?: NullableStringFieldUpdateOperationsInput | string | null
     coverLetterText?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -61956,6 +63311,7 @@ export namespace Prisma {
     files?: CandidateFileUncheckedUpdateManyWithoutCandidateNestedInput
     activities?: ActivityUncheckedUpdateManyWithoutCandidateNestedInput
     meetings?: MeetingUncheckedUpdateManyWithoutCandidateNestedInput
+    interviewNotes?: InterviewNoteUncheckedUpdateManyWithoutCandidateNestedInput
     ratings?: CandidateRatingUncheckedUpdateManyWithoutCandidateNestedInput
   }
 
@@ -61967,6 +63323,10 @@ export namespace Prisma {
     phoneNumber?: string | null
     resumeUrl?: string | null
     score?: number | null
+    ai_screening_score?: number | null
+    ai_screening_summary?: string | null
+    ai_screening_pros?: string | null
+    ai_screening_cons?: string | null
     coverLetterText?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -61980,6 +63340,10 @@ export namespace Prisma {
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
     resumeUrl?: NullableStringFieldUpdateOperationsInput | string | null
     score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_summary?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_pros?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_cons?: NullableStringFieldUpdateOperationsInput | string | null
     coverLetterText?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -61993,9 +63357,68 @@ export namespace Prisma {
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
     resumeUrl?: NullableStringFieldUpdateOperationsInput | string | null
     score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_summary?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_pros?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_cons?: NullableStringFieldUpdateOperationsInput | string | null
     coverLetterText?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type InterviewNoteCreateInput = {
+    id?: string
+    jobId: string
+    content: string
+    createdAt?: Date | string
+    candidate: CandidateCreateNestedOneWithoutInterviewNotesInput
+  }
+
+  export type InterviewNoteUncheckedCreateInput = {
+    id?: string
+    candidateId: string
+    jobId: string
+    content: string
+    createdAt?: Date | string
+  }
+
+  export type InterviewNoteUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    jobId?: StringFieldUpdateOperationsInput | string
+    content?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    candidate?: CandidateUpdateOneRequiredWithoutInterviewNotesNestedInput
+  }
+
+  export type InterviewNoteUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    candidateId?: StringFieldUpdateOperationsInput | string
+    jobId?: StringFieldUpdateOperationsInput | string
+    content?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type InterviewNoteCreateManyInput = {
+    id?: string
+    candidateId: string
+    jobId: string
+    content: string
+    createdAt?: Date | string
+  }
+
+  export type InterviewNoteUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    jobId?: StringFieldUpdateOperationsInput | string
+    content?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type InterviewNoteUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    candidateId?: StringFieldUpdateOperationsInput | string
+    jobId?: StringFieldUpdateOperationsInput | string
+    content?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type ApplicationCreateInput = {
@@ -65512,6 +66935,16 @@ export namespace Prisma {
     _max?: NestedEnumResponseVisibilityFilter<$PrismaModel>
   }
 
+  export type InterviewNoteListRelationFilter = {
+    every?: InterviewNoteWhereInput
+    some?: InterviewNoteWhereInput
+    none?: InterviewNoteWhereInput
+  }
+
+  export type InterviewNoteOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
   export type CandidateCountOrderByAggregateInput = {
     id?: SortOrder
     firstName?: SortOrder
@@ -65520,6 +66953,10 @@ export namespace Prisma {
     phoneNumber?: SortOrder
     resumeUrl?: SortOrder
     score?: SortOrder
+    ai_screening_score?: SortOrder
+    ai_screening_summary?: SortOrder
+    ai_screening_pros?: SortOrder
+    ai_screening_cons?: SortOrder
     coverLetterText?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -65527,6 +66964,7 @@ export namespace Prisma {
 
   export type CandidateAvgOrderByAggregateInput = {
     score?: SortOrder
+    ai_screening_score?: SortOrder
   }
 
   export type CandidateMaxOrderByAggregateInput = {
@@ -65537,6 +66975,10 @@ export namespace Prisma {
     phoneNumber?: SortOrder
     resumeUrl?: SortOrder
     score?: SortOrder
+    ai_screening_score?: SortOrder
+    ai_screening_summary?: SortOrder
+    ai_screening_pros?: SortOrder
+    ai_screening_cons?: SortOrder
     coverLetterText?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -65550,6 +66992,10 @@ export namespace Prisma {
     phoneNumber?: SortOrder
     resumeUrl?: SortOrder
     score?: SortOrder
+    ai_screening_score?: SortOrder
+    ai_screening_summary?: SortOrder
+    ai_screening_pros?: SortOrder
+    ai_screening_cons?: SortOrder
     coverLetterText?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -65557,6 +67003,36 @@ export namespace Prisma {
 
   export type CandidateSumOrderByAggregateInput = {
     score?: SortOrder
+    ai_screening_score?: SortOrder
+  }
+
+  export type CandidateScalarRelationFilter = {
+    is?: CandidateWhereInput
+    isNot?: CandidateWhereInput
+  }
+
+  export type InterviewNoteCountOrderByAggregateInput = {
+    id?: SortOrder
+    candidateId?: SortOrder
+    jobId?: SortOrder
+    content?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type InterviewNoteMaxOrderByAggregateInput = {
+    id?: SortOrder
+    candidateId?: SortOrder
+    jobId?: SortOrder
+    content?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type InterviewNoteMinOrderByAggregateInput = {
+    id?: SortOrder
+    candidateId?: SortOrder
+    jobId?: SortOrder
+    content?: SortOrder
+    createdAt?: SortOrder
   }
 
   export type EnumApplicationStatusFilter<$PrismaModel = never> = {
@@ -65575,11 +67051,6 @@ export namespace Prisma {
     gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
-  }
-
-  export type CandidateScalarRelationFilter = {
-    is?: CandidateWhereInput
-    isNot?: CandidateWhereInput
   }
 
   export type MessageThreadNullableScalarRelationFilter = {
@@ -69019,6 +70490,13 @@ export namespace Prisma {
     connect?: MeetingWhereUniqueInput | MeetingWhereUniqueInput[]
   }
 
+  export type InterviewNoteCreateNestedManyWithoutCandidateInput = {
+    create?: XOR<InterviewNoteCreateWithoutCandidateInput, InterviewNoteUncheckedCreateWithoutCandidateInput> | InterviewNoteCreateWithoutCandidateInput[] | InterviewNoteUncheckedCreateWithoutCandidateInput[]
+    connectOrCreate?: InterviewNoteCreateOrConnectWithoutCandidateInput | InterviewNoteCreateOrConnectWithoutCandidateInput[]
+    createMany?: InterviewNoteCreateManyCandidateInputEnvelope
+    connect?: InterviewNoteWhereUniqueInput | InterviewNoteWhereUniqueInput[]
+  }
+
   export type CandidateRatingCreateNestedManyWithoutCandidateInput = {
     create?: XOR<CandidateRatingCreateWithoutCandidateInput, CandidateRatingUncheckedCreateWithoutCandidateInput> | CandidateRatingCreateWithoutCandidateInput[] | CandidateRatingUncheckedCreateWithoutCandidateInput[]
     connectOrCreate?: CandidateRatingCreateOrConnectWithoutCandidateInput | CandidateRatingCreateOrConnectWithoutCandidateInput[]
@@ -69066,6 +70544,13 @@ export namespace Prisma {
     connectOrCreate?: MeetingCreateOrConnectWithoutCandidateInput | MeetingCreateOrConnectWithoutCandidateInput[]
     createMany?: MeetingCreateManyCandidateInputEnvelope
     connect?: MeetingWhereUniqueInput | MeetingWhereUniqueInput[]
+  }
+
+  export type InterviewNoteUncheckedCreateNestedManyWithoutCandidateInput = {
+    create?: XOR<InterviewNoteCreateWithoutCandidateInput, InterviewNoteUncheckedCreateWithoutCandidateInput> | InterviewNoteCreateWithoutCandidateInput[] | InterviewNoteUncheckedCreateWithoutCandidateInput[]
+    connectOrCreate?: InterviewNoteCreateOrConnectWithoutCandidateInput | InterviewNoteCreateOrConnectWithoutCandidateInput[]
+    createMany?: InterviewNoteCreateManyCandidateInputEnvelope
+    connect?: InterviewNoteWhereUniqueInput | InterviewNoteWhereUniqueInput[]
   }
 
   export type CandidateRatingUncheckedCreateNestedManyWithoutCandidateInput = {
@@ -69157,6 +70642,20 @@ export namespace Prisma {
     update?: MeetingUpdateWithWhereUniqueWithoutCandidateInput | MeetingUpdateWithWhereUniqueWithoutCandidateInput[]
     updateMany?: MeetingUpdateManyWithWhereWithoutCandidateInput | MeetingUpdateManyWithWhereWithoutCandidateInput[]
     deleteMany?: MeetingScalarWhereInput | MeetingScalarWhereInput[]
+  }
+
+  export type InterviewNoteUpdateManyWithoutCandidateNestedInput = {
+    create?: XOR<InterviewNoteCreateWithoutCandidateInput, InterviewNoteUncheckedCreateWithoutCandidateInput> | InterviewNoteCreateWithoutCandidateInput[] | InterviewNoteUncheckedCreateWithoutCandidateInput[]
+    connectOrCreate?: InterviewNoteCreateOrConnectWithoutCandidateInput | InterviewNoteCreateOrConnectWithoutCandidateInput[]
+    upsert?: InterviewNoteUpsertWithWhereUniqueWithoutCandidateInput | InterviewNoteUpsertWithWhereUniqueWithoutCandidateInput[]
+    createMany?: InterviewNoteCreateManyCandidateInputEnvelope
+    set?: InterviewNoteWhereUniqueInput | InterviewNoteWhereUniqueInput[]
+    disconnect?: InterviewNoteWhereUniqueInput | InterviewNoteWhereUniqueInput[]
+    delete?: InterviewNoteWhereUniqueInput | InterviewNoteWhereUniqueInput[]
+    connect?: InterviewNoteWhereUniqueInput | InterviewNoteWhereUniqueInput[]
+    update?: InterviewNoteUpdateWithWhereUniqueWithoutCandidateInput | InterviewNoteUpdateWithWhereUniqueWithoutCandidateInput[]
+    updateMany?: InterviewNoteUpdateManyWithWhereWithoutCandidateInput | InterviewNoteUpdateManyWithWhereWithoutCandidateInput[]
+    deleteMany?: InterviewNoteScalarWhereInput | InterviewNoteScalarWhereInput[]
   }
 
   export type CandidateRatingUpdateManyWithoutCandidateNestedInput = {
@@ -69257,6 +70756,20 @@ export namespace Prisma {
     deleteMany?: MeetingScalarWhereInput | MeetingScalarWhereInput[]
   }
 
+  export type InterviewNoteUncheckedUpdateManyWithoutCandidateNestedInput = {
+    create?: XOR<InterviewNoteCreateWithoutCandidateInput, InterviewNoteUncheckedCreateWithoutCandidateInput> | InterviewNoteCreateWithoutCandidateInput[] | InterviewNoteUncheckedCreateWithoutCandidateInput[]
+    connectOrCreate?: InterviewNoteCreateOrConnectWithoutCandidateInput | InterviewNoteCreateOrConnectWithoutCandidateInput[]
+    upsert?: InterviewNoteUpsertWithWhereUniqueWithoutCandidateInput | InterviewNoteUpsertWithWhereUniqueWithoutCandidateInput[]
+    createMany?: InterviewNoteCreateManyCandidateInputEnvelope
+    set?: InterviewNoteWhereUniqueInput | InterviewNoteWhereUniqueInput[]
+    disconnect?: InterviewNoteWhereUniqueInput | InterviewNoteWhereUniqueInput[]
+    delete?: InterviewNoteWhereUniqueInput | InterviewNoteWhereUniqueInput[]
+    connect?: InterviewNoteWhereUniqueInput | InterviewNoteWhereUniqueInput[]
+    update?: InterviewNoteUpdateWithWhereUniqueWithoutCandidateInput | InterviewNoteUpdateWithWhereUniqueWithoutCandidateInput[]
+    updateMany?: InterviewNoteUpdateManyWithWhereWithoutCandidateInput | InterviewNoteUpdateManyWithWhereWithoutCandidateInput[]
+    deleteMany?: InterviewNoteScalarWhereInput | InterviewNoteScalarWhereInput[]
+  }
+
   export type CandidateRatingUncheckedUpdateManyWithoutCandidateNestedInput = {
     create?: XOR<CandidateRatingCreateWithoutCandidateInput, CandidateRatingUncheckedCreateWithoutCandidateInput> | CandidateRatingCreateWithoutCandidateInput[] | CandidateRatingUncheckedCreateWithoutCandidateInput[]
     connectOrCreate?: CandidateRatingCreateOrConnectWithoutCandidateInput | CandidateRatingCreateOrConnectWithoutCandidateInput[]
@@ -69269,6 +70782,20 @@ export namespace Prisma {
     update?: CandidateRatingUpdateWithWhereUniqueWithoutCandidateInput | CandidateRatingUpdateWithWhereUniqueWithoutCandidateInput[]
     updateMany?: CandidateRatingUpdateManyWithWhereWithoutCandidateInput | CandidateRatingUpdateManyWithWhereWithoutCandidateInput[]
     deleteMany?: CandidateRatingScalarWhereInput | CandidateRatingScalarWhereInput[]
+  }
+
+  export type CandidateCreateNestedOneWithoutInterviewNotesInput = {
+    create?: XOR<CandidateCreateWithoutInterviewNotesInput, CandidateUncheckedCreateWithoutInterviewNotesInput>
+    connectOrCreate?: CandidateCreateOrConnectWithoutInterviewNotesInput
+    connect?: CandidateWhereUniqueInput
+  }
+
+  export type CandidateUpdateOneRequiredWithoutInterviewNotesNestedInput = {
+    create?: XOR<CandidateCreateWithoutInterviewNotesInput, CandidateUncheckedCreateWithoutInterviewNotesInput>
+    connectOrCreate?: CandidateCreateOrConnectWithoutInterviewNotesInput
+    upsert?: CandidateUpsertWithoutInterviewNotesInput
+    connect?: CandidateWhereUniqueInput
+    update?: XOR<XOR<CandidateUpdateToOneWithWhereWithoutInterviewNotesInput, CandidateUpdateWithoutInterviewNotesInput>, CandidateUncheckedUpdateWithoutInterviewNotesInput>
   }
 
   export type CandidateCreateNestedOneWithoutApplicationsInput = {
@@ -75229,6 +76756,30 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type InterviewNoteCreateWithoutCandidateInput = {
+    id?: string
+    jobId: string
+    content: string
+    createdAt?: Date | string
+  }
+
+  export type InterviewNoteUncheckedCreateWithoutCandidateInput = {
+    id?: string
+    jobId: string
+    content: string
+    createdAt?: Date | string
+  }
+
+  export type InterviewNoteCreateOrConnectWithoutCandidateInput = {
+    where: InterviewNoteWhereUniqueInput
+    create: XOR<InterviewNoteCreateWithoutCandidateInput, InterviewNoteUncheckedCreateWithoutCandidateInput>
+  }
+
+  export type InterviewNoteCreateManyCandidateInputEnvelope = {
+    data: InterviewNoteCreateManyCandidateInput | InterviewNoteCreateManyCandidateInput[]
+    skipDuplicates?: boolean
+  }
+
   export type CandidateRatingCreateWithoutCandidateInput = {
     id?: string
     jobWorkflowStageId: string
@@ -75363,6 +76914,33 @@ export namespace Prisma {
     data: XOR<MeetingUpdateManyMutationInput, MeetingUncheckedUpdateManyWithoutCandidateInput>
   }
 
+  export type InterviewNoteUpsertWithWhereUniqueWithoutCandidateInput = {
+    where: InterviewNoteWhereUniqueInput
+    update: XOR<InterviewNoteUpdateWithoutCandidateInput, InterviewNoteUncheckedUpdateWithoutCandidateInput>
+    create: XOR<InterviewNoteCreateWithoutCandidateInput, InterviewNoteUncheckedCreateWithoutCandidateInput>
+  }
+
+  export type InterviewNoteUpdateWithWhereUniqueWithoutCandidateInput = {
+    where: InterviewNoteWhereUniqueInput
+    data: XOR<InterviewNoteUpdateWithoutCandidateInput, InterviewNoteUncheckedUpdateWithoutCandidateInput>
+  }
+
+  export type InterviewNoteUpdateManyWithWhereWithoutCandidateInput = {
+    where: InterviewNoteScalarWhereInput
+    data: XOR<InterviewNoteUpdateManyMutationInput, InterviewNoteUncheckedUpdateManyWithoutCandidateInput>
+  }
+
+  export type InterviewNoteScalarWhereInput = {
+    AND?: InterviewNoteScalarWhereInput | InterviewNoteScalarWhereInput[]
+    OR?: InterviewNoteScalarWhereInput[]
+    NOT?: InterviewNoteScalarWhereInput | InterviewNoteScalarWhereInput[]
+    id?: StringFilter<"InterviewNote"> | string
+    candidateId?: StringFilter<"InterviewNote"> | string
+    jobId?: StringFilter<"InterviewNote"> | string
+    content?: StringFilter<"InterviewNote"> | string
+    createdAt?: DateTimeFilter<"InterviewNote"> | Date | string
+  }
+
   export type CandidateRatingUpsertWithWhereUniqueWithoutCandidateInput = {
     where: CandidateRatingWhereUniqueInput
     update: XOR<CandidateRatingUpdateWithoutCandidateInput, CandidateRatingUncheckedUpdateWithoutCandidateInput>
@@ -75379,6 +76957,118 @@ export namespace Prisma {
     data: XOR<CandidateRatingUpdateManyMutationInput, CandidateRatingUncheckedUpdateManyWithoutCandidateInput>
   }
 
+  export type CandidateCreateWithoutInterviewNotesInput = {
+    id?: string
+    firstName: string
+    lastName: string
+    email: string
+    phoneNumber?: string | null
+    resumeUrl?: string | null
+    score?: number | null
+    ai_screening_score?: number | null
+    ai_screening_summary?: string | null
+    ai_screening_pros?: string | null
+    ai_screening_cons?: string | null
+    coverLetterText?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    applications?: ApplicationCreateNestedManyWithoutCandidateInput
+    candidateAnswers?: CandidateAnswerCreateNestedManyWithoutCandidateInput
+    comments?: CommentCreateNestedManyWithoutCandidateInput
+    files?: CandidateFileCreateNestedManyWithoutCandidateInput
+    activities?: ActivityCreateNestedManyWithoutCandidateInput
+    meetings?: MeetingCreateNestedManyWithoutCandidateInput
+    ratings?: CandidateRatingCreateNestedManyWithoutCandidateInput
+  }
+
+  export type CandidateUncheckedCreateWithoutInterviewNotesInput = {
+    id?: string
+    firstName: string
+    lastName: string
+    email: string
+    phoneNumber?: string | null
+    resumeUrl?: string | null
+    score?: number | null
+    ai_screening_score?: number | null
+    ai_screening_summary?: string | null
+    ai_screening_pros?: string | null
+    ai_screening_cons?: string | null
+    coverLetterText?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    applications?: ApplicationUncheckedCreateNestedManyWithoutCandidateInput
+    candidateAnswers?: CandidateAnswerUncheckedCreateNestedManyWithoutCandidateInput
+    comments?: CommentUncheckedCreateNestedManyWithoutCandidateInput
+    files?: CandidateFileUncheckedCreateNestedManyWithoutCandidateInput
+    activities?: ActivityUncheckedCreateNestedManyWithoutCandidateInput
+    meetings?: MeetingUncheckedCreateNestedManyWithoutCandidateInput
+    ratings?: CandidateRatingUncheckedCreateNestedManyWithoutCandidateInput
+  }
+
+  export type CandidateCreateOrConnectWithoutInterviewNotesInput = {
+    where: CandidateWhereUniqueInput
+    create: XOR<CandidateCreateWithoutInterviewNotesInput, CandidateUncheckedCreateWithoutInterviewNotesInput>
+  }
+
+  export type CandidateUpsertWithoutInterviewNotesInput = {
+    update: XOR<CandidateUpdateWithoutInterviewNotesInput, CandidateUncheckedUpdateWithoutInterviewNotesInput>
+    create: XOR<CandidateCreateWithoutInterviewNotesInput, CandidateUncheckedCreateWithoutInterviewNotesInput>
+    where?: CandidateWhereInput
+  }
+
+  export type CandidateUpdateToOneWithWhereWithoutInterviewNotesInput = {
+    where?: CandidateWhereInput
+    data: XOR<CandidateUpdateWithoutInterviewNotesInput, CandidateUncheckedUpdateWithoutInterviewNotesInput>
+  }
+
+  export type CandidateUpdateWithoutInterviewNotesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    firstName?: StringFieldUpdateOperationsInput | string
+    lastName?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    resumeUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_summary?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_pros?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_cons?: NullableStringFieldUpdateOperationsInput | string | null
+    coverLetterText?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    applications?: ApplicationUpdateManyWithoutCandidateNestedInput
+    candidateAnswers?: CandidateAnswerUpdateManyWithoutCandidateNestedInput
+    comments?: CommentUpdateManyWithoutCandidateNestedInput
+    files?: CandidateFileUpdateManyWithoutCandidateNestedInput
+    activities?: ActivityUpdateManyWithoutCandidateNestedInput
+    meetings?: MeetingUpdateManyWithoutCandidateNestedInput
+    ratings?: CandidateRatingUpdateManyWithoutCandidateNestedInput
+  }
+
+  export type CandidateUncheckedUpdateWithoutInterviewNotesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    firstName?: StringFieldUpdateOperationsInput | string
+    lastName?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    resumeUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_summary?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_pros?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_cons?: NullableStringFieldUpdateOperationsInput | string | null
+    coverLetterText?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    applications?: ApplicationUncheckedUpdateManyWithoutCandidateNestedInput
+    candidateAnswers?: CandidateAnswerUncheckedUpdateManyWithoutCandidateNestedInput
+    comments?: CommentUncheckedUpdateManyWithoutCandidateNestedInput
+    files?: CandidateFileUncheckedUpdateManyWithoutCandidateNestedInput
+    activities?: ActivityUncheckedUpdateManyWithoutCandidateNestedInput
+    meetings?: MeetingUncheckedUpdateManyWithoutCandidateNestedInput
+    ratings?: CandidateRatingUncheckedUpdateManyWithoutCandidateNestedInput
+  }
+
   export type CandidateCreateWithoutApplicationsInput = {
     id?: string
     firstName: string
@@ -75387,6 +77077,10 @@ export namespace Prisma {
     phoneNumber?: string | null
     resumeUrl?: string | null
     score?: number | null
+    ai_screening_score?: number | null
+    ai_screening_summary?: string | null
+    ai_screening_pros?: string | null
+    ai_screening_cons?: string | null
     coverLetterText?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -75395,6 +77089,7 @@ export namespace Prisma {
     files?: CandidateFileCreateNestedManyWithoutCandidateInput
     activities?: ActivityCreateNestedManyWithoutCandidateInput
     meetings?: MeetingCreateNestedManyWithoutCandidateInput
+    interviewNotes?: InterviewNoteCreateNestedManyWithoutCandidateInput
     ratings?: CandidateRatingCreateNestedManyWithoutCandidateInput
   }
 
@@ -75406,6 +77101,10 @@ export namespace Prisma {
     phoneNumber?: string | null
     resumeUrl?: string | null
     score?: number | null
+    ai_screening_score?: number | null
+    ai_screening_summary?: string | null
+    ai_screening_pros?: string | null
+    ai_screening_cons?: string | null
     coverLetterText?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -75414,6 +77113,7 @@ export namespace Prisma {
     files?: CandidateFileUncheckedCreateNestedManyWithoutCandidateInput
     activities?: ActivityUncheckedCreateNestedManyWithoutCandidateInput
     meetings?: MeetingUncheckedCreateNestedManyWithoutCandidateInput
+    interviewNotes?: InterviewNoteUncheckedCreateNestedManyWithoutCandidateInput
     ratings?: CandidateRatingUncheckedCreateNestedManyWithoutCandidateInput
   }
 
@@ -75658,6 +77358,10 @@ export namespace Prisma {
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
     resumeUrl?: NullableStringFieldUpdateOperationsInput | string | null
     score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_summary?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_pros?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_cons?: NullableStringFieldUpdateOperationsInput | string | null
     coverLetterText?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -75666,6 +77370,7 @@ export namespace Prisma {
     files?: CandidateFileUpdateManyWithoutCandidateNestedInput
     activities?: ActivityUpdateManyWithoutCandidateNestedInput
     meetings?: MeetingUpdateManyWithoutCandidateNestedInput
+    interviewNotes?: InterviewNoteUpdateManyWithoutCandidateNestedInput
     ratings?: CandidateRatingUpdateManyWithoutCandidateNestedInput
   }
 
@@ -75677,6 +77382,10 @@ export namespace Prisma {
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
     resumeUrl?: NullableStringFieldUpdateOperationsInput | string | null
     score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_summary?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_pros?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_cons?: NullableStringFieldUpdateOperationsInput | string | null
     coverLetterText?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -75685,6 +77394,7 @@ export namespace Prisma {
     files?: CandidateFileUncheckedUpdateManyWithoutCandidateNestedInput
     activities?: ActivityUncheckedUpdateManyWithoutCandidateNestedInput
     meetings?: MeetingUncheckedUpdateManyWithoutCandidateNestedInput
+    interviewNotes?: InterviewNoteUncheckedUpdateManyWithoutCandidateNestedInput
     ratings?: CandidateRatingUncheckedUpdateManyWithoutCandidateNestedInput
   }
 
@@ -75908,6 +77618,10 @@ export namespace Prisma {
     phoneNumber?: string | null
     resumeUrl?: string | null
     score?: number | null
+    ai_screening_score?: number | null
+    ai_screening_summary?: string | null
+    ai_screening_pros?: string | null
+    ai_screening_cons?: string | null
     coverLetterText?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -75916,6 +77630,7 @@ export namespace Prisma {
     files?: CandidateFileCreateNestedManyWithoutCandidateInput
     activities?: ActivityCreateNestedManyWithoutCandidateInput
     meetings?: MeetingCreateNestedManyWithoutCandidateInput
+    interviewNotes?: InterviewNoteCreateNestedManyWithoutCandidateInput
     ratings?: CandidateRatingCreateNestedManyWithoutCandidateInput
   }
 
@@ -75927,6 +77642,10 @@ export namespace Prisma {
     phoneNumber?: string | null
     resumeUrl?: string | null
     score?: number | null
+    ai_screening_score?: number | null
+    ai_screening_summary?: string | null
+    ai_screening_pros?: string | null
+    ai_screening_cons?: string | null
     coverLetterText?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -75935,6 +77654,7 @@ export namespace Prisma {
     files?: CandidateFileUncheckedCreateNestedManyWithoutCandidateInput
     activities?: ActivityUncheckedCreateNestedManyWithoutCandidateInput
     meetings?: MeetingUncheckedCreateNestedManyWithoutCandidateInput
+    interviewNotes?: InterviewNoteUncheckedCreateNestedManyWithoutCandidateInput
     ratings?: CandidateRatingUncheckedCreateNestedManyWithoutCandidateInput
   }
 
@@ -76038,6 +77758,10 @@ export namespace Prisma {
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
     resumeUrl?: NullableStringFieldUpdateOperationsInput | string | null
     score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_summary?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_pros?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_cons?: NullableStringFieldUpdateOperationsInput | string | null
     coverLetterText?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -76046,6 +77770,7 @@ export namespace Prisma {
     files?: CandidateFileUpdateManyWithoutCandidateNestedInput
     activities?: ActivityUpdateManyWithoutCandidateNestedInput
     meetings?: MeetingUpdateManyWithoutCandidateNestedInput
+    interviewNotes?: InterviewNoteUpdateManyWithoutCandidateNestedInput
     ratings?: CandidateRatingUpdateManyWithoutCandidateNestedInput
   }
 
@@ -76057,6 +77782,10 @@ export namespace Prisma {
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
     resumeUrl?: NullableStringFieldUpdateOperationsInput | string | null
     score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_summary?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_pros?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_cons?: NullableStringFieldUpdateOperationsInput | string | null
     coverLetterText?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -76065,6 +77794,7 @@ export namespace Prisma {
     files?: CandidateFileUncheckedUpdateManyWithoutCandidateNestedInput
     activities?: ActivityUncheckedUpdateManyWithoutCandidateNestedInput
     meetings?: MeetingUncheckedUpdateManyWithoutCandidateNestedInput
+    interviewNotes?: InterviewNoteUncheckedUpdateManyWithoutCandidateNestedInput
     ratings?: CandidateRatingUncheckedUpdateManyWithoutCandidateNestedInput
   }
 
@@ -77371,6 +79101,10 @@ export namespace Prisma {
     phoneNumber?: string | null
     resumeUrl?: string | null
     score?: number | null
+    ai_screening_score?: number | null
+    ai_screening_summary?: string | null
+    ai_screening_pros?: string | null
+    ai_screening_cons?: string | null
     coverLetterText?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -77380,6 +79114,7 @@ export namespace Prisma {
     files?: CandidateFileCreateNestedManyWithoutCandidateInput
     activities?: ActivityCreateNestedManyWithoutCandidateInput
     meetings?: MeetingCreateNestedManyWithoutCandidateInput
+    interviewNotes?: InterviewNoteCreateNestedManyWithoutCandidateInput
   }
 
   export type CandidateUncheckedCreateWithoutRatingsInput = {
@@ -77390,6 +79125,10 @@ export namespace Prisma {
     phoneNumber?: string | null
     resumeUrl?: string | null
     score?: number | null
+    ai_screening_score?: number | null
+    ai_screening_summary?: string | null
+    ai_screening_pros?: string | null
+    ai_screening_cons?: string | null
     coverLetterText?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -77399,6 +79138,7 @@ export namespace Prisma {
     files?: CandidateFileUncheckedCreateNestedManyWithoutCandidateInput
     activities?: ActivityUncheckedCreateNestedManyWithoutCandidateInput
     meetings?: MeetingUncheckedCreateNestedManyWithoutCandidateInput
+    interviewNotes?: InterviewNoteUncheckedCreateNestedManyWithoutCandidateInput
   }
 
   export type CandidateCreateOrConnectWithoutRatingsInput = {
@@ -77584,6 +79324,10 @@ export namespace Prisma {
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
     resumeUrl?: NullableStringFieldUpdateOperationsInput | string | null
     score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_summary?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_pros?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_cons?: NullableStringFieldUpdateOperationsInput | string | null
     coverLetterText?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -77593,6 +79337,7 @@ export namespace Prisma {
     files?: CandidateFileUpdateManyWithoutCandidateNestedInput
     activities?: ActivityUpdateManyWithoutCandidateNestedInput
     meetings?: MeetingUpdateManyWithoutCandidateNestedInput
+    interviewNotes?: InterviewNoteUpdateManyWithoutCandidateNestedInput
   }
 
   export type CandidateUncheckedUpdateWithoutRatingsInput = {
@@ -77603,6 +79348,10 @@ export namespace Prisma {
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
     resumeUrl?: NullableStringFieldUpdateOperationsInput | string | null
     score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_summary?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_pros?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_cons?: NullableStringFieldUpdateOperationsInput | string | null
     coverLetterText?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -77612,6 +79361,7 @@ export namespace Prisma {
     files?: CandidateFileUncheckedUpdateManyWithoutCandidateNestedInput
     activities?: ActivityUncheckedUpdateManyWithoutCandidateNestedInput
     meetings?: MeetingUncheckedUpdateManyWithoutCandidateNestedInput
+    interviewNotes?: InterviewNoteUncheckedUpdateManyWithoutCandidateNestedInput
   }
 
   export type UserUpsertWithoutRatingsInput = {
@@ -78002,6 +79752,10 @@ export namespace Prisma {
     phoneNumber?: string | null
     resumeUrl?: string | null
     score?: number | null
+    ai_screening_score?: number | null
+    ai_screening_summary?: string | null
+    ai_screening_pros?: string | null
+    ai_screening_cons?: string | null
     coverLetterText?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -78010,6 +79764,7 @@ export namespace Prisma {
     files?: CandidateFileCreateNestedManyWithoutCandidateInput
     activities?: ActivityCreateNestedManyWithoutCandidateInput
     meetings?: MeetingCreateNestedManyWithoutCandidateInput
+    interviewNotes?: InterviewNoteCreateNestedManyWithoutCandidateInput
     ratings?: CandidateRatingCreateNestedManyWithoutCandidateInput
   }
 
@@ -78021,6 +79776,10 @@ export namespace Prisma {
     phoneNumber?: string | null
     resumeUrl?: string | null
     score?: number | null
+    ai_screening_score?: number | null
+    ai_screening_summary?: string | null
+    ai_screening_pros?: string | null
+    ai_screening_cons?: string | null
     coverLetterText?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -78029,6 +79788,7 @@ export namespace Prisma {
     files?: CandidateFileUncheckedCreateNestedManyWithoutCandidateInput
     activities?: ActivityUncheckedCreateNestedManyWithoutCandidateInput
     meetings?: MeetingUncheckedCreateNestedManyWithoutCandidateInput
+    interviewNotes?: InterviewNoteUncheckedCreateNestedManyWithoutCandidateInput
     ratings?: CandidateRatingUncheckedCreateNestedManyWithoutCandidateInput
   }
 
@@ -78115,6 +79875,10 @@ export namespace Prisma {
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
     resumeUrl?: NullableStringFieldUpdateOperationsInput | string | null
     score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_summary?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_pros?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_cons?: NullableStringFieldUpdateOperationsInput | string | null
     coverLetterText?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -78123,6 +79887,7 @@ export namespace Prisma {
     files?: CandidateFileUpdateManyWithoutCandidateNestedInput
     activities?: ActivityUpdateManyWithoutCandidateNestedInput
     meetings?: MeetingUpdateManyWithoutCandidateNestedInput
+    interviewNotes?: InterviewNoteUpdateManyWithoutCandidateNestedInput
     ratings?: CandidateRatingUpdateManyWithoutCandidateNestedInput
   }
 
@@ -78134,6 +79899,10 @@ export namespace Prisma {
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
     resumeUrl?: NullableStringFieldUpdateOperationsInput | string | null
     score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_summary?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_pros?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_cons?: NullableStringFieldUpdateOperationsInput | string | null
     coverLetterText?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -78142,6 +79911,7 @@ export namespace Prisma {
     files?: CandidateFileUncheckedUpdateManyWithoutCandidateNestedInput
     activities?: ActivityUncheckedUpdateManyWithoutCandidateNestedInput
     meetings?: MeetingUncheckedUpdateManyWithoutCandidateNestedInput
+    interviewNotes?: InterviewNoteUncheckedUpdateManyWithoutCandidateNestedInput
     ratings?: CandidateRatingUncheckedUpdateManyWithoutCandidateNestedInput
   }
 
@@ -78218,6 +79988,10 @@ export namespace Prisma {
     phoneNumber?: string | null
     resumeUrl?: string | null
     score?: number | null
+    ai_screening_score?: number | null
+    ai_screening_summary?: string | null
+    ai_screening_pros?: string | null
+    ai_screening_cons?: string | null
     coverLetterText?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -78226,6 +80000,7 @@ export namespace Prisma {
     comments?: CommentCreateNestedManyWithoutCandidateInput
     activities?: ActivityCreateNestedManyWithoutCandidateInput
     meetings?: MeetingCreateNestedManyWithoutCandidateInput
+    interviewNotes?: InterviewNoteCreateNestedManyWithoutCandidateInput
     ratings?: CandidateRatingCreateNestedManyWithoutCandidateInput
   }
 
@@ -78237,6 +80012,10 @@ export namespace Prisma {
     phoneNumber?: string | null
     resumeUrl?: string | null
     score?: number | null
+    ai_screening_score?: number | null
+    ai_screening_summary?: string | null
+    ai_screening_pros?: string | null
+    ai_screening_cons?: string | null
     coverLetterText?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -78245,6 +80024,7 @@ export namespace Prisma {
     comments?: CommentUncheckedCreateNestedManyWithoutCandidateInput
     activities?: ActivityUncheckedCreateNestedManyWithoutCandidateInput
     meetings?: MeetingUncheckedCreateNestedManyWithoutCandidateInput
+    interviewNotes?: InterviewNoteUncheckedCreateNestedManyWithoutCandidateInput
     ratings?: CandidateRatingUncheckedCreateNestedManyWithoutCandidateInput
   }
 
@@ -78331,6 +80111,10 @@ export namespace Prisma {
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
     resumeUrl?: NullableStringFieldUpdateOperationsInput | string | null
     score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_summary?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_pros?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_cons?: NullableStringFieldUpdateOperationsInput | string | null
     coverLetterText?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -78339,6 +80123,7 @@ export namespace Prisma {
     comments?: CommentUpdateManyWithoutCandidateNestedInput
     activities?: ActivityUpdateManyWithoutCandidateNestedInput
     meetings?: MeetingUpdateManyWithoutCandidateNestedInput
+    interviewNotes?: InterviewNoteUpdateManyWithoutCandidateNestedInput
     ratings?: CandidateRatingUpdateManyWithoutCandidateNestedInput
   }
 
@@ -78350,6 +80135,10 @@ export namespace Prisma {
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
     resumeUrl?: NullableStringFieldUpdateOperationsInput | string | null
     score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_summary?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_pros?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_cons?: NullableStringFieldUpdateOperationsInput | string | null
     coverLetterText?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -78358,6 +80147,7 @@ export namespace Prisma {
     comments?: CommentUncheckedUpdateManyWithoutCandidateNestedInput
     activities?: ActivityUncheckedUpdateManyWithoutCandidateNestedInput
     meetings?: MeetingUncheckedUpdateManyWithoutCandidateNestedInput
+    interviewNotes?: InterviewNoteUncheckedUpdateManyWithoutCandidateNestedInput
     ratings?: CandidateRatingUncheckedUpdateManyWithoutCandidateNestedInput
   }
 
@@ -78434,6 +80224,10 @@ export namespace Prisma {
     phoneNumber?: string | null
     resumeUrl?: string | null
     score?: number | null
+    ai_screening_score?: number | null
+    ai_screening_summary?: string | null
+    ai_screening_pros?: string | null
+    ai_screening_cons?: string | null
     coverLetterText?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -78442,6 +80236,7 @@ export namespace Prisma {
     comments?: CommentCreateNestedManyWithoutCandidateInput
     files?: CandidateFileCreateNestedManyWithoutCandidateInput
     meetings?: MeetingCreateNestedManyWithoutCandidateInput
+    interviewNotes?: InterviewNoteCreateNestedManyWithoutCandidateInput
     ratings?: CandidateRatingCreateNestedManyWithoutCandidateInput
   }
 
@@ -78453,6 +80248,10 @@ export namespace Prisma {
     phoneNumber?: string | null
     resumeUrl?: string | null
     score?: number | null
+    ai_screening_score?: number | null
+    ai_screening_summary?: string | null
+    ai_screening_pros?: string | null
+    ai_screening_cons?: string | null
     coverLetterText?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -78461,6 +80260,7 @@ export namespace Prisma {
     comments?: CommentUncheckedCreateNestedManyWithoutCandidateInput
     files?: CandidateFileUncheckedCreateNestedManyWithoutCandidateInput
     meetings?: MeetingUncheckedCreateNestedManyWithoutCandidateInput
+    interviewNotes?: InterviewNoteUncheckedCreateNestedManyWithoutCandidateInput
     ratings?: CandidateRatingUncheckedCreateNestedManyWithoutCandidateInput
   }
 
@@ -78547,6 +80347,10 @@ export namespace Prisma {
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
     resumeUrl?: NullableStringFieldUpdateOperationsInput | string | null
     score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_summary?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_pros?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_cons?: NullableStringFieldUpdateOperationsInput | string | null
     coverLetterText?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -78555,6 +80359,7 @@ export namespace Prisma {
     comments?: CommentUpdateManyWithoutCandidateNestedInput
     files?: CandidateFileUpdateManyWithoutCandidateNestedInput
     meetings?: MeetingUpdateManyWithoutCandidateNestedInput
+    interviewNotes?: InterviewNoteUpdateManyWithoutCandidateNestedInput
     ratings?: CandidateRatingUpdateManyWithoutCandidateNestedInput
   }
 
@@ -78566,6 +80371,10 @@ export namespace Prisma {
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
     resumeUrl?: NullableStringFieldUpdateOperationsInput | string | null
     score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_summary?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_pros?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_cons?: NullableStringFieldUpdateOperationsInput | string | null
     coverLetterText?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -78574,6 +80383,7 @@ export namespace Prisma {
     comments?: CommentUncheckedUpdateManyWithoutCandidateNestedInput
     files?: CandidateFileUncheckedUpdateManyWithoutCandidateNestedInput
     meetings?: MeetingUncheckedUpdateManyWithoutCandidateNestedInput
+    interviewNotes?: InterviewNoteUncheckedUpdateManyWithoutCandidateNestedInput
     ratings?: CandidateRatingUncheckedUpdateManyWithoutCandidateNestedInput
   }
 
@@ -79065,6 +80875,10 @@ export namespace Prisma {
     phoneNumber?: string | null
     resumeUrl?: string | null
     score?: number | null
+    ai_screening_score?: number | null
+    ai_screening_summary?: string | null
+    ai_screening_pros?: string | null
+    ai_screening_cons?: string | null
     coverLetterText?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -79073,6 +80887,7 @@ export namespace Prisma {
     comments?: CommentCreateNestedManyWithoutCandidateInput
     files?: CandidateFileCreateNestedManyWithoutCandidateInput
     activities?: ActivityCreateNestedManyWithoutCandidateInput
+    interviewNotes?: InterviewNoteCreateNestedManyWithoutCandidateInput
     ratings?: CandidateRatingCreateNestedManyWithoutCandidateInput
   }
 
@@ -79084,6 +80899,10 @@ export namespace Prisma {
     phoneNumber?: string | null
     resumeUrl?: string | null
     score?: number | null
+    ai_screening_score?: number | null
+    ai_screening_summary?: string | null
+    ai_screening_pros?: string | null
+    ai_screening_cons?: string | null
     coverLetterText?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -79092,6 +80911,7 @@ export namespace Prisma {
     comments?: CommentUncheckedCreateNestedManyWithoutCandidateInput
     files?: CandidateFileUncheckedCreateNestedManyWithoutCandidateInput
     activities?: ActivityUncheckedCreateNestedManyWithoutCandidateInput
+    interviewNotes?: InterviewNoteUncheckedCreateNestedManyWithoutCandidateInput
     ratings?: CandidateRatingUncheckedCreateNestedManyWithoutCandidateInput
   }
 
@@ -79366,6 +81186,10 @@ export namespace Prisma {
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
     resumeUrl?: NullableStringFieldUpdateOperationsInput | string | null
     score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_summary?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_pros?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_cons?: NullableStringFieldUpdateOperationsInput | string | null
     coverLetterText?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -79374,6 +81198,7 @@ export namespace Prisma {
     comments?: CommentUpdateManyWithoutCandidateNestedInput
     files?: CandidateFileUpdateManyWithoutCandidateNestedInput
     activities?: ActivityUpdateManyWithoutCandidateNestedInput
+    interviewNotes?: InterviewNoteUpdateManyWithoutCandidateNestedInput
     ratings?: CandidateRatingUpdateManyWithoutCandidateNestedInput
   }
 
@@ -79385,6 +81210,10 @@ export namespace Prisma {
     phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
     resumeUrl?: NullableStringFieldUpdateOperationsInput | string | null
     score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_summary?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_pros?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_cons?: NullableStringFieldUpdateOperationsInput | string | null
     coverLetterText?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -79393,6 +81222,7 @@ export namespace Prisma {
     comments?: CommentUncheckedUpdateManyWithoutCandidateNestedInput
     files?: CandidateFileUncheckedUpdateManyWithoutCandidateNestedInput
     activities?: ActivityUncheckedUpdateManyWithoutCandidateNestedInput
+    interviewNotes?: InterviewNoteUncheckedUpdateManyWithoutCandidateNestedInput
     ratings?: CandidateRatingUncheckedUpdateManyWithoutCandidateNestedInput
   }
 
@@ -83222,6 +85052,13 @@ export namespace Prisma {
     createdAt?: Date | string
   }
 
+  export type InterviewNoteCreateManyCandidateInput = {
+    id?: string
+    jobId: string
+    content: string
+    createdAt?: Date | string
+  }
+
   export type CandidateRatingCreateManyCandidateInput = {
     id?: string
     applicationId: string
@@ -83451,6 +85288,27 @@ export namespace Prisma {
     applicationId?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumMeetingStatusFieldUpdateOperationsInput | $Enums.MeetingStatus
     meetingTemplateId?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type InterviewNoteUpdateWithoutCandidateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    jobId?: StringFieldUpdateOperationsInput | string
+    content?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type InterviewNoteUncheckedUpdateWithoutCandidateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    jobId?: StringFieldUpdateOperationsInput | string
+    content?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type InterviewNoteUncheckedUpdateManyWithoutCandidateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    jobId?: StringFieldUpdateOperationsInput | string
+    content?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 

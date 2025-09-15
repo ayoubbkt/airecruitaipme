@@ -1,0 +1,2187 @@
+// src/services/ai/meganActions.service.js
+import db from '../../config/db.js';
+
+/**
+ * Actions que Megan peut effectuer en accédant à la base de données
+ */
+
+export const meganActions = {
+  // ============================================================================
+  // 📋 GESTION QUOTIDIENNE DES TÂCHES - VERSION PRODUCTION
+  // ============================================================================
+
+  /**
+   * 🎯 Récupère les priorités du jour pour un recruteur
+   * Logique métier: Entretiens urgents > Évaluations en retard > Relances importantes
+   */
+  async getTodayPriorities(userId) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    let userIdString = userId ? userId.toString() : (await db.user.findFirst())?.id;
+    if (!userIdString) throw new Error('Utilisateur non trouvé');
+
+    // 1. Entretiens du jour (priorité absolue)
+    const todayInterviews = await db.meeting.findMany({
+      where: {
+        organizerId: userIdString,
+        startTime: { gte: today, lt: tomorrow },
+        status: { in: ['SCHEDULED', 'IN_PROGRESS'] }
+      },
+      include: {
+        candidate: { select: { firstName: true, lastName: true, email: true } },
+        job: { select: { title: true, company: { select: { name: true } } } }
+      },
+      orderBy: { startTime: 'asc' }
+    });
+
+    // 2. Évaluations en retard (>48h) - utiliser les activités existantes
+    const overdueEvaluations = await db.activity.findMany({
+      where: {
+        type: 'AI_SCREENING', // Utiliser un type existant
+        createdAt: { lt: yesterday },
+        performedBy: userIdString
+      },
+      include: {
+        candidate: { select: { firstName: true, lastName: true, email: true } }
+      },
+      take: 5
+    });
+
+    // 3. Candidats à recontacter (sans activité depuis 3+ jours)
+    const candidatesToFollow = await db.candidate.findMany({
+      where: {
+        applications: {
+          some: {
+            job: { 
+              hiringTeam: {
+                some: { userId: userIdString }
+              }
+            },
+            status: 'ACTIVE'
+          }
+        },
+        activities: {
+          none: {
+            createdAt: { gte: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) }
+          }
+        }
+      },
+      include: {
+        applications: {
+          where: { 
+            job: { 
+              hiringTeam: {
+                some: { userId: userIdString }
+              }
+            }
+          },
+          include: { job: { select: { title: true } } }
+        }
+      },
+      take: 5
+    });
+
+    // 4. Applications nécessitant une action
+    const overdueApplications = await db.application.findMany({
+      where: {
+        job: { 
+          hiringTeam: {
+            some: { userId: userIdString }
+          }
+        },
+        currentStage: { 
+          type: { in: ['APPLIED', 'AI_SCREENING', 'REVIEW'] } 
+        },
+        updatedAt: { lt: yesterday }
+      },
+      include: {
+        candidate: { select: { firstName: true, lastName: true, email: true } },
+        job: { select: { title: true } },
+        currentStage: { select: { name: true, type: true } }
+      },
+      take: 3
+    });
+
+    return {
+      summary: {
+        todayInterviews: todayInterviews.length,
+        overdueEvaluations: overdueEvaluations.length,
+        candidatesToFollow: candidatesToFollow.length,
+        overdueApplications: overdueApplications.length
+      },
+      priorities: {
+        urgent: todayInterviews,
+        overdue: overdueEvaluations,
+        followUp: candidatesToFollow,
+        applications: overdueApplications
+      },
+      totalPriorities: todayInterviews.length + overdueEvaluations.length + candidatesToFollow.length + overdueApplications.length
+    };
+  },
+
+  /**
+   * 📞 Candidats nécessitant un suivi cette semaine
+   * Logique métier: Dernière interaction > 7 jours OU étape critique
+   */
+  async getCandidatesToFollow(userId, daysThreshold = 7) {
+    const thresholdDate = new Date(Date.now() - daysThreshold * 24 * 60 * 60 * 1000);
+    let userIdString = userId ? userId.toString() : (await db.user.findFirst())?.id;
+
+    const candidates = await db.candidate.findMany({
+      where: {
+        applications: {
+          some: {
+            job: { 
+              hiringTeam: {
+                some: { userId: userIdString }
+              }
+            },
+            currentStage: { 
+              type: { 
+                in: ['APPLIED', 'AI_SCREENING', 'REVIEW', 'INTERVIEW'] 
+              }
+            }
+          }
+        },
+        OR: [
+          // Pas d'activité récente
+          {
+            activities: {
+              none: { createdAt: { gte: thresholdDate } }
+            }
+          },
+          // OU candidat en étape critique sans action
+          {
+            applications: {
+              some: {
+                currentStage: { type: 'INTERVIEW' },
+                updatedAt: { lt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) }
+              }
+            }
+          }
+        ]
+      },
+      include: {
+        applications: {
+          where: { 
+            job: { 
+              hiringTeam: {
+                some: { userId: userIdString }
+              }
+            }
+          },
+          include: { 
+            job: { select: { title: true } },
+            currentStage: { select: { name: true, type: true } }
+          }
+        },
+        activities: {
+          orderBy: { createdAt: 'desc' },
+          take: 1
+        }
+      },
+      orderBy: { updatedAt: 'asc' },
+      take: 10
+    });
+
+    return candidates.map(candidate => ({
+      ...candidate,
+      daysSinceLastContact: Math.floor((Date.now() - new Date(candidate.updatedAt)) / (24 * 60 * 60 * 1000)),
+      urgencyLevel: 'NORMAL' // Simplification pour l'instant
+    }));
+  },
+
+  /**
+   * ⏰ Entretiens en retard de planification
+   * Logique métier: Candidats validés mais sans RDV depuis >48h
+   */
+  async getOverdueInterviews(userId) {
+    const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+    let userIdString = userId ? userId.toString() : (await db.user.findFirst())?.id;
+
+    const overdueInterviews = await db.application.findMany({
+      where: {
+        job: { 
+          hiringTeam: {
+            some: { userId: userIdString }
+          }
+        },
+        currentStage: { 
+          type: { in: ['REVIEW', 'INTERVIEW'] } 
+        },
+        updatedAt: { lt: twoDaysAgo }
+      },
+      include: {
+        candidate: { 
+          select: { 
+            firstName: true, 
+            lastName: true, 
+            email: true, 
+            phoneNumber: true,
+            ai_screening_score: true
+          } 
+        },
+        job: { 
+          select: { 
+            title: true,
+            company: { select: { name: true } }
+          } 
+        },
+        currentStage: {
+          select: { name: true, type: true }
+        }
+      },
+      orderBy: [
+        { updatedAt: 'asc' }
+      ]
+    });
+
+    return overdueInterviews.map(app => ({
+      ...app,
+      daysOverdue: Math.floor((Date.now() - new Date(app.updatedAt)) / (24 * 60 * 60 * 1000)),
+      urgencyScore: (app.candidate.ai_screening_score || 0)
+    }));
+  },
+
+  /**
+   * 📝 Évaluations en attente avec priorisation
+   * Logique métier: Entretiens passés sans feedback > deadlines proches
+   */
+  async getPendingEvaluations(userId) {
+    let userIdString = userId ? userId.toString() : (await db.user.findFirst())?.id;
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+
+    // Entretiens terminés sans évaluation
+    const completedInterviewsNoEval = await db.meeting.findMany({
+      where: {
+        organizerId: userIdString,
+        status: 'COMPLETED',
+        endTime: { lt: new Date() },
+        // Pas d'activité d'évaluation associée récente
+        candidate: {
+          activities: {
+            none: {
+              type: 'RATING_ADDED',
+              createdAt: { gte: threeDaysAgo }
+            }
+          }
+        }
+      },
+      include: {
+        candidate: { select: { firstName: true, lastName: true, email: true } },
+        job: { 
+          select: { 
+            title: true
+          } 
+        }
+      },
+      orderBy: { endTime: 'asc' }
+    });
+
+    // Applications en attente d'évaluation
+    const pendingApplications = await db.application.findMany({
+      where: {
+        job: { 
+          hiringTeam: {
+            some: { userId: userIdString }
+          }
+        },
+        currentStage: { type: 'INTERVIEW' },
+        updatedAt: { lt: threeDaysAgo }
+      },
+      include: {
+        candidate: { select: { firstName: true, lastName: true, email: true } },
+        job: { select: { title: true } },
+        currentStage: { select: { name: true, type: true } }
+      },
+      orderBy: { updatedAt: 'asc' }
+    });
+
+    return {
+      completedInterviews: completedInterviewsNoEval,
+      pendingApplications: pendingApplications,
+      totalPending: completedInterviewsNoEval.length + pendingApplications.length
+    };
+  },
+
+  /**
+   * 🔔 Rappels et relances programmées
+   * Logique métier: Actions planifiées + relances automatiques intelligentes
+   */
+  async getFollowUpReminders(userId) {
+    let userIdString = userId ? userId.toString() : (await db.user.findFirst())?.id;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    // Activités récentes nécessitant un suivi
+    const recentActivities = await db.activity.findMany({
+      where: {
+        performedBy: userIdString,
+        type: { in: ['EMAIL_SENT', 'MEETING_SCHEDULED'] },
+        createdAt: {
+          gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+          lte: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
+        }
+      },
+      include: {
+        candidate: { select: { firstName: true, lastName: true, email: true } }
+      },
+      orderBy: { createdAt: 'asc' },
+      take: 5
+    });
+
+    // Candidats qui n'ont pas répondu à un email depuis 5+ jours
+    const autoReminders = await db.candidate.findMany({
+      where: {
+        applications: {
+          some: {
+            job: { 
+              hiringTeam: {
+                some: { userId: userIdString }
+              }
+            },
+            status: 'ACTIVE'
+          }
+        },
+        // Candidats qui ont reçu un email mais n'ont pas d'activité récente
+        activities: {
+          some: {
+            type: 'EMAIL_SENT',
+            createdAt: { 
+              gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+              lte: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)
+            }
+          }
+        }
+      },
+      include: {
+        applications: {
+          where: { 
+            job: { 
+              hiringTeam: {
+                some: { userId: userIdString }
+              }
+            }
+          },
+          include: { 
+            job: { select: { title: true } },
+            currentStage: { select: { name: true, type: true } }
+          }
+        },
+        activities: {
+          where: { type: 'EMAIL_SENT' },
+          orderBy: { createdAt: 'desc' },
+          take: 1
+        }
+      },
+      take: 5
+    });
+
+    return {
+      recentActivities: recentActivities,
+      autoReminders: autoReminders,
+      totalReminders: recentActivities.length + autoReminders.length
+    };
+  },
+
+  // ============================================================================
+  // � SUIVI DES CANDIDATS - VERSION PRODUCTION
+  // ============================================================================
+
+  /**
+   * 🎯 Candidats en phase d'entretien
+   * Logique métier: Tous les candidats dans les étapes d'entretien avec détails complets
+   */
+  async getCandidatesInInterview(userId) {
+    let userIdString = userId ? userId.toString() : (await db.user.findFirst())?.id;
+    
+    const candidatesInInterview = await db.application.findMany({
+      where: {
+        job: { 
+          hiringTeam: {
+            some: { userId: userIdString }
+          }
+        },
+        currentStage: { 
+          type: { in: ['INTERVIEW'] } 
+        },
+        status: 'ACTIVE'
+      },
+      include: {
+        candidate: { 
+          select: { 
+            id: true,
+            firstName: true, 
+            lastName: true, 
+            email: true, 
+            phoneNumber: true,
+            ai_screening_score: true,
+            resumeUrl: true
+          } 
+        },
+        job: { 
+          select: { 
+            id: true,
+            title: true,
+            company: { select: { name: true } }
+          } 
+        },
+        currentStage: {
+          select: { name: true, type: true }
+        }
+      },
+      orderBy: [
+        { candidate: { ai_screening_score: 'desc' } },
+        { updatedAt: 'desc' }
+      ]
+    });
+
+    // Récupérer les entretiens programmés pour ces candidats
+    const candidateIds = candidatesInInterview.map(app => app.candidate.id);
+    const upcomingMeetings = await db.meeting.findMany({
+      where: {
+        candidateId: { in: candidateIds },
+        status: { in: ['SCHEDULED', 'IN_PROGRESS'] },
+        startTime: { gte: new Date() }
+      },
+      select: {
+        candidateId: true,
+        startTime: true,
+        title: true,
+        status: true
+      },
+      orderBy: { startTime: 'asc' }
+    });
+
+    // Mapper les entretiens aux candidats
+    const candidatesWithMeetings = candidatesInInterview.map(app => ({
+      ...app,
+      upcomingMeeting: upcomingMeetings.find(meeting => meeting.candidateId === app.candidate.id),
+      daysInStage: Math.floor((Date.now() - new Date(app.updatedAt)) / (24 * 60 * 60 * 1000))
+    }));
+
+    return {
+      totalCandidates: candidatesWithMeetings.length,
+      byStage: {
+        interview: candidatesWithMeetings.filter(app => app.currentStage.type === 'INTERVIEW').length,
+        offer: candidatesWithMeetings.filter(app => app.currentStage.type === 'OFFER').length
+      },
+      candidates: candidatesWithMeetings
+    };
+  },
+
+  /**
+   * 🏆 Meilleurs candidats du mois
+   * Logique métier: Score IA + progression + activité récente
+   */
+  async getTopCandidatesThisMonth(userId, limit = 10) {
+    let userIdString = userId ? userId.toString() : (await db.user.findFirst())?.id;
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+
+    const topCandidates = await db.application.findMany({
+      where: {
+        job: { 
+          hiringTeam: {
+            some: { userId: userIdString }
+          }
+        },
+        OR: [
+          // Candidats ajoutés ce mois
+          { appliedAt: { gte: monthStart } },
+          // OU candidats actifs avec score élevé
+          { 
+            status: 'ACTIVE',
+            candidate: { ai_screening_score: { gte: 70 } }
+          }
+        ]
+      },
+      include: {
+        candidate: { 
+          select: { 
+            id: true,
+            firstName: true, 
+            lastName: true, 
+            email: true, 
+            phoneNumber: true,
+            ai_screening_score: true,
+            resumeUrl: true,
+            createdAt: true
+          } 
+        },
+        job: { 
+          select: { 
+            id: true,
+            title: true,
+            company: { select: { name: true } }
+          } 
+        },
+        currentStage: {
+          select: { name: true, type: true }
+        }
+      },
+      orderBy: [
+        { candidate: { ai_screening_score: 'desc' } },
+        { appliedAt: 'desc' }
+      ],
+      take: limit
+    });
+
+    // Calculer les métriques avancées pour chaque candidat
+    const candidatesWithMetrics = await Promise.all(
+      topCandidates.map(async (app) => {
+        // Nombre d'activités récentes
+        const recentActivities = await db.activity.count({
+          where: {
+            candidateId: app.candidate.id,
+            createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }
+          }
+        });
+
+        // Progression dans le processus
+        const allStages = ['APPLIED', 'AI_SCREENING', 'REVIEW', 'INTERVIEW', 'OFFER', 'HIRED'];
+        const currentStageType = app.currentStage?.type || 'APPLIED';
+        const currentStageIndex = allStages.indexOf(currentStageType);
+        const progressPercentage = currentStageIndex >= 0 ? ((currentStageIndex + 1) / allStages.length) * 100 : 10;
+
+        return {
+          ...app,
+          metrics: {
+            recentActivities,
+            progressPercentage: Math.round(progressPercentage),
+            daysInProcess: Math.floor((Date.now() - new Date(app.appliedAt)) / (24 * 60 * 60 * 1000)),
+            overallScore: (app.candidate.ai_screening_score || 0) + (recentActivities * 5) + (progressPercentage * 0.3)
+          }
+        };
+      })
+    );
+
+    // Trier par score global
+    candidatesWithMetrics.sort((a, b) => b.metrics.overallScore - a.metrics.overallScore);
+
+    return {
+      totalFound: candidatesWithMetrics.length,
+      monthStart: monthStart.toISOString(),
+      averageScore: Math.round(candidatesWithMetrics.reduce((sum, c) => sum + (c.candidate.ai_screening_score || 0), 0) / candidatesWithMetrics.length) || 0,
+      candidates: candidatesWithMetrics
+    };
+  },
+
+  /**
+   * 📵 Candidats non-répondants depuis 7+ jours
+   * Logique métier: Dernière activité > seuil + status actif
+   */
+  async getNonRespondingCandidates(userId, daysThreshold = 7) {
+    let userIdString = userId ? userId.toString() : (await db.user.findFirst())?.id;
+    const thresholdDate = new Date(Date.now() - daysThreshold * 24 * 60 * 60 * 1000);
+
+    const nonRespondingCandidates = await db.candidate.findMany({
+      where: {
+        applications: {
+          some: {
+            job: { 
+              hiringTeam: {
+                some: { userId: userIdString }
+              }
+            },
+            status: 'ACTIVE',
+            currentStage: { 
+              type: { notIn: ['DISQUALIFIED', 'HIRED', 'ARCHIVED'] }
+            }
+          }
+        },
+        // Dernière activité > seuil
+        activities: {
+          none: {
+            createdAt: { gte: thresholdDate }
+          }
+        }
+      },
+      include: {
+        applications: {
+          where: { 
+            job: { 
+              hiringTeam: {
+                some: { userId: userIdString }
+              }
+            },
+            status: 'ACTIVE'
+          },
+          include: { 
+            job: { select: { title: true } },
+            currentStage: { select: { name: true, type: true } }
+          }
+        },
+        activities: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: {
+            type: true,
+            createdAt: true,
+            description: true
+          }
+        }
+      },
+      orderBy: { updatedAt: 'asc' }
+    });
+
+    // Calculer les métriques pour chaque candidat
+    const candidatesWithMetrics = nonRespondingCandidates.map(candidate => {
+      const lastActivity = candidate.activities[0];
+      const daysSinceLastContact = lastActivity 
+        ? Math.floor((Date.now() - new Date(lastActivity.createdAt)) / (24 * 60 * 60 * 1000))
+        : Math.floor((Date.now() - new Date(candidate.updatedAt)) / (24 * 60 * 60 * 1000));
+
+      let urgencyLevel = 'LOW';
+      if (daysSinceLastContact > 14) urgencyLevel = 'HIGH';
+      else if (daysSinceLastContact > 10) urgencyLevel = 'MEDIUM';
+
+      return {
+        ...candidate,
+        daysSinceLastContact,
+        urgencyLevel,
+        lastActivityType: lastActivity?.type || 'NONE'
+      };
+    });
+
+    return {
+      totalNonResponding: candidatesWithMetrics.length,
+      thresholdDays: daysThreshold,
+      urgencyBreakdown: {
+        high: candidatesWithMetrics.filter(c => c.urgencyLevel === 'HIGH').length,
+        medium: candidatesWithMetrics.filter(c => c.urgencyLevel === 'MEDIUM').length,
+        low: candidatesWithMetrics.filter(c => c.urgencyLevel === 'LOW').length
+      },
+      candidates: candidatesWithMetrics.slice(0, 15) // Limiter pour performance
+    };
+  },
+
+  /**
+   * 📊 CV reçus cette semaine par poste
+   * Logique métier: Applications groupées par job avec métriques
+   */
+  async getWeeklyApplicationsByJob(userId) {
+    let userIdString = userId ? userId.toString() : (await db.user.findFirst())?.id;
+    const weekStart = new Date();
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // Début de semaine (dimanche)
+    weekStart.setHours(0, 0, 0, 0);
+
+    const weeklyApplications = await db.application.findMany({
+      where: {
+        job: { 
+          hiringTeam: {
+            some: { userId: userIdString }
+          }
+        },
+        appliedAt: { gte: weekStart }
+      },
+      include: {
+        candidate: { 
+          select: { 
+            firstName: true, 
+            lastName: true, 
+            email: true,
+            ai_screening_score: true
+          } 
+        },
+        job: { 
+          select: { 
+            id: true,
+            title: true,
+            company: { select: { name: true } },
+            status: true
+          } 
+        }
+      },
+      orderBy: { appliedAt: 'desc' }
+    });
+
+    // Grouper par job et calculer les statistiques
+    const jobStats = weeklyApplications.reduce((acc, app) => {
+      const jobId = app.job.id;
+      
+      if (!acc[jobId]) {
+        acc[jobId] = {
+          job: app.job,
+          applications: [],
+          metrics: {
+            totalApplications: 0,
+            averageScore: 0,
+            topScore: 0,
+            applicationsToday: 0
+          }
+        };
+      }
+      
+      acc[jobId].applications.push(app);
+      acc[jobId].metrics.totalApplications++;
+      
+      // Calculer scores
+      const score = app.candidate.ai_screening_score || 0;
+      if (score > acc[jobId].metrics.topScore) {
+        acc[jobId].metrics.topScore = score;
+      }
+      
+      // Applications aujourd'hui
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (new Date(app.appliedAt) >= today) {
+        acc[jobId].metrics.applicationsToday++;
+      }
+      
+      return acc;
+    }, {});
+
+    // Calculer la moyenne des scores pour chaque job
+    Object.values(jobStats).forEach(jobStat => {
+      const scores = jobStat.applications
+        .map(app => app.candidate.ai_screening_score || 0)
+        .filter(score => score > 0);
+      
+      jobStat.metrics.averageScore = scores.length > 0 
+        ? Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length)
+        : 0;
+    });
+
+    // Convertir en array et trier par nombre d'applications
+    const sortedJobStats = Object.values(jobStats)
+      .sort((a, b) => b.metrics.totalApplications - a.metrics.totalApplications);
+
+    return {
+      weekStart: weekStart.toISOString(),
+      totalApplicationsThisWeek: weeklyApplications.length,
+      totalJobsWithApplications: sortedJobStats.length,
+      jobStats: sortedJobStats
+    };
+  },
+
+  /**
+   * 🎯 Meilleur candidat par score IA pour un poste
+   * Logique métier: Score IA max + détails complets + comparaison
+   */
+  async getBestCandidateForJob(userId, jobId) {
+    let userIdString = userId ? userId.toString() : (await db.user.findFirst())?.id;
+    
+    if (!jobId) {
+      // Si pas de jobId, prendre le job le plus récent de l'utilisateur
+      const latestJob = await db.job.findFirst({
+        where: {
+          hiringTeam: {
+            some: { userId: userIdString }
+          }
+        },
+        orderBy: { createdAt: 'desc' }
+      });
+      jobId = latestJob?.id;
+    }
+
+    if (!jobId) {
+      throw new Error('Aucun poste trouvé pour cet utilisateur');
+    }
+
+    // Récupérer tous les candidats pour ce poste avec leur score
+    const allCandidates = await db.application.findMany({
+      where: {
+        jobId: jobId.toString(), // Convertir en string car jobId est String dans le schéma
+        job: { 
+          hiringTeam: {
+            some: { userId: userIdString }
+          }
+        }
+      },
+      include: {
+        candidate: { 
+          select: { 
+            id: true,
+            firstName: true, 
+            lastName: true, 
+            email: true, 
+            phoneNumber: true,
+            ai_screening_score: true,
+            resumeUrl: true,
+            createdAt: true
+          } 
+        },
+        job: { 
+          select: { 
+            id: true,
+            title: true,
+            company: { select: { name: true } },
+            description: true
+          } 
+        },
+        currentStage: {
+          select: { name: true, type: true }
+        }
+      },
+      orderBy: [
+        { candidate: { ai_screening_score: 'desc' } },
+        { appliedAt: 'desc' }
+      ]
+    });
+
+    if (allCandidates.length === 0) {
+      return {
+        job: await db.job.findUnique({
+          where: { id: jobId.toString() },
+          select: { title: true, company: { select: { name: true } } }
+        }),
+        message: 'Aucun candidat trouvé pour ce poste',
+        totalCandidates: 0
+      };
+    }
+
+    const bestCandidate = allCandidates[0];
+    
+    // Statistiques comparatives
+    const scores = allCandidates
+      .map(app => app.candidate.ai_screening_score || 0)
+      .filter(score => score > 0);
+    
+    const averageScore = scores.length > 0 
+      ? Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length)
+      : 0;
+
+    // Activités récentes du meilleur candidat
+    const recentActivities = await db.activity.findMany({
+      where: {
+        candidateId: bestCandidate.candidate.id
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 3,
+      select: {
+        type: true,
+        createdAt: true,
+        description: true
+      }
+    });
+
+    return {
+      job: bestCandidate.job,
+      bestCandidate: {
+        ...bestCandidate,
+        recentActivities,
+        daysInProcess: Math.floor((Date.now() - new Date(bestCandidate.appliedAt)) / (24 * 60 * 60 * 1000))
+      },
+      statistics: {
+        totalCandidates: allCandidates.length,
+        averageScore,
+        topScore: bestCandidate.candidate.ai_screening_score || 0,
+        scoreAdvantage: (bestCandidate.candidate.ai_screening_score || 0) - averageScore,
+        candidatesAbove80: allCandidates.filter(app => (app.candidate.ai_screening_score || 0) >= 80).length
+      },
+      topCandidates: allCandidates.slice(0, 5) // Top 5 pour comparaison
+    };
+  },
+
+  // ============================================================================
+  // �📋 FONCTION EXISTANTE - getTodayTasks (pour compatibilité)
+  // ============================================================================
+  
+  async getTodayTasks(userId) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    let userIdString = userId ? userId.toString() : (await db.user.findFirst())?.id;
+
+    // Activités du jour
+    const activities = await db.activity.findMany({
+      where: {
+        createdAt: {
+          gte: today,
+          lt: tomorrow,
+        },
+        performedBy: userIdString,
+      },
+      include: {
+        candidate: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    // Entretiens du jour
+    const meetings = await db.meeting.findMany({
+      where: {
+        startTime: {
+          gte: today,
+          lt: tomorrow
+        },
+        status: {
+          in: ['SCHEDULED', 'IN_PROGRESS']
+        }
+      },
+      include: {
+        candidate: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true
+          }
+        },
+        job: {
+          select: {
+            title: true
+          }
+        }
+      },
+      orderBy: {
+        startTime: 'asc'
+      }
+    });
+
+    return {
+      activities,
+      meetings,
+      totalTasks: activities.length + meetings.length
+    };
+  },
+
+  // Récupérer les détails d'un job
+  async getJobDetails(jobId) {
+    const job = await db.job.findUnique({
+      where: { id: parseInt(jobId) },
+      include: {
+        applications: {
+          include: {
+            candidate: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                phoneNumber: true,
+                ai_screening_score: true
+              }
+            }
+          }
+        },
+        _count: {
+          select: {
+            applications: true
+          }
+        }
+      }
+    });
+
+    return job;
+  },
+
+  // Récupérer les candidats par étape
+  async getCandidatesByStage(jobId, stage) {
+    const candidates = await db.application.findMany({
+      where: {
+        jobId: parseInt(jobId),
+        stage: stage || undefined
+      },
+      include: {
+        candidate: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phoneNumber: true,
+            ai_screening_score: true
+          }
+        },
+        job: {
+          select: {
+            title: true
+          }
+        }
+      },
+      orderBy: {
+        updatedAt: 'desc'
+      }
+    });
+
+    return candidates;
+  },
+
+  // Planifier un entretien (meeting)
+  async scheduleInterview(candidateId, jobId, scheduledAt, meetingType = 'VIDEO_CALL') {
+    try {
+      const meeting = await db.meeting.create({
+        data: {
+          candidateId: candidateId.toString(),
+          jobId: jobId.toString(),
+          organizerId: (await db.user.findFirst()).id, // Premier utilisateur par défaut
+          title: `Entretien ${meetingType}`,
+          description: `Entretien planifié par Megan AI le ${new Date().toLocaleString()}`,
+          startTime: new Date(scheduledAt),
+          endTime: new Date(new Date(scheduledAt).getTime() + 60 * 60 * 1000), // 1 heure plus tard
+          status: 'SCHEDULED'
+        },
+        include: {
+          candidate: {
+            select: {
+              firstName: true,
+              lastName: true,
+              email: true
+            }
+          },
+          job: {
+            select: {
+              title: true
+            }
+          }
+        }
+      });
+
+      // Créer une activité
+      await db.activity.create({
+        data: {
+          candidateId: candidateId.toString(),
+          type: 'INTERVIEW_SCHEDULED',
+          description: `🤖 Megan a planifié un entretien pour le ${new Date(scheduledAt).toLocaleString()}`,
+          performedBy: (await db.user.findFirst()).id
+        }
+      });
+
+      return meeting;
+    } catch (error) {
+      throw new Error(`Erreur lors de la planification: ${error.message}`);
+    }
+  },
+
+  // Vérifier les emails envoyés
+  async getEmailStatus(candidateId, limit = 5) {
+    // Pour l'instant, on simule avec les activités qui mentionnent des emails
+    const emailActivities = await db.activity.findMany({
+      where: {
+        candidateId: parseInt(candidateId),
+        OR: [
+          { description: { contains: 'email' } },
+          { description: { contains: 'message' } },
+          { type: 'EMAIL_SENT' }
+        ]
+      },
+      orderBy: {
+        createdAt: 'desc'
+      },
+      take: limit,
+      include: {
+        candidate: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true
+          }
+        }
+      }
+    });
+
+    return emailActivities;
+  },
+
+  // Récupérer les statistiques générales
+  async getDashboardStats() {
+    const [
+      totalCandidates,
+      totalJobs,
+      todayApplications,
+      pendingInterviews
+    ] = await Promise.all([
+      db.candidate.count(),
+      db.job.count({ where: { status: 'PUBLISHED' } }),
+      db.application.count({
+        where: {
+          appliedAt: {
+            gte: new Date(new Date().setHours(0, 0, 0, 0))
+          }
+        }
+      }),
+      db.meeting.count({
+        where: {
+          status: 'SCHEDULED',
+          startTime: {
+            gte: new Date()
+          }
+        }
+      })
+    ]);
+
+    return {
+      totalCandidates,
+      totalJobs,
+      todayApplications,
+      pendingInterviews
+    };
+  },
+
+  // Rechercher des candidats
+  async searchCandidates(query, limit = 10) {
+    const candidates = await db.candidate.findMany({
+      where: {
+        OR: [
+          { firstName: { contains: query, mode: 'insensitive' } },
+          { lastName: { contains: query, mode: 'insensitive' } },
+          { email: { contains: query, mode: 'insensitive' } }
+        ]
+      },
+      include: {
+        applications: {
+          include: {
+            job: {
+              select: {
+                title: true,
+                status: true
+              }
+            }
+          }
+        }
+      },
+      take: limit
+    });
+
+    return candidates;
+  },
+
+  // ============================================================================
+  // 📅 PLANIFICATION ET ORGANISATION - VERSION PRODUCTION
+  // ============================================================================
+
+  /**
+   * 📋 Planifier un entretien avec un candidat spécifique
+   * Logique métier: Recherche candidat + création meeting + notification
+   */
+  async scheduleSpecificInterview(userId, candidateName, dateTime, jobId = null, meetingType = 'VIDEO_CALL') {
+    let userIdString = userId ? userId.toString() : (await db.user.findFirst())?.id;
+    
+    if (!candidateName || !dateTime) {
+      throw new Error('Nom du candidat et date/heure requis');
+    }
+
+    // 1. Rechercher le candidat par nom (flexible)
+    const candidates = await db.candidate.findMany({
+      where: {
+        OR: [
+          { 
+            firstName: { 
+              contains: candidateName, 
+              mode: 'insensitive' 
+            } 
+          },
+          { 
+            lastName: { 
+              contains: candidateName, 
+              mode: 'insensitive' 
+            } 
+          },
+          {
+            // Recherche combinée prénom + nom
+            AND: [
+              {
+                OR: [
+                  { firstName: { contains: candidateName.split(' ')[0] || '', mode: 'insensitive' } },
+                  { lastName: { contains: candidateName.split(' ')[0] || '', mode: 'insensitive' } }
+                ]
+              }
+            ]
+          }
+        ],
+        // Candidat doit avoir une application active
+        applications: {
+          some: {
+            job: { 
+              hiringTeam: {
+                some: { userId: userIdString }
+              }
+            },
+            status: 'ACTIVE'
+          }
+        }
+      },
+      include: {
+        applications: {
+          where: { 
+            job: { 
+              hiringTeam: {
+                some: { userId: userIdString }
+              }
+            },
+            status: 'ACTIVE'
+          },
+          include: { 
+            job: { 
+              select: { 
+                id: true, 
+                title: true,
+                company: { select: { name: true } }
+              } 
+            },
+            currentStage: { select: { name: true, type: true } }
+          },
+          orderBy: { updatedAt: 'desc' }
+        }
+      }
+    });
+
+    if (candidates.length === 0) {
+      return {
+        success: false,
+        error: `Aucun candidat trouvé avec le nom "${candidateName}" dans vos postes actifs`,
+        suggestions: await this.searchCandidates(candidateName, 3)
+      };
+    }
+
+    // 2. Sélectionner le candidat le plus pertinent
+    const targetCandidate = candidates[0];
+    const application = jobId 
+      ? targetCandidate.applications.find(app => app.job.id === jobId.toString())
+      : targetCandidate.applications[0];
+
+    if (!application) {
+      return {
+        success: false,
+        error: `Candidat trouvé mais pas d'application active pour le poste spécifié`,
+        candidate: targetCandidate
+      };
+    }
+
+    // 3. Valider la date/heure
+    const scheduledDateTime = new Date(dateTime);
+    if (isNaN(scheduledDateTime.getTime())) {
+      throw new Error('Format de date/heure invalide');
+    }
+
+    if (scheduledDateTime < new Date()) {
+      return {
+        success: false,
+        error: 'Impossible de planifier un entretien dans le passé',
+        requestedDateTime: dateTime
+      };
+    }
+
+    // 4. Vérifier les conflits
+    const existingMeetings = await db.meeting.findMany({
+      where: {
+        organizerId: userIdString,
+        status: { in: ['SCHEDULED', 'IN_PROGRESS'] },
+        startTime: {
+          gte: new Date(scheduledDateTime.getTime() - 30 * 60 * 1000), // 30 min avant
+          lte: new Date(scheduledDateTime.getTime() + 30 * 60 * 1000)  // 30 min après
+        }
+      }
+    });
+
+    const hasConflict = existingMeetings.length > 0;
+
+    // 5. Créer l'entretien
+    try {
+      const meeting = await db.meeting.create({
+        data: {
+          candidateId: targetCandidate.id,
+          jobId: application.job.id,
+          organizerId: userIdString,
+          title: `Entretien ${meetingType} - ${targetCandidate.firstName} ${targetCandidate.lastName}`,
+          description: `Entretien planifié via Megan AI pour le poste ${application.job.title} chez ${application.job.company.name}`,
+          startTime: scheduledDateTime,
+          endTime: new Date(scheduledDateTime.getTime() + 60 * 60 * 1000), // 1 heure
+          status: 'SCHEDULED',
+          meetingType
+        },
+        include: {
+          candidate: { select: { firstName: true, lastName: true, email: true } },
+          job: { select: { title: true, company: { select: { name: true } } } }
+        }
+      });
+
+      // 6. Créer l'activité associée
+      await db.activity.create({
+        data: {
+          candidateId: targetCandidate.id,
+          type: 'MEETING_SCHEDULED',
+          description: `🤖 Megan a planifié un entretien ${meetingType} pour le ${scheduledDateTime.toLocaleString('fr-FR')}`,
+          performedBy: userIdString
+        }
+      });
+
+      return {
+        success: true,
+        meeting,
+        candidate: targetCandidate,
+        application,
+        hasConflict,
+        conflictDetails: hasConflict ? existingMeetings : null,
+        nextSteps: [
+          'Envoyer invitation email au candidat',
+          'Préparer les questions d\'entretien',
+          'Réviser le CV et la lettre de motivation'
+        ]
+      };
+
+    } catch (error) {
+      throw new Error(`Erreur lors de la création de l'entretien: ${error.message}`);
+    }
+  },
+
+  /**
+   * ⏰ Analyser les créneaux disponibles pour planifier plusieurs entretiens
+   * Logique métier: Analyse du planning + suggestions intelligentes
+   */
+  async getAvailableTimeSlots(userId, numberOfInterviews = 3, daysAhead = 7) {
+    let userIdString = userId ? userId.toString() : (await db.user.findFirst())?.id;
+    
+    const today = new Date();
+    const endDate = new Date(today.getTime() + daysAhead * 24 * 60 * 60 * 1000);
+
+    // 1. Récupérer tous les meetings existants
+    const existingMeetings = await db.meeting.findMany({
+      where: {
+        organizerId: userIdString,
+        status: { in: ['SCHEDULED', 'IN_PROGRESS'] },
+        startTime: { gte: today, lte: endDate }
+      },
+      select: {
+        startTime: true,
+        endTime: true,
+        title: true
+      },
+      orderBy: { startTime: 'asc' }
+    });
+
+    // 2. Définir les heures de travail (9h-18h, Lun-Ven)
+    const workingHours = { start: 9, end: 18 };
+    const workingDays = [1, 2, 3, 4, 5]; // Lundi à Vendredi
+
+    // 3. Générer tous les créneaux possibles (slots de 1h)
+    const allPossibleSlots = [];
+    for (let day = 1; day <= daysAhead; day++) {
+      const currentDate = new Date(today.getTime() + day * 24 * 60 * 60 * 1000);
+      
+      if (workingDays.includes(currentDate.getDay())) {
+        for (let hour = workingHours.start; hour < workingHours.end; hour++) {
+          const slotStart = new Date(currentDate);
+          slotStart.setHours(hour, 0, 0, 0);
+          
+          const slotEnd = new Date(slotStart.getTime() + 60 * 60 * 1000);
+          
+          allPossibleSlots.push({
+            start: slotStart,
+            end: slotEnd,
+            dayName: slotStart.toLocaleDateString('fr-FR', { weekday: 'long' }),
+            timeSlot: `${hour}h00-${hour + 1}h00`
+          });
+        }
+      }
+    }
+
+    // 4. Filtrer les créneaux libres
+    const availableSlots = allPossibleSlots.filter(slot => {
+      return !existingMeetings.some(meeting => {
+        const meetingStart = new Date(meeting.startTime);
+        const meetingEnd = new Date(meeting.endTime);
+        
+        // Vérifier s'il y a chevauchement
+        return (slot.start < meetingEnd && slot.end > meetingStart);
+      });
+    });
+
+    // 5. Grouper par jour et suggérer les meilleurs créneaux
+    const slotsByDay = availableSlots.reduce((acc, slot) => {
+      const dayKey = slot.start.toDateString();
+      if (!acc[dayKey]) {
+        acc[dayKey] = [];
+      }
+      acc[dayKey].push(slot);
+      return acc;
+    }, {});
+
+    // 6. Suggestions intelligentes
+    const suggestions = [];
+    const preferredHours = [9, 10, 11, 14, 15, 16]; // Heures préférées pour les entretiens
+
+    Object.entries(slotsByDay).forEach(([day, slots]) => {
+      const preferredSlots = slots.filter(slot => 
+        preferredHours.includes(slot.start.getHours())
+      );
+      
+      if (preferredSlots.length > 0) {
+        suggestions.push({
+          date: day,
+          dayName: slots[0].dayName,
+          availableSlots: slots.length,
+          recommendedSlots: preferredSlots.slice(0, 3),
+          allSlots: slots
+        });
+      }
+    });
+
+    // 7. Calculer la faisabilité
+    const totalAvailableSlots = availableSlots.length;
+    const canScheduleAll = totalAvailableSlots >= numberOfInterviews;
+
+    return {
+      requestedInterviews: numberOfInterviews,
+      daysAnalyzed: daysAhead,
+      totalAvailableSlots,
+      canScheduleAll,
+      suggestions: suggestions.slice(0, 5), // Top 5 jours
+      conflictingMeetings: existingMeetings.length,
+      nextAvailableSlot: availableSlots[0] || null,
+      analysis: {
+        bestDays: suggestions.slice(0, 3).map(s => s.dayName),
+        averageSlotsPerDay: Math.round(totalAvailableSlots / workingDays.length),
+        recommendedStrategy: canScheduleAll 
+          ? 'Planification possible cette semaine'
+          : 'Étaler sur plusieurs semaines recommandé'
+      }
+    };
+  },
+
+  /**
+   * 📊 Analyser les entretiens prévus la semaine prochaine
+   * Logique métier: Vue d'ensemble + préparation + optimisation
+   */
+  async getNextWeekInterviews(userId) {
+    let userIdString = userId ? userId.toString() : (await db.user.findFirst())?.id;
+    
+    // 1. Calculer les dates de la semaine prochaine
+    const today = new Date();
+    const nextMonday = new Date(today);
+    nextMonday.setDate(today.getDate() + (8 - today.getDay())); // Prochain lundi
+    nextMonday.setHours(0, 0, 0, 0);
+    
+    const nextSunday = new Date(nextMonday);
+    nextSunday.setDate(nextMonday.getDate() + 6);
+    nextSunday.setHours(23, 59, 59, 999);
+
+    // 2. Récupérer tous les entretiens de la semaine prochaine
+    const interviews = await db.meeting.findMany({
+      where: {
+        userId: userIdString,
+        scheduledDateTime: {
+          gte: nextMonday,
+          lte: nextSunday
+        },
+        OR: [
+          { title: { contains: 'entretien', mode: 'insensitive' } },
+          { title: { contains: 'interview', mode: 'insensitive' } },
+          { candidateId: { not: null } }
+        ]
+      },
+      include: {
+        candidate: {
+          include: {
+            applications: {
+              include: { job: true }
+            }
+          }
+        }
+      },
+      orderBy: {
+        scheduledDateTime: 'asc'
+      }
+    });
+
+    // 3. Organiser par jour de la semaine
+    const interviewsByDay = {};
+    const dayNames = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+    
+    interviews.forEach(interview => {
+      const dayIndex = interview.scheduledDateTime.getDay();
+      const dayName = dayNames[dayIndex];
+      
+      if (!interviewsByDay[dayName]) {
+        interviewsByDay[dayName] = [];
+      }
+      
+      interviewsByDay[dayName].push({
+        time: interview.scheduledDateTime.toLocaleTimeString('fr-FR', { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        }),
+        candidateName: interview.candidate ? 
+          `${interview.candidate.firstName} ${interview.candidate.lastName}` : 
+          'Candidat non spécifié',
+        jobTitle: interview.candidate?.applications[0]?.job?.title || 'Poste non spécifié',
+        type: interview.type || 'VIDEO_CALL',
+        needsPreparation: !interview.description || interview.description.length < 50,
+        candidateId: interview.candidateId,
+        meetingId: interview.id
+      });
+    });
+
+    // 4. Analyser la charge et identifier les besoins de préparation
+    const totalInterviews = interviews.length;
+    const daysWithInterviews = Object.keys(interviewsByDay).length;
+    const interviewsNeedingPrep = interviews.filter(i => 
+      !i.description || i.description.length < 50
+    ).length;
+
+    // 5. Suggestions d'optimisation
+    const suggestions = [];
+    if (totalInterviews > 5) {
+      suggestions.push('⚠️ Charge élevée - considérer reporter certains entretiens');
+    }
+    if (interviewsNeedingPrep > 0) {
+      suggestions.push(`📋 ${interviewsNeedingPrep} entretien(s) nécessitent une préparation`);
+    }
+    if (daysWithInterviews >= 5) {
+      suggestions.push('🎯 Bloquer temps pour évaluations en fin de semaine');
+    }
+    if (totalInterviews === 0) {
+      suggestions.push('✅ Semaine libre - opportunité pour autres tâches RH');
+    }
+
+    // 6. Calculer temps total prévu
+    const totalHours = totalInterviews * 1; // Estimer 1h par entretien
+    const preparationHours = interviewsNeedingPrep * 0.5; // 30 min de prep par entretien
+
+    return {
+      success: true,
+      message: `📊 ${totalInterviews} entretien(s) prévu(s) la semaine prochaine`,
+      weekOverview: {
+        totalInterviews,
+        daysWithInterviews,
+        estimatedHours: totalHours + preparationHours,
+        weekOf: nextMonday.toLocaleDateString('fr-FR', { 
+          day: 'numeric', 
+          month: 'long', 
+          year: 'numeric' 
+        })
+      },
+      dailySchedule: interviewsByDay,
+      preparationNeeded: interviews
+        .filter(i => !i.description || i.description.length < 50)
+        .map(i => ({
+          candidateName: i.candidate ? 
+            `${i.candidate.firstName} ${i.candidate.lastName}` : 
+            'Candidat non spécifié',
+          time: i.scheduledDateTime.toLocaleString('fr-FR'),
+          jobTitle: i.candidate?.applications[0]?.job?.title,
+          action: 'Préparer questions et réviser CV'
+        })),
+      workloadAnalysis: {
+        intensity: totalInterviews <= 2 ? 'légère' : 
+                   totalInterviews <= 4 ? 'modérée' : 
+                   totalInterviews <= 6 ? 'élevée' : 'très élevée',
+        recommendedBreaks: Math.ceil(totalInterviews / 3),
+        optimalDuration: '45-60 min par entretien'
+      },
+      suggestions,
+      quickActions: [
+        'Préparer templates questions',
+        'Bloquer créneaux évaluation',
+        'Synchroniser calendrier équipe'
+      ]
+    };
+  },
+
+  /**
+   * ⏰ Bloquer du temps dédié pour les évaluations de candidats
+   * Logique métier: Réservation temps + éviter conflits + optimisation
+   */
+  async blockEvaluationTime(userId, dayOfWeek, startTime, durationHours = 2, description = 'Bloc évaluation candidats') {
+    let userIdString = userId ? userId.toString() : (await db.user.findFirst())?.id;
+    
+    // 1. Convertir le jour de la semaine en date
+    const dayMapping = {
+      'lundi': 1, 'mardi': 2, 'mercredi': 3, 'jeudi': 4, 
+      'vendredi': 5, 'samedi': 6, 'dimanche': 0
+    };
+    
+    const targetDayIndex = dayMapping[dayOfWeek.toLowerCase()];
+    if (targetDayIndex === undefined) {
+      return {
+        success: false,
+        message: `❌ Jour invalide: ${dayOfWeek}`,
+        validDays: Object.keys(dayMapping)
+      };
+    }
+
+    // 2. Calculer la prochaine occurrence de ce jour
+    const today = new Date();
+    const daysUntilTarget = (targetDayIndex - today.getDay() + 7) % 7;
+    const targetDate = new Date(today);
+    targetDate.setDate(today.getDate() + (daysUntilTarget === 0 ? 7 : daysUntilTarget));
+
+    // 3. Parser l'heure de début
+    let startHour;
+    try {
+      if (startTime.includes('h')) {
+        startHour = parseInt(startTime.replace('h', ''));
+      } else if (startTime.includes(':')) {
+        startHour = parseInt(startTime.split(':')[0]);
+      } else {
+        startHour = parseInt(startTime);
+      }
+      
+      if (startHour < 8 || startHour > 18) {
+        return {
+          success: false,
+          message: '❌ Heure doit être entre 8h et 18h',
+          suggestion: 'Utiliser format: 14h ou 14:00'
+        };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: `❌ Format d'heure invalide: ${startTime}`,
+        examples: ['14h', '14:00', '16h30']
+      };
+    }
+
+    // 4. Créer la datetime de début et fin
+    const blockStartDateTime = new Date(targetDate);
+    blockStartDateTime.setHours(startHour, 0, 0, 0);
+    
+    const blockEndDateTime = new Date(blockStartDateTime);
+    blockEndDateTime.setHours(blockStartDateTime.getHours() + durationHours);
+
+    // 5. Vérifier les conflits existants
+    const conflicts = await db.meeting.findMany({
+      where: {
+        userId: userIdString,
+        scheduledDateTime: {
+          gte: blockStartDateTime,
+          lt: blockEndDateTime
+        }
+      }
+    });
+
+    if (conflicts.length > 0) {
+      return {
+        success: false,
+        message: `⚠️ ${conflicts.length} conflit(s) détecté(s) sur ce créneau`,
+        conflicts: conflicts.map(c => ({
+          time: c.scheduledDateTime.toLocaleTimeString('fr-FR'),
+          title: c.title
+        })),
+        alternatives: [
+          `${dayOfWeek} ${startHour + 2}h-${startHour + 2 + durationHours}h`,
+          `${dayOfWeek} ${Math.max(8, startHour - 2)}h-${Math.max(8, startHour - 2) + durationHours}h`
+        ]
+      };
+    }
+
+    // 6. Créer le bloc d'évaluation
+    const evaluationBlock = await db.meeting.create({
+      data: {
+        title: 'Bloc Évaluation Candidats',
+        description: `${description} - ${durationHours}h dédiées à l'évaluation des candidatures et entretiens`,
+        scheduledDateTime: blockStartDateTime,
+        type: 'EVALUATION_BLOCK',
+        userId: userIdString,
+        metadata: JSON.stringify({
+          blockType: 'evaluation',
+          durationHours,
+          purpose: 'candidate_evaluation'
+        })
+      }
+    });
+
+    // 7. Logger l'activité
+    await db.activity.create({
+      data: {
+        type: 'EVALUATION_BLOCK_CREATED',
+        description: `Bloc évaluation créé: ${dayOfWeek} ${startTime} (${durationHours}h)`,
+        userId: userIdString,
+        metadata: JSON.stringify({
+          meetingId: evaluationBlock.id,
+          dayOfWeek,
+          startTime,
+          durationHours
+        })
+      }
+    });
+
+    // 8. Suggérer candidats à évaluer pendant ce créneau
+    const recentCandidates = await db.candidate.findMany({
+      where: {
+        applications: {
+          some: {
+            status: { in: ['INTERVIEW_COMPLETED', 'PENDING_EVALUATION'] }
+          }
+        }
+      },
+      include: {
+        applications: {
+          include: { job: true }
+        }
+      },
+      take: 5
+    });
+
+    return {
+      success: true,
+      message: `✅ Bloc évaluation créé: ${dayOfWeek} ${startTime}-${startHour + durationHours}h`,
+      blockDetails: {
+        day: dayOfWeek,
+        date: targetDate.toLocaleDateString('fr-FR'),
+        startTime: blockStartDateTime.toLocaleTimeString('fr-FR', { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        }),
+        endTime: blockEndDateTime.toLocaleTimeString('fr-FR', { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        }),
+        duration: `${durationHours}h`,
+        meetingId: evaluationBlock.id
+      },
+      suggestedCandidates: recentCandidates.map(c => ({
+        name: `${c.firstName} ${c.lastName}`,
+        jobTitle: c.applications[0]?.job?.title,
+        status: c.applications[0]?.status,
+        priority: c.applications[0]?.status === 'INTERVIEW_COMPLETED' ? 'Haute' : 'Normale'
+      })),
+      evaluationTasks: [
+        'Réviser notes d\'entretiens',
+        'Comparer profils candidats',
+        'Prendre décisions finales',
+        'Préparer feedbacks'
+      ],
+      productivity: {
+        estimatedCandidatesEvaluated: Math.floor(durationHours * 2), // 2 candidats/heure
+        recommendedBreaks: durationHours > 2 ? '15 min toutes les heures' : 'Optionnel'
+      }
+    };
+  },
+
+  /**
+   * 🔔 Programmer un rappel pour relancer un candidat
+   * Logique métier: Rappel intelligent + suivi automatisé + personnalisation
+   */
+  async scheduleFollowUpReminder(userId, candidateName, reminderDate, reminderType = 'FOLLOW_UP', customMessage = null) {
+    let userIdString = userId ? userId.toString() : (await db.user.findFirst())?.id;
+    
+    if (!candidateName || !reminderDate) {
+      return {
+        success: false,
+        message: '❌ Nom du candidat et date de rappel requis',
+        examples: [
+          'Rappelle-moi de relancer Pierre lundi',
+          'Programmer rappel candidat Martin demain'
+        ]
+      };
+    }
+
+    // 1. Rechercher le candidat
+    const candidates = await db.candidate.findMany({
+      where: {
+        OR: [
+          { firstName: { contains: candidateName, mode: 'insensitive' } },
+          { lastName: { contains: candidateName, mode: 'insensitive' } }
+        ]
+      },
+      include: {
+        applications: {
+          include: { job: true },
+          orderBy: { createdAt: 'desc' }
+        }
+      }
+    });
+
+    if (candidates.length === 0) {
+      return {
+        success: false,
+        message: `❌ Candidat "${candidateName}" non trouvé`,
+        suggestion: 'Vérifier l\'orthographe ou utiliser nom/prénom complet'
+      };
+    }
+
+    const candidate = candidates[0];
+    const latestApplication = candidate.applications[0];
+
+    // 2. Calculer la date du rappel
+    let reminderDateTime;
+    try {
+      const today = new Date();
+      
+      switch (reminderDate.toLowerCase()) {
+        case 'demain':
+          reminderDateTime = new Date(today);
+          reminderDateTime.setDate(today.getDate() + 1);
+          reminderDateTime.setHours(9, 0, 0, 0); // 9h par défaut
+          break;
+        case 'lundi':
+          reminderDateTime = new Date(today);
+          const daysUntilMonday = (8 - today.getDay()) % 7;
+          reminderDateTime.setDate(today.getDate() + (daysUntilMonday === 0 ? 7 : daysUntilMonday));
+          reminderDateTime.setHours(9, 0, 0, 0);
+          break;
+        case 'mardi':
+        case 'mercredi':
+        case 'jeudi':
+        case 'vendredi':
+          const dayMapping = { 'mardi': 2, 'mercredi': 3, 'jeudi': 4, 'vendredi': 5 };
+          const targetDay = dayMapping[reminderDate.toLowerCase()];
+          reminderDateTime = new Date(today);
+          const daysUntilTarget = (targetDay - today.getDay() + 7) % 7;
+          reminderDateTime.setDate(today.getDate() + (daysUntilTarget === 0 ? 7 : daysUntilTarget));
+          reminderDateTime.setHours(9, 0, 0, 0);
+          break;
+        default:
+          // Essayer de parser comme date
+          reminderDateTime = new Date(reminderDate);
+          if (isNaN(reminderDateTime.getTime())) {
+            throw new Error('Format de date invalide');
+          }
+      }
+
+      // Vérifier que la date n'est pas dans le passé
+      if (reminderDateTime < new Date()) {
+        return {
+          success: false,
+          message: '❌ La date de rappel ne peut pas être dans le passé',
+          suggestion: 'Utiliser "demain", "lundi" ou une date future'
+        };
+      }
+
+    } catch (error) {
+      return {
+        success: false,
+        message: `❌ Date de rappel invalide: ${reminderDate}`,
+        validFormats: ['demain', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi']
+      };
+    }
+
+    // 3. Définir le message selon le type de rappel
+    const defaultMessages = {
+      'FOLLOW_UP': `Relancer ${candidate.firstName} ${candidate.lastName} - ${latestApplication?.job?.title || 'candidature'}`,
+      'DECISION_PENDING': `Décision attendue pour ${candidate.firstName} ${candidate.lastName}`,
+      'INTERVIEW_FEEDBACK': `Envoyer feedback entretien à ${candidate.firstName} ${candidate.lastName}`,
+      'REFERENCE_CHECK': `Vérifier références de ${candidate.firstName} ${candidate.lastName}`,
+      'CONTRACT_NEGOTIATION': `Négociation contrat avec ${candidate.firstName} ${candidate.lastName}`
+    };
+
+    const reminderMessage = customMessage || defaultMessages[reminderType] || defaultMessages['FOLLOW_UP'];
+
+    // 4. Créer l'activité de rappel
+    const reminder = await db.activity.create({
+      data: {
+        type: 'REMINDER_SCHEDULED',
+        description: reminderMessage,
+        userId: userIdString,
+        candidateId: candidate.id,
+        scheduledFor: reminderDateTime,
+        metadata: JSON.stringify({
+          reminderType,
+          candidateName: `${candidate.firstName} ${candidate.lastName}`,
+          jobTitle: latestApplication?.job?.title,
+          originalRequest: `${candidateName} ${reminderDate}`,
+          customMessage: customMessage
+        })
+      }
+    });
+
+    // 5. Analyser le contexte du candidat pour suggestions
+    const daysSinceLastUpdate = latestApplication ? 
+      Math.floor((new Date() - latestApplication.updatedAt) / (24 * 60 * 60 * 1000)) : 0;
+
+    const contextualSuggestions = [];
+    if (daysSinceLastUpdate > 7) {
+      contextualSuggestions.push('Candidat sans nouvelles depuis > 7 jours - relance urgente');
+    }
+    if (latestApplication?.status === 'INTERVIEW_COMPLETED') {
+      contextualSuggestions.push('Entretien terminé - prioriser feedback');
+    }
+    if (candidates.length > 1) {
+      contextualSuggestions.push(`${candidates.length} candidats trouvés - vérifier le bon candidat`);
+    }
+
+    return {
+      success: true,
+      message: `🔔 Rappel programmé pour ${candidate.firstName} ${candidate.lastName}`,
+      reminderDetails: {
+        candidateName: `${candidate.firstName} ${candidate.lastName}`,
+        jobTitle: latestApplication?.job?.title || 'Non spécifié',
+        reminderDate: reminderDateTime.toLocaleDateString('fr-FR', { 
+          weekday: 'long', 
+          day: 'numeric', 
+          month: 'long' 
+        }),
+        reminderTime: reminderDateTime.toLocaleTimeString('fr-FR', { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        }),
+        reminderType,
+        scheduledFor: reminderDateTime.toLocaleString('fr-FR'),
+        message: defaultMessage,
+        daysFromNow: Math.ceil((reminderDateTime - new Date()) / (24 * 60 * 60 * 1000))
+      },
+      suggestedActions: [
+        'Préparer email de relance',
+        'Vérifier dernière interaction',
+        'Mettre à jour statut candidat'
+      ]
+    };
+  }
+};
+
+// Fonction pour déterminer quelle action Megan doit effectuer
+export const determineAction = (userInput) => {
+  const input = userInput.toLowerCase()
+    .normalize('NFD') // Normaliser les accents
+    .replace(/[\u0300-\u036f]/g, '') // Supprimer les accents
+    .replace(/[^a-z0-9\s]/g, '') // Supprimer la ponctuation
+    .trim();
+  
+  // ============================================================================
+  // � PLANIFICATION ET ORGANISATION - DÉTECTION PROFESSIONNELLE
+  // ============================================================================
+  
+  // 1. Planifier un entretien spécifique
+  if (
+    (input.includes('planifie') && input.includes('entretien') && (input.includes('candidat') || input.includes('avec'))) ||
+    (input.includes('planifier') && input.includes('entretien') && input.includes('demain')) ||
+    (input.includes('rdv') && (input.includes('candidat') || input.includes('avec'))) ||
+    (input.includes('entretien') && input.includes('avec') && (input.includes('demain') || input.includes('14h') || input.includes('heure'))) ||
+    (input.includes('programmer') && input.includes('entretien'))
+  ) {
+    // Extraire le nom du candidat si mentionné
+    const candidateMatch = input.match(/candidat (\w+)|avec (\w+)/);
+    const candidateName = candidateMatch ? (candidateMatch[1] || candidateMatch[2]) : null;
+    
+    // Extraire la date/heure si mentionnée
+    const timeMatch = input.match(/(\d{1,2}h\d{0,2})|demain|(\d{1,2}:\d{2})/);
+    const dateTime = timeMatch ? (timeMatch[0] === 'demain' ? 'tomorrow' : timeMatch[0]) : null;
+    
+    return { 
+      action: 'scheduleSpecificInterview', 
+      params: { candidateName, dateTime } 
+    };
+  }
+
+  // 2. Créneaux disponibles pour plusieurs entretiens
+  if (
+    (input.includes('quand') && input.includes('programmer') && input.includes('entretien')) ||
+    (input.includes('quand') && input.includes('planifier') && input.includes('entretien')) ||
+    (input.includes('combien') && input.includes('entretien') && input.includes('semaine')) ||
+    (input.includes('creneaux') && input.includes('libres')) ||
+    (input.includes('disponibilite') && input.includes('semaine')) ||
+    (input.includes('planning') && input.includes('libre'))
+  ) {
+    // Extraire le nombre d'entretiens si mentionné
+    const numberMatch = input.match(/(\d+) entretiens?/);
+    const numberOfInterviews = numberMatch ? parseInt(numberMatch[1]) : 3;
+    
+    return { 
+      action: 'getAvailableTimeSlots', 
+      params: { numberOfInterviews } 
+    };
+  }
+
+  // 3. Entretiens prévus la semaine prochaine
+  if (
+    (input.includes('combien') && input.includes('entretien') && (input.includes('semaine prochaine') || input.includes('semaine suivante'))) ||
+    (input.includes('entretien') && input.includes('prevu') && input.includes('semaine')) ||
+    (input.includes('planning') && input.includes('semaine prochaine')) ||
+    (input.includes('entretien') && input.includes('semaine prochaine')) ||
+    (input.includes('rdv') && input.includes('semaine prochaine'))
+  ) {
+    return { action: 'getNextWeekInterviews', params: {} };
+  }
+
+  // 4. Bloquer du temps pour les évaluations
+  if (
+    (input.includes('bloque') && (input.includes('temps') || input.includes('creneau')) && input.includes('evaluation')) ||
+    (input.includes('bloque') && input.includes('vendredi') && (input.includes('2h') || input.includes('heure'))) ||
+    (input.includes('reserver') && input.includes('temps') && input.includes('evaluation')) ||
+    (input.includes('planning') && input.includes('evaluation') && input.includes('bloc')) ||
+    (input.includes('temps') && input.includes('dedie') && input.includes('evaluation'))
+  ) {
+    // Extraire le jour si mentionné
+    const dayMatch = input.match(/(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)/);
+    const dayOfWeek = dayMatch ? dayMatch[1] : 'vendredi';
+    
+    // Extraire la durée si mentionnée
+    const durationMatch = input.match(/(\d+)h/);
+    const durationHours = durationMatch ? parseInt(durationMatch[1]) : 2;
+    
+    // Extraire l'heure si mentionnée
+    const timeMatch = input.match(/(\d{1,2})h/);
+    const startTime = timeMatch ? `${timeMatch[1]}h` : '14h';
+    
+    return { 
+      action: 'blockEvaluationTime', 
+      params: { dayOfWeek, startTime, durationHours } 
+    };
+  }
+
+  // 5. Programmer un rappel pour relancer un candidat
+  if (
+    (input.includes('rappelle') && input.includes('relancer') && input.includes('candidat')) ||
+    (input.includes('rappel') && input.includes('candidat') && (input.includes('lundi') || input.includes('demain'))) ||
+    (input.includes('programmer') && input.includes('rappel') && input.includes('candidat')) ||
+    (input.includes('relance') && input.includes('candidat') && (input.includes('lundi') || input.includes('date'))) ||
+    (input.includes('me') && input.includes('rappeler') && input.includes('candidat'))
+  ) {
+    // Extraire le nom du candidat si mentionné
+    const candidateMatch = input.match(/candidat (\w+)|relancer (\w+)/);
+    const candidateName = candidateMatch ? (candidateMatch[1] || candidateMatch[2]) : null;
+    
+    // Extraire la date si mentionnée
+    const dateMatch = input.match(/(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|demain)/);
+    const reminderDate = dateMatch ? dateMatch[1] : 'lundi';
+    
+    return { 
+      action: 'scheduleFollowUpReminder', 
+      params: { candidateName, reminderDate } 
+    };
+  }
+  
+  // ============================================================================
+  // �👥 SUIVI DES CANDIDATS - DÉTECTION PROFESSIONNELLE
+  // ============================================================================
+  
+  // 1. Candidats en phase d'entretien
+  if (
+    (input.includes('candidat') && (input.includes('entretien') || input.includes('interview'))) ||
+    (input.includes('combien') && input.includes('candidat') && input.includes('entretien')) ||
+    input.includes('phase entretien') ||
+    input.includes('en entretien') ||
+    input.includes('candidats interview')
+  ) {
+    return { action: 'getCandidatesInInterview', params: {} };
+  }
+
+  // 2. Meilleurs candidats du mois
+  if (
+    (input.includes('meilleur') && input.includes('candidat') && (input.includes('mois') || input.includes('month'))) ||
+    (input.includes('top') && input.includes('candidat')) ||
+    input.includes('candidats excellents') ||
+    input.includes('candidats performants') ||
+    (input.includes('candidat') && input.includes('score') && input.includes('eleve'))
+  ) {
+    return { action: 'getTopCandidatesThisMonth', params: {} };
+  }
+
+  // 3. Candidats non-répondants
+  if (
+    (input.includes('candidat') && (input.includes('repondu') || input.includes('repond'))) ||
+    (input.includes('candidat') && input.includes('jours') && (input.includes('pas') || input.includes('non'))) ||
+    input.includes('candidats silencieux') ||
+    input.includes('sans nouvelles') ||
+    (input.includes('candidat') && input.includes('inactif'))
+  ) {
+    return { action: 'getNonRespondingCandidates', params: {} };
+  }
+
+  // 4. CV reçus par poste cette semaine
+  if (
+    (input.includes('cv') && (input.includes('semaine') || input.includes('recu'))) ||
+    (input.includes('candidature') && input.includes('semaine')) ||
+    (input.includes('application') && input.includes('semaine')) ||
+    (input.includes('combien') && input.includes('cv') && input.includes('poste')) ||
+    input.includes('candidatures par poste')
+  ) {
+    return { action: 'getWeeklyApplicationsByJob', params: {} };
+  }
+
+  // 5. Meilleur candidat pour un poste (score IA)
+  if (
+    (input.includes('meilleur') && input.includes('score') && (input.includes('poste') || input.includes('job'))) ||
+    (input.includes('candidat') && input.includes('score') && input.includes('ia')) ||
+    input.includes('top candidat poste') ||
+    input.includes('meilleur profil') ||
+    (input.includes('qui') && input.includes('meilleur') && input.includes('candidat'))
+  ) {
+    // Essayer d'extraire un ID de poste si mentionné
+    const jobIdMatch = input.match(/poste (\d+)|job (\d+)|id (\d+)/);
+    const jobId = jobIdMatch ? (jobIdMatch[1] || jobIdMatch[2] || jobIdMatch[3]) : null;
+    
+    return { action: 'getBestCandidateForJob', params: { jobId } };
+  }
+
+  // 6. Rappels de relance pour les dossiers en attente
+  // 6. Rappels de relance pour les dossiers en attente
+  if((input.includes('rappel') && input.includes('relance') && input.includes('dossier')) ||
+     (input.includes('relance') && input.includes('dossier') && input.includes('en attente')) ||
+     (input.includes('dossier') && input.includes('relance') && input.includes('urgent'))) {
+    return { action: 'getFollowUpReminders', params: {} };
+  }
+
+
+
+  // ============================================================================
+  // 📊 DÉTECTIONS EXISTANTES AMÉLIORÉES
+  // ============================================================================
+  
+  // Détection des tâches/activités générales - plus flexible
+  if (
+    (input.includes('tache') || input.includes('task') || input.includes('activite')) ||
+    (input.includes('aujourdhui') || input.includes('aujourduit') || input.includes('today')) ||
+    (input.includes('faire') && (input.includes('aujourdhui') || input.includes('aujourduit'))) ||
+    (input.includes('realise') && (input.includes('aujourdhui') || input.includes('aujourduit'))) ||
+    (input.includes('ai') && input.includes('des') && (input.includes('tache') || input.includes('activite')))
+  ) {
+    return { action: 'getTodayTasks', params: {} };
+  }
+  
+  // Planification d'entretiens
+  if (input.includes('planifier') || input.includes('rdv') || input.includes('entretien') || input.includes('interview')) {
+    return { action: 'scheduleInterview', params: {} };
+  }
+  
+  // Détails de job
+  if (input.includes('job') && (input.includes('detail') || input.includes('info'))) {
+    return { action: 'getJobDetails', params: {} };
+  }
+  
+  // Candidats par étape
+  if (input.includes('candidat') && input.includes('etape')) {
+    return { action: 'getCandidatesByStage', params: {} };
+  }
+  
+  // Emails/messages
+  if (input.includes('email') || input.includes('message')) {
+    return { action: 'getEmailStatus', params: {} };
+  }
+  
+  // Statistiques - plus flexible
+  if (
+    input.includes('statistique') || input.includes('stats') ||
+    input.includes('dashboard') || input.includes('resume') || 
+    input.includes('plateforme') || input.includes('chiffre') ||
+    (input.includes('combien') && (input.includes('candidat') || input.includes('job')))
+  ) {
+    return { action: 'getDashboardStats', params: {} };
+  }
+  
+  // Recherche de candidats - plus flexible
+  if (
+    input.includes('chercher') || input.includes('trouver') || 
+    input.includes('recherche') || input.includes('search') ||
+    (input.includes('candidat') && input.includes('nom'))
+  ) {
+    // Extraire le terme de recherche après "nom" ou chercher "smith" directement
+    let searchTerm = 'smith'; // valeur par défaut
+    
+    if (input.includes('smith')) {
+      searchTerm = 'smith';
+    } else if (input.includes('nom')) {
+      const words = input.split(' ');
+      const nomIndex = words.findIndex(word => word.includes('nom'));
+      if (nomIndex > -1 && nomIndex < words.length - 1) {
+        searchTerm = words[nomIndex + 1];
+    }
+    
+    return { action: 'searchCandidates', params: { query: searchTerm } };
+  }
+  
+  // Si aucune détection ne correspond, retourner une action par défaut
+  return { action: 'unknown', params: {} };
+}
+
+
+  

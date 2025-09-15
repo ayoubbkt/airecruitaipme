@@ -20,7 +20,7 @@ class MeganAiService {
     try {
       const user = await prisma.user.findUnique({
         where: { id: userId },
-        include: { companies: { include: { company: true } } }
+        include: { companyMemberships: { include: { company: true } } }
       });
 
       const prompt = this.buildPrompt(message, context, user);
@@ -198,7 +198,7 @@ Sois concis et objectif.`;
 
   // Construction du prompt selon contexte
   buildPrompt(message, context, user) {
-    const basePersonality = `Tu es Megan, assistant IA RH de ${user.companies[0]?.company?.name || 'cette entreprise'}. Tu es professionnelle, concise et experte en recrutement. Tu réponds en français.`;
+    const basePersonality = `Tu es Megan, assistant IA RH de ${user.companyMemberships[0]?.company?.name || 'cette entreprise'}. Tu es professionnelle, concise et experte en recrutement. Tu réponds en français.`;
 
     switch (context.type) {
       case 'ai_screening':
