@@ -1,9 +1,16 @@
 // frontend/src/components/candidate/modals/CandidateModals.jsx
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Send, Mail, Calendar, Upload, Eye, EyeOff, Users, 
-  Clock, MapPin, Video, FileText, X, ChevronDown,  Paperclip
+  Clock, MapPin, Video, FileText, X, ChevronDown,  
+  Paperclip,
+  Lock,
+  Shield,
+  UserCheck,
+  User,
+  Reply,
+  AtSign,
 } from 'lucide-react';
 
 // Modal de base réutilisable
@@ -36,138 +43,514 @@ export const BaseModal = ({ isOpen, onClose, title, children, footer }) => {
 };
 
 // Modal pour ajouter un commentaire
-export const CommentModal = ({ isOpen, onClose, onSubmit, loading = false }) => {
+export const CommentModal = ({ 
+  isOpen, 
+  onClose, 
+  candidateId,
+  companyId,
+  onCommentAdded,
+  onSubmit,
+  replyTo = null, // Pour les réponses
+  initialMention = null // Pour mentionner automatiquement quelqu'un
+}) => {
+  // États du composant
   const [content, setContent] = useState('');
-  const [visibility, setVisibility] = useState('PUBLIC');
-  const [mentionedUsers, setMentionedUsers] = useState([]);
-  const [showDropdown, setShowDropdown] = useState(false);
+  const [visibility, setVisibility] = useState('Public');
+  const [showVisibilityDropdown, setShowVisibilityDropdown] = useState(false);
+  const [showMentionDropdown, setShowMentionDropdown] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState('');
+  const [mentionPosition, setMentionPosition] = useState({ x: 0, y: 0 });
+  const [selectedMentions, setSelectedMentions] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [teamMembers, setTeamMembers] = useState([]);
+  
+  const contentRef = useRef(null);
+  const modalRef = useRef(null);
 
-  const handleSubmit = async e => {
-    e.preventDefault();
-    if (!content.trim()) return;
-    
-    try {
-      await onSubmit({ content, visibility, mentionedUsers });
-      setContent('');
-      setVisibility('PUBLIC');
-      setMentionedUsers([]);
-      onClose();
-    } catch (error) {
-      console.error('Error adding comment:', error);
-    }
-  };
-
+  // Options de visibilité avec descriptions détaillées
   const visibilityOptions = [
-    { 
-      value: 'PUBLIC', 
-      label: 'Public', 
-      desc: 'Visible to everyone on job', 
-      color: 'bg-green-100 text-green-700',
-      icon: Eye
+    {
+      id: 'Public',
+      name: 'Public',
+      description: 'Visible to everyone on job',
+      icon: Eye,
+      color: 'text-green-600 bg-green-100'
     },
-    { 
-      value: 'PRIVATE', 
-      label: 'Private', 
-      desc: 'Visible to Hiring Manager and above', 
-      color: 'bg-yellow-100 text-yellow-700',
-      icon: EyeOff
+    {
+      id: 'Private',
+      name: 'Private',
+      description: 'Visible to Hiring Manager and above',
+      icon: Lock,
+      color: 'text-yellow-600 bg-yellow-100'
     },
-    { 
-      value: 'CONFIDENTIAL', 
-      label: 'Confidential', 
-      desc: 'Visible to you and Company admins', 
-      color: 'bg-red-100 text-red-700',
-      icon: EyeOff
+    {
+      id: 'Confidential',
+      name: 'Confidential',
+      description: 'Visible to you and Company admins only',
+      icon: Shield,
+      color: 'text-red-600 bg-red-100'
     }
   ];
 
-  const selectedOption = visibilityOptions.find(opt => opt.value === visibility);
+  // Types de mentions possibles
+  const mentionTypes = [
+    {
+      id: 'team-groups',
+      name: 'Team Groups',
+      icon: Users,
+      members: [
+        { id: 'hiring-team', name: 'Hiring Team', type: 'group', avatar: 'HT' },
+        { id: 'hiring-managers', name: 'Hiring Managers', type: 'group', avatar: 'HM' },
+        { id: 'job-admins', name: 'Job Admins', type: 'group', avatar: 'JA' }
+      ]
+    },
+    {
+      id: 'ai-assistants',
+      name: 'AI Assistants',
+      icon: UserCheck,
+      members: [
+        { id: 'megan-ai', name: 'Megan (AI)', type: 'ai', avatar: 'M' }
+      ]
+    },
+    {
+      id: 'individual',
+      name: 'Team Members',
+      icon: User,
+      members: [] // Sera rempli avec les vrais membres de l'équipe
+    }
+  ];
+
+  // Chargement des membres de l'équipe
+  useEffect(() => {
+    if (isOpen &&  companyId) {
+      fetchTeamMembers();
+      
+      // Si c'est une réponse, ajouter automatiquement une mention
+      if (replyTo) {
+        setContent(`@${replyTo.authorName} `);
+        setSelectedMentions([{ 
+          id: replyTo.authorId, 
+          name: replyTo.authorName,
+          type: 'user'
+        }]);
+      }
+      
+      // Si mention initiale spécifiée
+      if (initialMention) {
+        setContent(`@${initialMention.name} `);
+        setSelectedMentions([initialMention]);
+      }
+    }
+  }, [isOpen, replyTo, companyId,initialMention]);
+
+  // Fermeture au clic extérieur
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (modalRef.current && !modalRef.current.contains(event.target)) {
+        if (showMentionDropdown) {
+          setShowMentionDropdown(false);
+        } else if (showVisibilityDropdown) {
+          setShowVisibilityDropdown(false);
+        } else {
+          onClose();
+        }
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isOpen, showMentionDropdown, showVisibilityDropdown, onClose]);
+
+  // Récupération des membres de l'équipe
+  const fetchTeamMembers = async () => {
+    try {
+      const response = await fetch(`/api/companies/${companyId}/team-members`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (response.ok) {
+        const members = await response.json();
+        setTeamMembers(members.map(member => ({
+          id: member.id,
+          name: member.name || `${member.firstName} ${member.lastName}`,
+          type: 'user',
+          avatar: member.avatar || member.initials,
+          email: member.email
+        })));
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des membres:', error);
+    }
+  };
+
+  // Gestion des mentions avec @
+  const handleMentionTrigger = (e) => {
+    if (e.key === '@' || (e.key === ' ' && e.target.textContent.endsWith('@'))) {
+      const rect = e.target.getBoundingClientRect();
+      const selection = window.getSelection();
+      const range = selection.getRangeAt(0);
+      const rect2 = range.getBoundingClientRect();
+      
+      setMentionPosition({
+        x: rect2.left - rect.left,
+        y: rect2.bottom - rect.top + 5
+      });
+      setShowMentionDropdown(true);
+      setMentionQuery('');
+    }
+    
+    if (e.key === 'Escape') {
+      setShowMentionDropdown(false);
+      setMentionQuery('');
+    }
+  };
+
+  // Sélection d'une mention
+ 
+const handleMentionSelect = (member) => {
+  // Focus sur le champ contentEditable
+  contentRef.current.focus();
+
+  // Récupère la sélection
+  const selection = window.getSelection();
+  if (!selection.rangeCount) return;
+
+  const range = selection.getRangeAt(0);
+
+  // Supprime le @ et le texte en cours de saisie
+  const node = range.startContainer;
+  let text = node.textContent;
+  let offset = range.startOffset;
+  // Trouve le début du mot commençant par @
+  const atIndex = text.lastIndexOf('@', offset - 1);
+  if (atIndex !== -1) {
+    range.setStart(node, atIndex);
+    range.setEnd(node, offset);
+    range.deleteContents();
+  }
+
+  // Crée l'élément mention
+  const mentionElement = document.createElement('span');
+  mentionElement.className = 'inline-flex items-center px-2 py-1 mx-1 text-sm bg-blue-100 text-blue-800 rounded font-medium mention-tag';
+  mentionElement.contentEditable = 'false';
+  mentionElement.textContent = `@${member.name}`;
+  mentionElement.setAttribute('data-mention-id', member.id);
+  mentionElement.setAttribute('data-mention-type', member.type);
+
+  // Insère la mention
+  range.insertNode(mentionElement);
+
+  // Ajoute un espace après
+  const spaceNode = document.createTextNode(' ');
+  range.setStartAfter(mentionElement);
+  range.insertNode(spaceNode);
+  range.setStartAfter(spaceNode);
+  range.collapse(true);
+
+  selection.removeAllRanges();
+  selection.addRange(range);
+
+  // Met à jour les mentions sélectionnées
+  setSelectedMentions(prev => {
+    const exists = prev.find(m => m.id === member.id);
+    return exists ? prev : [...prev, member];
+  });
+
+  setShowMentionDropdown(false);
+  setMentionQuery('');
+};
+ 
+
+  // Soumission du commentaire
+  // ...existing code...
+const handleSubmit = async (e) => {
+  e?.preventDefault?.();
+  const textContent = contentRef.current?.textContent || '';
+  if (!textContent.trim()) {
+    setError('Le contenu du commentaire est requis');
+    return;
+  }
+
+  setIsLoading(true);
+  setError(null);
+
+  try {
+    const commentData = {
+      content: contentRef.current?.innerHTML || content,
+      textContent,
+      visibility: visibility.toUpperCase(),
+      mentions: selectedMentions.map(m => ({
+        id: m.id,
+        name: m.name,
+        type: m.type
+      })),
+      candidateId,
+      replyToId: replyTo?.id || null
+    };
+
+    // Appelle la prop onSubmit fournie par le parent
+    await onSubmit?.(commentData);
+
+    // Réinitialise le formulaire
+    setContent('');
+    setSelectedMentions([]);
+    setVisibility('Public');
+    onClose();
+
+  } catch (error) {
+    console.error('Erreur lors de la soumission:', error);
+    setError(error.message);
+  } finally {
+    setIsLoading(false);
+  }
+};
+// ...existing code...
+
+  // Filtrage des membres pour la recherche
+  const getFilteredMembers = (type) => {
+    if (type.id === 'individual') {
+      return teamMembers.filter(member =>
+        member.name.toLowerCase().includes(mentionQuery.toLowerCase())
+      );
+    }
+    return type.members.filter(member =>
+      member.name.toLowerCase().includes(mentionQuery.toLowerCase())
+    );
+  };
 
   if (!isOpen) return null;
 
+  const selectedVisibility = visibilityOptions.find(v => v.id === visibility);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-      <div className="bg-white rounded-xl shadow-xl p-8 w-full max-w-xl mx-4">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold">New Comment</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
-            <X className="w-5 h-5 text-gray-500" />
-          </button>
-        </div>
-        <form onSubmit={handleSubmit}>
-          {/* Toolbar */}
-          <div className="flex items-center gap-2 mb-2">
-            <button type="button" className="px-2 py-1 rounded hover:bg-gray-100 text-xs font-bold border border-gray-200">H1</button>
-            <button type="button" className="px-2 py-1 rounded hover:bg-gray-100 text-xs font-bold border border-gray-200">H2</button>
-            <button type="button" className="px-2 py-1 rounded hover:bg-gray-100 text-xs font-bold border border-gray-200">H3</button>
-            <button type="button" className="px-2 py-1 rounded hover:bg-gray-100 text-xs font-bold border border-gray-200">B</button>
-            <button type="button" className="px-2 py-1 rounded hover:bg-gray-100 text-xs italic border border-gray-200">I</button>
-            <button type="button" className="px-2 py-1 rounded hover:bg-gray-100 text-xs underline border border-gray-200">S</button>
-            <button type="button" className="px-2 py-1 rounded hover:bg-gray-100 text-xs border border-gray-200">•</button>
-            <button type="button" className="px-2 py-1 rounded hover:bg-gray-100 text-xs border border-gray-200">1.</button>
-            <button type="button" className="px-2 py-1 rounded hover:bg-gray-100 text-xs border border-gray-200">🔗</button>
-          </div>
-          {/* Textarea */}
-          <textarea
-            className="w-full border rounded px-3 py-2 mb-4 focus:ring-2 focus:ring-blue-500"
-            rows={6}
-            placeholder="Write your comment..."
-            value={content}
-            onChange={e => setContent(e.target.value)}
-            required
-            disabled={loading}
-          />
-          {/* Visibility selector */}
-          <div className="flex items-center gap-2 mb-4 relative">
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+        {/* Overlay */}
+        <div className="fixed inset-0 transition-opacity bg-gray-900 bg-opacity-50" />
+
+        {/* Modal */}
+        <div
+          ref={modalRef}
+          className="inline-block w-full max-w-2xl my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl relative"
+        >
+          {/* En-tête */}
+          <div className="flex items-center justify-between p-6 border-b border-gray-200">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                {replyTo ? `Reply to ${replyTo.authorName}` : 'New Comment'}
+                {console.log("replyTo", replyTo)}
+              </h3>
+              {replyTo && (
+                <p className="text-sm text-gray-500 mt-1">
+                  Replying to comment from {new Date(replyTo.createdAt).toLocaleDateString()}
+                </p>
+              )}
+            </div>
             <button
-              type="button"
-              onClick={() => setShowDropdown(v => !v)}
-              className={`flex items-center px-3 py-1 rounded border ${selectedOption.color} text-xs font-medium focus:outline-none`}
+              onClick={onClose}
+              className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
             >
-              <selectedOption.icon size={12} className="mr-1" />
-              {selectedOption.label}
-              <span className="ml-2 text-gray-500">&#9662;</span>
+              <X className="w-5 h-5" />
             </button>
-            <span className="text-sm text-gray-500">{selectedOption.desc}</span>
-            {showDropdown && (
-              <div className="absolute left-0 top-8 w-80 bg-white rounded-xl shadow-lg border z-30">
-                {visibilityOptions.map(opt => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => { setVisibility(opt.value); setShowDropdown(false); }}
-                    className={`flex items-center w-full px-4 py-2 text-left gap-2 hover:bg-gray-50 ${opt.value === visibility ? 'font-semibold' : ''}`}
-                  >
-                    <span className={`inline-block w-20 text-center rounded ${opt.color} py-1 text-xs`}>
-                      <opt.icon size={12} className="inline mr-1" />
-                      {opt.label}
-                    </span>
-                    <span className="text-xs text-gray-600">{opt.desc}</span>
-                  </button>
-                ))}
+          </div>
+
+          {/* Contenu */}
+          <div className="p-6 space-y-4">
+            {/* Zone de texte avec mentions */}
+            <div className="relative">
+              <div
+  ref={contentRef}
+  contentEditable
+  className="min-h-32 p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+  onInput={(e) => {
+    setContent(e.target.innerHTML);
+    // Détection du dernier mot commençant par @
+    const text = e.target.textContent;
+    const match = text.match(/@(\w*)$/);
+    if (match) {
+      setMentionQuery(match[1]);
+      setShowMentionDropdown(true);
+      // Optionnel: position du dropdown
+      setMentionPosition({ x: 20, y: 40 });
+    } else {
+      setShowMentionDropdown(false);
+      setMentionQuery('');
+    }
+  }}
+  suppressContentEditableWarning={true}
+  data-placeholder="Write your comment... Use @ to mention someone"
+  style={{
+    minHeight: '120px',
+  }}
+/>
+
+              {/* Placeholder personnalisé */}
+              <style jsx>{`
+                [contenteditable][data-placeholder]:empty::before {
+                  content: attr(data-placeholder);
+                  color: #9CA3AF;
+                  pointer-events: none;
+                }
+                .mention-tag {
+                  user-select: none;
+                  cursor: pointer;
+                }
+              `}</style>
+
+              {/* Dropdown des mentions */}
+              {showMentionDropdown && (
+                <div
+                  className="absolute z-20 w-80 bg-white border border-gray-200 rounded-lg shadow-lg"
+                  style={{
+                    left: Math.min(mentionPosition.x, 200),
+                    top: mentionPosition.y
+                  }}
+                >
+                  <div className="p-3 border-b border-gray-100">
+                    <div className="relative">
+                      <AtSign className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Search team members..."
+                        value={mentionQuery}
+                        onChange={(e) => setMentionQuery(e.target.value)}
+                        className="w-full pl-10 pr-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        autoFocus
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="py-2 max-h-64 overflow-y-auto">
+                    {mentionTypes.map((type) => {
+                      const IconComponent = type.icon;
+                      const filteredMembers = getFilteredMembers(type);
+
+                      if (filteredMembers.length === 0) return null;
+
+                      return (
+                        <div key={type.id} className="mb-2">
+                          <div className="px-4 py-2 text-xs font-medium text-gray-500 bg-gray-50">
+                            <div className="flex items-center">
+                              <IconComponent className="w-4 h-4 mr-2" />
+                              {type.name}
+                            </div>
+                          </div>
+                          
+                          {filteredMembers.map((member) => (
+                            <button
+                              key={member.id}
+                              onClick={() => handleMentionSelect(member)}
+                              className="w-full px-4 py-3 text-left hover:bg-gray-100 flex items-center space-x-3"
+                            >
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                                member.type === 'ai' ? 'bg-purple-100 text-purple-600' :
+                                member.type === 'group' ? 'bg-blue-100 text-blue-600' :
+                                'bg-gray-100 text-gray-600'
+                              }`}>
+                                {member.avatar}
+                              </div>
+                              <div>
+                                <div className="font-medium text-gray-900">{member.name}</div>
+                                {member.email && (
+                                  <div className="text-xs text-gray-500">{member.email}</div>
+                                )}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Affichage des erreurs */}
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-600">{error}</p>
               </div>
             )}
           </div>
-          {/* Actions */}
-          <div className="flex justify-end gap-4 pt-2">
-            <button 
-              type="button" 
-              onClick={onClose} 
-              className="px-4 py-2 rounded bg-gray-100 hover:bg-gray-200 text-gray-700"
-              disabled={loading}
-            >
-              Cancel
-            </button>
-            <button 
-              type="submit" 
-              disabled={loading || !content.trim()} 
-              className="px-6 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 font-semibold flex items-center gap-2"
-            >
-              <Send size={16} />
-              {loading ? 'Saving...' : 'Submit'}
-            </button>
+
+          {/* Pied du modal */}
+          <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gray-50">
+            {/* Sélecteur de visibilité */}
+            <div className="relative">
+              <button
+                onClick={() => setShowVisibilityDropdown(!showVisibilityDropdown)}
+                className="flex items-center space-x-2 px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                <selectedVisibility.icon className="w-4 h-4" />
+                <span>{selectedVisibility.name}</span>
+                <ChevronDown className="w-4 h-4" />
+              </button>
+
+              {showVisibilityDropdown && (
+                <div className="absolute bottom-full mb-2 left-0 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                  <div className="p-2">
+                    {visibilityOptions.map((option) => {
+                      const IconComponent = option.icon;
+                      return (
+                        <button
+                          key={option.id}
+                          onClick={() => {
+                            setVisibility(option.id);
+                            setShowVisibilityDropdown(false);
+                          }}
+                          className={`w-full text-left p-3 rounded-lg flex items-center space-x-3 hover:bg-gray-50 ${
+                            visibility === option.id ? 'bg-blue-50 border border-blue-200' : ''
+                          }`}
+                        >
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${option.color}`}>
+                            <IconComponent className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <div className="font-medium text-gray-900">{option.name}</div>
+                            <div className="text-sm text-gray-500">{option.description}</div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  
+                  <div className="border-t border-gray-200 p-3 bg-gray-50">
+                    <div className="flex items-start space-x-2">
+                      <Mail className="w-4 h-4 text-blue-500 mt-0.5" />
+                      <div className="text-sm text-gray-600">
+                        <strong>Email notifications</strong> are automatically sent when mentions are used.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Boutons d'action */}
+            <div className="flex space-x-3">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                disabled={isLoading}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmit}
+                disabled={isLoading || !content.trim()}
+                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Send className="w-4 h-4" />
+                <span>{isLoading ? 'Submitting...' : 'Submit'}</span>
+              </button>
+            </div>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );

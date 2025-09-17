@@ -313,41 +313,47 @@ class CandidateService {
     }
 
     // Méthode pour mettre à jour le stage d'un candidat
-    async updateCandidateStage(companyId, candidateId, stageId, comment = '') {
+    // async updateCandidateStage(companyId, candidateId, stageId, comment = '') {
       
-      try {
-        // Mapping UI -> ordre numérique du workflow
-        const map = {
-          'initial': 0,
-          'initial review': 0,
-          'initial_review': 0,
-          'phone': 1,
-          'phone screen': 1,
-          'phone_screen': 1,
-          'interview': 2,
-          'offer': 3,
-          'hired': 4
-        };
+    //   try {
+    //     // Mapping UI -> ordre numérique du workflow
+    //     const map = {
+    //       'initial': 0,
+    //       'initial review': 0,
+    //       'initial_review': 0,
+    //       'phone': 1,
+    //       'phone screen': 1,
+    //       'phone_screen': 1,
+    //       'interview': 2,
+    //       'offer': 3,
+    //       'hired': 4
+    //     };
 
-        if (typeof stageId === 'string' && stageId.toLowerCase() === 'disqualified') {
-          const disq = await axios.patch(`/candidates/${candidateId}/disqualify`, { reason: comment || '' });
-          return disq.data;
-        }
+    //     if (typeof stageId === 'string' && stageId.toLowerCase() === 'disqualified') {
+    //       const disq = await axios.patch(`/candidates/${candidateId}/disqualify`, { reason: comment || '' });
+    //       return disq.data;
+    //     }
 
-        let numeric = 0;
-        if (typeof stageId === 'number') numeric = stageId;
-        else if (!isNaN(parseInt(stageId))) numeric = parseInt(stageId);
-        else {
-          numeric = map[stageId?.toLowerCase?.()] ?? 0;
-        }
+    //     let numeric = 0;
+    //     if (typeof stageId === 'number') numeric = stageId;
+    //     else if (!isNaN(parseInt(stageId))) numeric = parseInt(stageId);
+    //     else {
+    //       numeric = map[stageId?.toLowerCase?.()] ?? 0;
+    //     }
 
-        const response = await axios.post(`/candidates/companies/${companyId}/candidates/${candidateId}/move-to-stage`, { stageId: numeric, comment });
+    //     const response = await axios.post(`/candidates/companies/${companyId}/candidates/${candidateId}/move-to-stage`, { stageId: numeric, comment });
          
-        return response.data;
-      } catch (error) {
-        console.error('Error updating candidate stage:', error);
-        throw error;
-      }
+    //     return response.data;
+    //   } catch (error) {
+    //     console.error('Error updating candidate stage:', error);
+    //     throw error;
+    //   }
+    // }
+    async updateCandidateStage (companyId, candidateId, stageId)  {
+      return axios.post(
+        `/candidates/companies/${companyId}/candidates/${candidateId}/move-to-stage`,
+        { stageId }
+      );
     }
 }
 export default new CandidateService();

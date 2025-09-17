@@ -1,12 +1,45 @@
 // src/services/ai/megan.service.js
-import { startChat, runConversation } from './gemini.service.js';
+import { startChat, runConversation, generateJson, generateText  } from './gemini.service.js';
 import { findRelevantDocuments } from './vectorDb.service.js';
-
+import db from '../../config/db.js'; // Assurez-vous que ceci pointe vers votre configuration Prisma
 // Importer TOUTES les fonctions d'exécution des outils.
 // C'est crucial pour pouvoir les appeler par leur nom.
 import * as jobToolFunctions from './tools/job.tools.js';
 import * as taskToolFunctions from './tools/task.tools.js';
+import fs from 'fs/promises';
+import path from 'path';
+import pdfParse from 'pdf-parse';
 
+export const extractResumeContent = async (resumeUrl) => {
+    if (!resumeUrl) return null;
+
+    try {
+      const filePath = path.join(process.cwd(), resumeUrl);
+      const fileExtension = path.extname(resumeUrl).toLowerCase();
+
+      if (fileExtension === '.txt') {
+        const content = await fs.readFile(filePath, 'utf-8');
+        return content;
+      } else if (fileExtension === '.pdf') {
+        // Pour les PDF, installer pdf-parse si nécessaire
+        try {
+          const mod = await import('pdf-parse');
+          const pdfParse = mod.default || mod;
+          const buffer = await fs.readFile(filePath);
+          const data = await pdfParse(buffer);
+          return data.text;
+        } catch (error) {
+          console.error('Error parsing PDF:', error);
+          return `Fichier PDF disponible: ${path.basename(resumeUrl)}`;
+        }
+      } else {
+        return `Fichier CV disponible: ${path.basename(resumeUrl)}\nType: ${fileExtension}`;
+      }
+    } catch (error) {
+      console.error('Error extracting resume content:', error);
+      return `Erreur lors de la lecture du CV. Fichier: ${path.basename(resumeUrl)}`;
+    }
+  }
 // Créer un objet unique qui mappe les noms des fonctions à leur implémentation.
 const availableTools = {
   ...jobToolFunctions,
@@ -28,6 +61,16 @@ const chatSystemInstruction = {
     -   Ne mentionne jamais les mots "outil", "fonction" ou "API" à l'utilisateur. Parle naturellement. Par exemple, au lieu de "J'exécute l'outil getTodaysTasks", dis "Je regarde votre agenda pour aujourd'hui...".
   `}]
 };
+
+const screeningSystemInstruction = `
+  Tu es Megan, une IA experte en recrutement. Ta tâche est d'analyser le CV d'un candidat par rapport à une description de poste.
+  Tu dois fournir une analyse concise et objective sous forme d'un objet JSON.
+  Le JSON doit contenir :
+  - "score": un score entier de 0 à 100 basé sur l'adéquation globale.
+  - "summary": un résumé de 2-3 phrases sur le profil du candidat.
+  - "pros": une liste de 3 points forts clés du candidat pour ce poste.
+  - "cons": une liste de 2 points faibles ou zones de questionnement.
+`;
 
 // En production, il est recommandé de gérer une instance de chat par utilisateur
 // et de sauvegarder/restaurer l'historique depuis une base de données (ex: Redis ou votre DB SQL/NoSQL).
@@ -183,35 +226,38 @@ export const performAiScreening = async (candidateId, jobId, userId = null) => {
   console.log("📋 Candidate trouvé:", candidate ? "✅" : "❌");
   console.log("💼 Job trouvé:", job ? "✅" : "❌");
   console.log("📄 Nombre de fichiers:", candidate?.files?.length || 0);
-
-  if (!candidate || !job) {
-    throw new Error(`Données manquantes: candidat=${!!candidate}, job=${!!job}`);
+  const resumeContent = await extractResumeContent(candidate.resumeUrl);
+  if (!candidate || !job || !resumeContent) {
+    throw new Error(`Données manquantes: candidat=${!!candidate}, job=${!!job}, CV=${!!resumeContent}`);
   }
-
+  
   // Si pas de fichiers, utiliser les informations de base du candidat
-  let resumeText = '';
-  if (candidate.files && candidate.files.length > 0) {
-    // Pour l'instant, utiliser le nom du fichier et les infos disponibles
-    const resumeFile = candidate.files.find(f => 
-      f.fileName.toLowerCase().includes('cv') || 
-      f.fileName.toLowerCase().includes('resume') ||
-      f.fileType?.includes('pdf')
-    ) || candidate.files[0];
+//   let resumeText = '';
+//   if (candidate.files && candidate.files.length > 0) {
+//     // Pour l'instant, utiliser le nom du fichier et les infos disponibles
+//     const resumeFile = candidate.files.find(f => 
+//       f.fileName.toLowerCase().includes('cv') || 
+//       f.fileName.toLowerCase().includes('resume') ||
+//       f.fileType?.includes('pdf')
+//     ) || candidate.files[0];
     
-    resumeText = `Fichier CV: ${resumeFile.fileName}
-Type: ${resumeFile.fileType || 'Non spécifié'}
-Taille: ${resumeFile.fileSize || 'Non spécifié'} bytes`;
-  }
+//     resumeText = `Fichier CV: ${resumeFile.fileName}
+// Type: ${resumeFile.fileType || 'Non spécifié'}
+// Taille: ${resumeFile.fileSize || 'Non spécifié'} bytes`;
+//   }
   
-  // Utiliser les informations disponibles du candidat
-  const candidateInfo = `
-Nom: ${candidate.firstName} ${candidate.lastName}
-Email: ${candidate.email}
-Téléphone: ${candidate.phoneNumber || 'Non spécifié'}
-${candidate.coverLetterText ? `Lettre de motivation: ${candidate.coverLetterText}` : ''}
-${resumeText}
-`;
+//   // Utiliser les informations disponibles du candidat
+//   const candidateInfo = `
+// Nom: ${candidate.firstName} ${candidate.lastName}
+// Email: ${candidate.email}
+// Téléphone: ${candidate.phoneNumber || 'Non spécifié'}
+// ${candidate.coverLetterText ? `Lettre de motivation: ${candidate.coverLetterText}` : ''}
+// ${resumeText}
+// `;
   
+// console.log("📄 Texte du CV/Infos du candidat:", candidateInfo);
+//   
+// console.log("💼 Description du poste:", jobDescription);
   const jobDescription = job.description || job.title || 'Description non disponible';
 
   const prompt = `
@@ -221,7 +267,7 @@ ${resumeText}
     ---
     Candidate Information:
     ---
-    ${candidateInfo}
+    ${resumeContent}
     ---
   `;
 

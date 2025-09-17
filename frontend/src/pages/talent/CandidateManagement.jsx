@@ -13,10 +13,14 @@ import {
   Plus,
   Check,
   Minus,
-  Upload
+  Upload,
+  FileText, Star, Phone, Calendar, Activity
 } from 'lucide-react';
 import { cvService, createCandidate , jobService, companyService } from '../../services/api';
 import candidateService from '../../services/candidateService';
+ 
+import { workflowService } from '../../services/api'; // adapte le chemin si besoin
+
 
 import { useAuth } from '../../contexts/AuthContext'; // Import AuthContext
 import axios from 'axios';
@@ -374,6 +378,8 @@ const CandidateManagement = () => {
   const [sortBy, setSortBy] = useState('updatedAt');
   const [sortOrder, setSortOrder] = useState('desc');
   const [currentPage, setCurrentPage] = useState(1);
+  const [stagesByJob, setStagesByJob] = useState({});
+
   
   // États pour les filtres (nouvelles étapes du workflow)
   const [selectedFilters, setSelectedFilters] = useState({
@@ -542,38 +548,47 @@ const CandidateManagement = () => {
   };
 
   // Changement de stage individuel avec API + rollback si échec
-  const handleStageChange = async (candidateId, newStage) => {
-    let previousStageName = null;
-    try {
-      setCandidates(prev => prev.map(c => {
-        if (c.id !== candidateId) return c;
-        const clone = { ...c };
-        if (clone.applications && clone.applications[0]) {
-          previousStageName = clone.applications[0].currentStage?.name || clone.applications[0].status;
-          const label = normalizeStageLabel(newStage);
-          clone.applications = [{ ...clone.applications[0], currentStage: { ...(clone.applications[0].currentStage||{}), name: label } }];
-        }
-        return clone;
-      }));
-      await candidateService.updateCandidateStage(companyId, candidateId, newStage);
-      toast.success('Stage mis à jour');
-      fetchData();
-    } catch (error) {
-      console.error('Erreur lors du changement de stage:', error);
-      toast.error('Erreur lors du changement de stage');
-      // rollback
-      if (previousStageName) {
-        setCandidates(prev => prev.map(c => {
-          if (c.id !== candidateId) return c;
-          const clone = { ...c };
-          if (clone.applications && clone.applications[0]) {
-            clone.applications = [{ ...clone.applications[0], currentStage: { ...(clone.applications[0].currentStage||{}), name: previousStageName } }];
-          }
-          return clone;
-        }));
-      }
-    }
-  };
+  const handleStageChange = async (candidateId, stageId) => {
+  try {
+    await candidateService.updateCandidateStage(companyId, candidateId, stageId);
+    toast.success('Stage mis à jour');
+    fetchData();
+  } catch (error) {
+    toast.error('Erreur lors du changement de stage');
+  }
+};
+  // const handleStageChange = async (candidateId, newStage) => {
+  //   let previousStageName = null;
+  //   try {
+  //     setCandidates(prev => prev.map(c => {
+  //       if (c.id !== candidateId) return c;
+  //       const clone = { ...c };
+  //       if (clone.applications && clone.applications[0]) {
+  //         previousStageName = clone.applications[0].currentStage?.name || clone.applications[0].status;
+  //         const label = normalizeStageLabel(newStage);
+  //         clone.applications = [{ ...clone.applications[0], currentStage: { ...(clone.applications[0].currentStage||{}), name: label } }];
+  //       }
+  //       return clone;
+  //     }));
+  //     await candidateService.updateCandidateStage(companyId, candidateId, newStage);
+  //     toast.success('Stage mis à jour');
+  //     fetchData();
+  //   } catch (error) {
+  //     console.error('Erreur lors du changement de stage:', error);
+  //     toast.error('Erreur lors du changement de stage');
+  //     // rollback
+  //     if (previousStageName) {
+  //       setCandidates(prev => prev.map(c => {
+  //         if (c.id !== candidateId) return c;
+  //         const clone = { ...c };
+  //         if (clone.applications && clone.applications[0]) {
+  //           clone.applications = [{ ...clone.applications[0], currentStage: { ...(clone.applications[0].currentStage||{}), name: previousStageName } }];
+  //         }
+  //         return clone;
+  //       }));
+  //     }
+  //   }
+  // };
 
   // Ajout de candidat avec API
   const addCandidate = async (formData) => {
@@ -676,6 +691,25 @@ const timeSince = (date) => {
     if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h`;
     return `${Math.floor(diffInSeconds / 86400)}j`;
   };
+
+
+  useEffect(() => {
+  async function fetchStages() {
+    const jobIds = candidates.map(c => c.applications?.[0]?.jobId).filter(Boolean);
+    const uniqueJobIds = Array.from(new Set(jobIds));
+    const stagesObj = {};
+    for (const jobId of uniqueJobIds) {
+      try {
+        const workflow = await workflowService.getJobWorkflow(jobId);
+        stagesObj[jobId] = workflow.stages || [];
+      } catch (e) {
+        stagesObj[jobId] = [];
+      }
+    }
+    setStagesByJob(stagesObj);
+  }
+  if (candidates.length > 0) fetchStages();
+}, [candidates]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
@@ -1112,54 +1146,52 @@ const timeSince = (date) => {
                           </button>
 
                           {/* Dropdown Advance */}
-                          <div className="relative">
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setShowAdvanceDropdown(showAdvanceDropdown === candidate.id ? null : candidate.id);
-                              }}
-                              className="px-4 py-2 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-colors flex items-center space-x-2 shadow-md"
-                            >
-                              <span>Avancer</span>
-                              <ChevronDown className="w-4 h-4" />
-                            </button>
-                            
-                            {showAdvanceDropdown === candidate.id && (
-                              <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 z-50 md:z-[60]">
-                                <div className="p-3">
-                                  <p className="text-sm font-medium text-gray-700 mb-3">Déplacer vers:</p>
-                                  <div className="space-y-2">
-                                    {/* Map des étapes internes -> ordre numérique attendu par backend */}
-                                    {[
-                                      { icon: '📝', label: 'Initial Review', value: 0 },
-                                      { icon: '📞', label: 'Phone Screen', value: 1 },
-                                      { icon: '💼', label: 'Interview', value: 2 },
-                                      { icon: '💰', label: 'Offer', value: 3 },
-                                      { icon: '✅', label: 'Hired', value: 4 },
-                                      { icon: '❌', label: 'Disqualified', value: 'disqualified' }
-                                    ].map((stage) => (
-                                      <button
-                                        key={stage.value}
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleStageChange(candidate.id, stage.value);
-                                          setShowAdvanceDropdown(null);
-                                        }}
-                                        className={`flex items-center space-x-3 w-full p-2 text-left hover:bg-gray-50 rounded-lg text-sm transition-colors ${
-                                          (typeof status === 'string' && (status.toLowerCase() === stage.label.toLowerCase()))
-                                           ? 'bg-blue-50 text-blue-700 font-medium'
-                                           : 'text-gray-700'
-                                        }`}
-                                      >
-                                        <span>{stage.icon}</span>
-                                        <span>{stage.label}</span>
-                                      </button>
-                                    ))}
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                          </div>
+                         
+ 
+<div className="relative">
+  <button
+    onClick={(e) => {
+      e.stopPropagation();
+      setShowAdvanceDropdown(showAdvanceDropdown === candidate.id ? null : candidate.id);
+    }}
+    className="px-4 py-2 bg-blue-600 flex items-center text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm relative"
+  >
+    Advance <ChevronDown className="w-4 h-4 ml-2" />
+  </button>
+  {showAdvanceDropdown === candidate.id && (
+    <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg z-20 border">
+      <div className="p-2 text-xs text-gray-500 border-b">Move to:</div>
+      <div className="p-2">
+        {(stagesByJob[candidate.applications?.[0]?.jobId] || []).map(stage => (
+          <button
+            key={stage.id}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleStageChange(candidate.id, stage.id); // ENVOIE L'ID !
+              setShowAdvanceDropdown(null);
+            }}
+            className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+          >
+            {/* Ajoute une icône selon le type de stage */}
+            {stage.name === 'Leads' && <Users className="w-4 h-4" />}
+            {stage.name === 'Applicants' && <FileText className="w-4 h-4" />}
+            {stage.name === 'Short List' && <Star className="w-4 h-4" />}
+            {stage.name === 'Screening Call' && <Phone className="w-4 h-4" />}
+            {stage.name === 'Interview' && <Calendar className="w-4 h-4" />}
+            {stage.name === 'Final review' && <Activity className="w-4 h-4" />}
+            {stage.name === 'Offer' && <Mail className="w-4 h-4" />}
+            {stage.name === 'Hired' && <Check className="w-4 h-4" />}
+            {stage.name === 'Disqualified' && <X className="w-4 h-4" />}
+            {stage.name === 'Archived' && <Archive className="w-4 h-4" />}
+            {stage.name}
+          </button>
+        ))}
+      </div>
+    </div>
+  )}
+</div>
+
+ 
                         </div>
                       </div>
                       

@@ -183,12 +183,14 @@ class AiMeganController {
   async chatWithMegan(req, res, next) {
     try {
       const { message, context = {} } = req.body;
+       const userId = req.user.id;
+      const companyId = req.user.companyId || context.companyId;
       
       if (!message?.trim()) {
         return res.status(400).json({ error: 'Message requis' });
       }
 
-      const result = await handleChatInteraction(message.trim(),req.user.id);
+      const result = await handleChatInteraction(message.trim(),userId, companyId);
 
       res.status(200).json(result);
 

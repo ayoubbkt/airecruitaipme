@@ -173,7 +173,7 @@ class CandidateService {
       error.statusCode = 404;
       throw error;
     }
-
+    
     // Extraire le contenu du CV
     const resumeContent = await this.extractResumeContent(candidate.resumeUrl);
 

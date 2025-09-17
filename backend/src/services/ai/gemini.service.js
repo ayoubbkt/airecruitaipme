@@ -4,13 +4,15 @@ import config from '../../config/index.js';
 
 // Importer les définitions de tous les outils disponibles
 import { jobTools } from './tools/job.tools.js';
+
 import { taskTools } from './tools/task.tools.js';
+import {candidateTools} from './tools/candidate.tools.js';
 // Vous ajouterez ici les futurs outils (ex: import { schedulingTools } from './tools/scheduling.tools.js';)
 
 const genAI = new GoogleGenerativeAI(config.gemini.apiKey);
 
 // Combiner tous les ensembles d'outils en une seule liste pour Gemini
-const allTools = [...jobTools, ...taskTools];
+const allTools = [...jobTools, ...taskTools, ...candidateTools];
 
 // Initialiser le modèle en lui fournissant la liste complète des outils
 
@@ -49,5 +51,25 @@ export const runConversation = async (chat, userInput) => {
 export const getEmbedding = async (text) => {
   const result = await models.embedding.embedContent(text);
   return result.embedding.values;
+};
+
+export const generateText = async (prompt, systemInstruction) => {
+  const model = genAI.getGenerativeModel({
+    model: "gemini-1.5-flash-latest",
+    systemInstruction,
+  });
+  const result = await model.generateContent(prompt);
+  return result.response.text();
+};
+
+export const generateJson = async (prompt, systemInstruction) => {
+  const model = genAI.getGenerativeModel({
+    model: "gemini-1.5-flash-latest",
+    systemInstruction,
+    generationConfig: { responseMimeType: "application/json" }
+  });
+  const result = await model.generateContent(prompt);
+  const text = result.response.text();
+  return JSON.parse(text);
 };
 

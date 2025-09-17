@@ -3,8 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { 
   User, Mail, Phone, MapPin, Calendar, FileText, MessageSquare, 
   Star, Activity, Upload, Send, Clock, Users, ExternalLink,
-  ChevronLeft, Edit, MoreVertical, Download, Eye, EyeOff, Trash2, Pin, ChevronDown, Brain
+  ChevronLeft, Edit, MoreVertical, Download, 
+  Eye, EyeOff, Trash2, Pin, ChevronDown, Brain,
+  Lock, Shield , MessageCircle, ChevronUp,  Reply, Check, X, Archive
 } from 'lucide-react';
+
+ 
+
 import { 
   useCandidateManagement,
   useCandidatesByStage 
@@ -16,6 +21,11 @@ import {
   FileUploadModal 
 } from './modals/CandidateModals';
 import { useAuth } from '../../contexts/AuthContext';
+import ActivityFeed from './modals/ActivityFeed'; 
+
+
+
+
 
 const CandidateDetailPage = () => {
   const { candidateId } = useParams();
@@ -28,6 +38,8 @@ const CandidateDetailPage = () => {
   const [showMeetingModal, setShowMeetingModal] = useState(false);
   const [showFileModal, setShowFileModal] = useState(false);
   const [showMoveToDropdown, setShowMoveToDropdown] = useState(false);
+  const [replyToComment, setReplyToComment] = useState(null);
+  const [showAddComment, setShowAddComment] = useState(false);
   const dropdownRef = useRef(null);
 
   const {
@@ -60,6 +72,7 @@ const CandidateDetailPage = () => {
     { id: '10', name: 'Archived' },
   ];
 
+ 
   const handleAddComment = async (commentData) => {
     await comments.addComment(commentData);
     await refreshAll();
@@ -97,6 +110,193 @@ const CandidateDetailPage = () => {
     }
   };
 
+  
+
+  const handleReply = (comment) => {
+    setReplyToComment({
+      id: comment.id,
+      authorId: comment.author.id,
+      authorName: comment.author.lastName,
+      createdAt: comment.createdAt
+    });
+    setShowCommentModal(true);
+  };
+
+  const CommentItem = ({ comment, comments = [], handleReply,isReply = false, level = 0 }) => {
+    const [showReplies, setShowReplies] = useState(true);
+    const [parsedContent, setParsedContent] = useState('');
+
+    useEffect(() => {
+      // Parser le contenu HTML pour afficher correctement les mentions
+      if (comment.content) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(comment.content, 'text/html');
+        const mentions = doc.querySelectorAll('[data-mention-id]');
+        
+        mentions.forEach(mention => {
+          mention.className = 'inline-flex items-center px-2 py-1 mx-1 text-sm bg-blue-100 text-blue-800 rounded-full font-medium cursor-pointer hover:bg-blue-200 transition-colors';
+        });
+        
+        setParsedContent(doc.body.innerHTML);
+      }
+    }, [comment.content]);
+
+    const getVisibilityIcon = (visibility) => {
+      switch (visibility) {
+        case 'Private': return <Lock className="w-3 h-3" />;
+        case 'Confidential': return <Shield className="w-3 h-3" />;
+        default: return <Eye className="w-3 h-3" />;
+      }
+    };
+
+    const getVisibilityColor = (visibility) => {
+      switch (visibility) {
+        case 'Private': return 'bg-yellow-100 text-yellow-700';
+        case 'Confidential': return 'bg-red-100 text-red-700';
+        default: return 'bg-green-100 text-green-700';
+      }
+    };
+
+    const formatDate = (dateString) => {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffMs = now - date;
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      const diffDays = Math.floor(diffHours / 24);
+
+      if (diffHours < 1) {
+        const diffMinutes = Math.floor(diffMs / (1000 * 60));
+        return diffMinutes < 1 ? 'just now' : `${diffMinutes}m ago`;
+      } else if (diffHours < 24) {
+        return `${diffHours}h ago`;
+      } else if (diffDays < 7) {
+        return `${diffDays}d ago`;
+      } else {
+        return date.toLocaleDateString();
+      }
+    };
+
+    const replies = comments.filter(c => c.replyToId === comment.id);
+
+    return (
+      <div className={`${isReply ? 'ml-12 mt-3' : 'mb-6'} ${level > 2 ? 'ml-6' : ''}`}>
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+          {/* En-tête du commentaire */}
+          <div className="flex items-start justify-between p-4 pb-2">
+            <div className="flex items-start space-x-3">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${
+                comment.author?.type === 'ai' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'
+              }`}>
+                {comment.author?.initials || 'U'}
+              </div>
+              
+              <div className="flex-1">
+                <div className="flex items-center space-x-2">
+                  <span className="font-semibold text-gray-900">
+                    {comment.author?.lastName || 'Unknown User'}
+                  
+                  </span>
+                  
+                  {comment.author?.type === 'ai' && (
+                    <span className="px-2 py-0.5 text-xs bg-purple-100 text-purple-700 rounded-full">
+                      AI Assistant
+                    </span>
+                  )}
+                  
+                  <span className={`inline-flex items-center space-x-1 px-2 py-0.5 text-xs rounded-full ${getVisibilityColor(comment.visibility)}`}>
+                    {getVisibilityIcon(comment.visibility)}
+                    <span>{comment.visibility}</span>
+                  </span>
+                </div>
+                
+                <div className="flex items-center space-x-2 mt-1">
+                  <Clock className="w-3 h-3 text-gray-400" />
+                  <span className="text-sm text-gray-500">
+                    {formatDate(comment.createdAt)}
+                  </span>
+                  
+                  {comment.mentions && comment.mentions.length > 0 && (
+                    <div className="flex items-center space-x-1 text-xs text-blue-600">
+                      <Mail className="w-3 h-3" />
+                      <span>Email sent</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => handleReply(comment)}
+                className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                title="Reply to this comment"
+              >
+                <Reply className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Contenu du commentaire */}
+          <div className="px-4 pb-4">
+            <div 
+              className="text-gray-700 leading-relaxed"
+              dangerouslySetInnerHTML={{ __html: parsedContent }}
+            />
+            
+            {comment.mentions && comment.mentions.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-gray-100">
+                <div className="flex items-center space-x-2 text-sm text-gray-500">
+                  <User className="w-4 h-4" />
+                  <span>Mentioned:</span>
+                  <div className="flex flex-wrap gap-1">
+                    {comment.mentions.map((mention, index) => (
+                      <span 
+                        key={mention.id}
+                        className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs"
+                      >
+                        @{mention.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Réponses */}
+          {replies.length > 0 && (
+            <div className="border-t border-gray-100">
+              <button
+                onClick={() => setShowReplies(!showReplies)}
+                className="w-full px-4 py-2 text-left text-sm text-gray-600 hover:bg-gray-50 flex items-center justify-between"
+              >
+                <div className="flex items-center space-x-2">
+                  <MessageCircle className="w-4 h-4" />
+                  <span>{replies.length} {replies.length === 1 ? 'reply' : 'replies'}</span>
+                </div>
+                {showReplies ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </button>
+
+              {showReplies && (
+                <div className="p-4 space-y-3 bg-gray-50">
+                  {replies.map((reply) => (
+                    <CommentItem
+                      key={reply.id}
+                      comment={reply}
+                      isReply={true}
+                      level={level + 1}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+  
+
   // Close dropdown on click outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -133,6 +333,8 @@ const CandidateDetailPage = () => {
       </span>
     );
   };
+
+  
 
   const ActivityItem = ({ activity }) => {
     const getActivityIcon = (type) => {
@@ -194,9 +396,13 @@ const CandidateDetailPage = () => {
       </div>
     );
   }
-
+const organizeComments = (comments) => {
+  return (comments.comments || []).filter(comment => !comment.replyToId);
+};
   const candidateData = candidate.candidate;
+  const jobStages = candidateData?.applications?.[0]?.job?.jobWorkflow?.stages || [];
   if (!candidateData) return null;
+const rootComments = organizeComments(comments);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -243,28 +449,42 @@ const CandidateDetailPage = () => {
             >
               Disqualify
             </button>
-            <button
-              onClick={() => setShowMoveToDropdown(!showMoveToDropdown)}
-              className="px-4 py-2 bg-blue-600 flex text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
-            >
-              Advance <ChevronDown className="w-4 h-4 ml-2" />
-              {showMoveToDropdown && (
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg z-20 border">
-                    <div className="p-2 text-xs text-gray-500 border-b">Move to:</div>
-                  <div className="p-2">
-                    {stages.map(stage => (
-                      <button
-                        key={stage.id}
-                        onClick={() => handleMoveToStage(stage.id)}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                      >
-                        {stage.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </button>
+             
+<button
+  onClick={() => setShowMoveToDropdown(!showMoveToDropdown)}
+  className="px-4 py-2 bg-blue-600 flex text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm relative"
+>
+  Advance <ChevronDown className="w-4 h-4 ml-2" />
+  {showMoveToDropdown && (
+    <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg z-20 border">
+      <div className="p-2 text-xs text-gray-500 border-b">Move to:</div>
+      <div className="p-2">
+        {console.log("candidate.applications[0].job.jobWorkflow.stages : ",jobStages)}
+        {jobStages.map(stage => (
+          <button
+            key={stage.id}
+            onClick={() => handleMoveToStage(stage.id)}
+            className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+          >
+            {/* Ajoute une icône selon le type de stage */}
+            {stage.name === 'Leads' && <User className="w-4 h-4" />}
+            {stage.name === 'Applicants' && <FileText className="w-4 h-4" />}
+            {stage.name === 'Short List' && <Star className="w-4 h-4" />}
+            {stage.name === 'Screening Call' && <Phone className="w-4 h-4" />}
+            {stage.name === 'Interview' && <Calendar className="w-4 h-4" />}
+            {stage.name === 'Final review' && <Activity className="w-4 h-4" />}
+            {stage.name === 'Offer' && <Mail className="w-4 h-4" />}
+            {stage.name === 'Hired' && <Check className="w-4 h-4" />}
+            {stage.name === 'Disqualified' && <X className="w-4 h-4" />}
+            {stage.name === 'Archived' && <Archive className="w-4 h-4" />}
+            {stage.name}
+          </button>
+        ))}
+      </div>
+    </div>
+  )}
+</button>
+ 
           </div>
         </div>
       </div>
@@ -396,11 +616,41 @@ const CandidateDetailPage = () => {
                           Update Resume
                         </button>
                       </div>
-                      <div className="bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
-                        <pre className="whitespace-pre-wrap text-sm text-gray-700">
-                          {candidateData.resumeContent || 'No resume content available'}
-                        </pre>
-                      </div>
+                      
+<div className="bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
+  {candidateData.resumeUrl && (
+    <>
+      {/* Si le CV est une image */}
+      {(candidateData.resumeUrl.endsWith('.png') || candidateData.resumeUrl.endsWith('.jpg') || candidateData.resumeUrl.endsWith('.jpeg')) ? (
+        <img
+          src={candidateData.resumeUrl}
+          alt="CV du candidat"
+          style={{ maxWidth: '100%', maxHeight: '400px', borderRadius: '8px' }}
+        />
+      ) : candidateData.resumeUrl.endsWith('.pdf') ? (
+        // Si le CV est un PDF, affiche dans un <iframe>
+        <iframe
+          src={candidateData.resumeUrl}
+          title="CV PDF"
+          width="100%"
+          height="400px"
+          style={{ border: 'none', borderRadius: '8px' }}
+        />
+      ) : (
+        // Sinon, affiche le texte extrait
+        <pre className="whitespace-pre-wrap text-sm text-gray-700">
+          {candidateData.resumeContent || 'No resume content available'}
+        </pre>
+      )}
+    </>
+  )}
+  {!candidateData.resumeUrl && (
+    <pre className="whitespace-pre-wrap text-sm text-gray-700">
+      {candidateData.resumeContent || 'No resume content available'}
+    </pre>
+  )}
+</div>
+
                     </div>
                   </div>
                 )}
@@ -575,9 +825,35 @@ const CandidateDetailPage = () => {
 
                 {activeTab === 'activity' && (
                   <div className="bg-white rounded-lg border border-gray-200 p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-6">Activity</h3>
+                    {/* <h3 className="text-lg font-semibold text-gray-900 mb-6">Activity</h3> */}
 
-                    {activities.activities.length === 0 ? (
+                  
+                    {/* Remplace tout ce bloc par ActivityFeed */}
+    {/* <ActivityFeed
+      candidateId={candidateId}
+      companyId={companyId}
+      comments={comments.comments}
+      onCommentsUpdate={async () => {
+        await refreshAll();
+      }}/>  */}
+
+      {/* En-tête avec bouton d'ajout */}
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Activity Feed</h3>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Add comments, use @mentions to notify teammates, and track all candidate interactions
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowAddComment(true)}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-blue-700 transition-colors shadow-sm"
+                  >
+                    + Add Comment
+                  </button>
+                </div>
+
+                  {activities.activities.length === 0 ? (
                       <div className="text-center py-12 text-gray-500">
                         <Activity size={48} className="mx-auto mb-4 opacity-50" />
                         <p>No activity recorded yet.</p>
@@ -589,7 +865,39 @@ const CandidateDetailPage = () => {
                         ))}
                       </div>
                     )}
-                  </div>
+
+                {/* Liste des commentaires */}
+                <div className="space-y-4">
+                  {rootComments.length > 0 ? (
+                    rootComments.map(comment => (
+                      <CommentItem
+                        key={comment.id}
+                        comment={comment}
+    comments={comments.comments}
+    handleReply={handleReply}
+                      />
+                    ))
+                  ) : (
+                    <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                      <MessageCircle className="mx-auto h-12 w-12 text-gray-400 mb-3" />
+                      <h4 className="text-lg font-medium text-gray-900 mb-2">No comments yet</h4>
+                      <p className="text-gray-500 mb-4">
+                        Start the conversation by adding the first comment about this candidate.
+                      </p>
+                      <button
+                        onClick={() => setShowAddComment(true)}
+                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        Add First Comment
+                      </button>
+                    </div>
+                  )}
+                </div>
+            
+
+    
+  </div>
+                   
                 )}
               </div>
 
@@ -608,6 +916,7 @@ const CandidateDetailPage = () => {
                       <div className="text-sm text-gray-600">Entered Stage</div>
                       <div className="font-medium text-gray-900">
                         {candidateData.enteredStage || 'N/A'}
+                        
                       </div>
                     </div>
                     <div>
@@ -678,8 +987,11 @@ const CandidateDetailPage = () => {
       <CommentModal
         isOpen={showCommentModal}
         onClose={() => setShowCommentModal(false)}
+        candidateId={candidateId} // doit être défini
+        companyId={companyId} 
         onSubmit={handleAddComment}
         loading={comments.loading}
+        replyTo={replyToComment}
       />
 
       <EmailModal

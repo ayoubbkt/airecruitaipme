@@ -223,6 +223,7 @@ const JobsPage = () => {
                     <div className="text-xs text-gray-700 flex gap-4 mt-1 font-medium">
                       <span>{job.stats.inReview} In-Review</span>
                       <span>{job.stats.inProgress} In-Progress</span>
+                      {console.log("job.stats",job.stats)}
                       <span>{job.stats.hired} Hired</span>
                       <span>{job.stats.total} Total</span>
                     </div>

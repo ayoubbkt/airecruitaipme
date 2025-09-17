@@ -4,7 +4,14 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import config from './config/index.js';
 import errorHandler from './middleware/errorHandler.middleware.js';
+import { fileURLToPath } from 'url';
 import path from 'path';
+
+
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 
 // Importation des routes (à créer)
 import authRoutes from './api/auth/auth.routes.js';
@@ -27,7 +34,9 @@ import candidateRoutes from './api/candidates/candidate.routes.js';
 
 import { protect } from './middleware/auth.middleware.js'; // Ajouté
 
+
 const app = express();
+console.log('Current Directory:', __dirname); // Pour vérifier le chemin
 
 // Middleware de base
 app.use(cors()); // Gérer les requêtes Cross-Origin Resource Sharing
@@ -70,9 +79,10 @@ app.use('/api/v1/questions', questionRoutes);
 app.use('/api/v1/candidates', candidateRoutes);
 app.get('/', (req, res) => {
   res.json({ message: 'API is ' });
-});
+})
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+;
 
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // Gestionnaire d'erreurs global (doit être le dernier middleware)
 app.use(errorHandler);
