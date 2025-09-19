@@ -228,6 +228,7 @@ export const jobService = {
   getJobById: async (companyId, jobId) => {
     try {
       const response = await axios.get(`/jobs/companies/${companyId}/jobs/${jobId}`);
+      
       return response.data.data; // Le backend renvoie { data: job }
     } catch (error) {
       console.error(`Erreur lors de la récupération du job ${jobId}:`, error.response?.data || error.message);
@@ -1530,6 +1531,7 @@ export const cvService = {
   getCandidates: async (companyId, params = {}) => {
     try {
       const response = await axios.get(`/candidates/companies/${companyId}/candidates`, { params });
+      console.log("response.data",response.data);
       return response.data;
     } catch (error) {
       console.error('Error fetching candidates:', error);

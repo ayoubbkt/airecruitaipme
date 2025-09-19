@@ -37,6 +37,7 @@ const JobCandidatePipelineView = () => {
           .map(s => ({ id: s.id, name: s.name, order: s.order }))
           .sort((a,b) => a.order - b.order);
         setStageOrder(stages);
+        
 
         // Fetch candidates for this job
         const res = await getCandidates(companyId, { jobId, limit: 200, sortBy: 'updatedAt', sortOrder: 'desc' });

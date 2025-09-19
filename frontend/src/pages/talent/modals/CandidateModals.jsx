@@ -12,6 +12,9 @@ import {
   Reply,
   AtSign,
 } from 'lucide-react';
+import { messageTemplateService } from '../../../services/api';
+import { useAuth } from '../../../contexts/AuthContext';
+import { toast } from 'react-toastify';
 
 // Modal de base réutilisable
 export const BaseModal = ({ isOpen, onClose, title, children, footer }) => {
@@ -558,6 +561,7 @@ const handleSubmit = async (e) => {
 
 // Modal pour composer un email
 export const EmailModal = ({ isOpen, onClose, onSubmit, candidate, loading = false }) => {
+  const { companyId } = useAuth();
   const [subject, setSubject] = useState('');
   const [content, setContent] = useState('');
   const [templateId, setTemplateId] = useState('');
@@ -565,18 +569,10 @@ export const EmailModal = ({ isOpen, onClose, onSubmit, candidate, loading = fal
   const [attachments, setAttachments] = useState([]);
   const [showTemplateDropdown, setShowTemplateDropdown] = useState(false);
   const [showScheduleDropdown, setShowScheduleDropdown] = useState(false);
+  const [templates, setTemplates] = useState([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
 
-  const templates = [
-    { id: 'confirmation', name: 'Application Confirmation' },
-    { id: 'phone_call', name: 'Phone Call' },
-    { id: 'phone_call_self', name: 'Phone Call (Self Schedule)' },
-    { id: 'interview_self', name: 'Interview (Self Schedule)' },
-    { id: 'interview', name: 'Interview' },
-    { id: 'send_offer', name: 'Send Offer' },
-    { id: 'mass_rejection', name: 'Mass Rejection' },
-    { id: 'disqualification', name: 'Disqualification' }
-  ];
-
+  // Options de planification
   const scheduleOptions = [
     { id: 'now', name: 'Send Email' },
     { id: '1h', name: 'Send in 1 hour' },
@@ -588,35 +584,134 @@ export const EmailModal = ({ isOpen, onClose, onSubmit, candidate, loading = fal
     { id: '1w', name: 'Send in 1 week' }
   ];
 
-  const handleTemplateSelect = (templateId) => {
-    const template = templates.find(t => t.id === templateId);
-    if (template) {
-      setTemplateId(templateId);
-      setSubject(`[${template.name}] Interview Opportunity at RecruitPME`);
-      setContent(`Hello ${candidate?.firstName},\n\nThank you for your application...\n\nBest regards,\nRecruitPME Team`);
+  // Charger les templates quand le modal s'ouvre
+  useEffect(() => {
+    if (isOpen && companyId) {
+      fetchTemplates();
     }
+  }, [isOpen, companyId]);
+
+  // Récupérer les templates
+  const fetchTemplates = async () => {
+    setLoadingTemplates(true);
+    try {
+      const response = await messageTemplateService.getMessageTemplates(companyId);
+      // Transformer en format utilisable pour le dropdown
+      const allTemplates = [
+        ...(response.required || []),
+        ...(response.custom || []),
+        ...(response.all || [])
+      ];
+      setTemplates(allTemplates);
+    } catch (error) {
+      console.error('Error loading message templates:', error);
+      toast.error('Impossible de charger les templates');
+    } finally {
+      setLoadingTemplates(false);
+    }
+  };
+
+  // Sélectionner un template
+  const handleTemplateSelect = async (templateId) => {
+    try {
+      // Trouver le template dans la liste locale
+      const template = templates.find(t => t.id === templateId);
+      
+      if (template) {
+        // Remplacer les variables dans le template
+        const replacedSubject = template.subject
+          .replace(/\{\{candidateName\}\}/g, candidate?.firstName || 'Candidate')
+          .replace(/\{\{candidateFirstName\}\}/g, candidate?.firstName || 'Candidate')
+          .replace(/\{\{candidateLastName\}\}/g, candidate?.lastName || '');
+        
+        const replacedContent = template.content
+          .replace(/\{\{candidateName\}\}/g, candidate?.firstName || 'Candidate')
+          .replace(/\{\{candidateFirstName\}\}/g, candidate?.firstName || 'Candidate')
+          .replace(/\{\{candidateLastName\}\}/g, candidate?.lastName || '');
+        
+        setTemplateId(templateId);
+        setSubject(replacedSubject);
+        setContent(replacedContent);
+      } else if (templateId) {
+        // Si on ne trouve pas localement, on essaie de récupérer directement
+        const templateData = await messageTemplateService.getMessageTemplateById(companyId, templateId);
+        if (templateData) {
+          const replacedSubject = templateData.subject
+            .replace(/\{\{candidateName\}\}/g, candidate?.firstName || 'Candidate')
+            .replace(/\{\{candidateFirstName\}\}/g, candidate?.firstName || 'Candidate')
+            .replace(/\{\{candidateLastName\}\}/g, candidate?.lastName || '');
+          
+          const replacedContent = templateData.content
+            .replace(/\{\{candidateName\}\}/g, candidate?.firstName || 'Candidate')
+            .replace(/\{\{candidateFirstName\}\}/g, candidate?.firstName || 'Candidate')
+            .replace(/\{\{candidateLastName\}\}/g, candidate?.lastName || '');
+          
+          setTemplateId(templateId);
+          setSubject(replacedSubject);
+          setContent(replacedContent);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading template:', error);
+      toast.error('Erreur lors du chargement du template');
+    }
+    
     setShowTemplateDropdown(false);
   };
 
+  // Préparer la date de planification
+  const parseScheduleOption = (option) => {
+    if (!option || option === 'now') return null;
+    
+    const now = new Date();
+    
+    switch (option) {
+      case '1h':
+        return new Date(now.getTime() + 60 * 60 * 1000);
+      case '2h':
+        return new Date(now.getTime() + 2 * 60 * 60 * 1000);
+      case '4h':
+        return new Date(now.getTime() + 4 * 60 * 60 * 1000);
+      case 'tomorrow_morning':
+        const tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(9, 0, 0, 0);
+        return tomorrow;
+      case 'tomorrow_evening':
+        const tomorrowEvening = new Date(now);
+        tomorrowEvening.setDate(tomorrowEvening.getDate() + 1);
+        tomorrowEvening.setHours(17, 0, 0, 0);
+        return tomorrowEvening;
+      case '2d':
+        const twoDays = new Date(now);
+        twoDays.setDate(twoDays.getDate() + 2);
+        return twoDays;
+      case '1w':
+        const oneWeek = new Date(now);
+        oneWeek.setDate(oneWeek.getDate() + 7);
+        return oneWeek;
+      default:
+        return null;
+    }
+  };
+
+  // Envoyer l'email
   const handleSubmit = async () => {
     if (!subject.trim() || !content.trim()) {
-      alert('Veuillez remplir le sujet et le contenu');
+      toast.error('Veuillez remplir le sujet et le contenu');
       return;
     }
 
     try {
+      const scheduledDateTime = parseScheduleOption(scheduledFor);
+      
       await onSubmit({
         subject,
         content,
         templateId: templateId || null,
-        scheduledFor: scheduledFor || null,
+        scheduledFor: scheduledDateTime ? scheduledDateTime.toISOString() : null,
         attachments
       });
-      console.log('Email sent successfully',subject,
-        content,
-        templateId,
-        scheduledFor,
-        attachments);
       
       // Reset form
       setSubject('');
@@ -627,10 +722,11 @@ export const EmailModal = ({ isOpen, onClose, onSubmit, candidate, loading = fal
       onClose();
     } catch (error) {
       console.error('Error sending email:', error);
-      alert('Erreur lors de l\'envoi de l\'email');
+      toast.error('Erreur lors de l\'envoi de l\'email');
     }
   };
 
+  // Si le modal n'est pas ouvert, ne rien afficher
   if (!isOpen) return null;
 
   return (
@@ -668,23 +764,29 @@ export const EmailModal = ({ isOpen, onClose, onSubmit, candidate, loading = fal
                 <button
                   onClick={() => setShowTemplateDropdown(!showTemplateDropdown)}
                   className="text-sm text-blue-600 hover:text-blue-700 flex items-center"
-                  disabled={loading}
+                  disabled={loading || loadingTemplates}
                 >
-                  Templates <ChevronDown className="w-4 h-4 ml-1" />
+                  Templates {loadingTemplates ? '(Loading...)' : ''} <ChevronDown className="w-4 h-4 ml-1" />
                 </button>
                 {showTemplateDropdown && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border z-10">
-                    <div className="p-2">
-                      {templates.map(template => (
-                        <button
-                          key={template.id}
-                          onClick={() => handleTemplateSelect(template.id)}
-                          className="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded"
-                          disabled={loading}
-                        >
-                          {template.name}
-                        </button>
-                      ))}
+                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border z-10">
+                    <div className="p-2 max-h-64 overflow-y-auto">
+                      {templates.length > 0 ? (
+                        templates.map(template => (
+                          <button
+                            key={template.id}
+                            onClick={() => handleTemplateSelect(template.id)}
+                            className="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded"
+                            disabled={loading}
+                          >
+                            {template.name}
+                          </button>
+                        ))
+                      ) : (
+                        <div className="text-sm text-gray-500 text-center py-2">
+                          {loadingTemplates ? 'Loading templates...' : 'No templates available'}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -694,103 +796,60 @@ export const EmailModal = ({ isOpen, onClose, onSubmit, candidate, loading = fal
               type="text"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Enter subject..."
+              placeholder="Subject"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               disabled={loading}
             />
           </div>
 
-          {/* Éditeur de texte */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <button className="p-1 hover:bg-gray-100 rounded" disabled={loading}><strong>B</strong></button>
-                <button className="p-1 hover:bg-gray-100 rounded" disabled={loading}><em>I</em></button>
-                <button className="p-1 hover:bg-gray-100 rounded" disabled={loading}><u>U</u></button>
-                <button className="p-1 hover:bg-gray-100 rounded" disabled={loading}>•</button>
-                <button className="p-1 hover:bg-gray-100 rounded" disabled={loading}>1.</button>
-                <button className="p-1 hover:bg-gray-100 rounded" disabled={loading}>🔗</button>
-              </div>
-              <button 
-                className="text-sm text-blue-600 hover:text-blue-700 flex items-center"
-                disabled={loading}
-              >
-                <Calendar className="w-4 h-4 mr-1" /> Scheduling Link
-              </button>
-            </div>
+          {/* Contenu */}
+          <div>
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              rows={8}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Write your message..."
+              placeholder="Write your message here..."
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[200px]"
               disabled={loading}
             />
           </div>
 
-          {/* Pièce jointe */}
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded hover:bg-gray-50"
-              disabled={loading}
-            >
-              <Paperclip className="w-4 h-4" />
-              Add attachment
-            </button>
-            {attachments.length > 0 && (
-              <span className="text-sm text-gray-600">
-                {attachments.length} file(s) attached
-              </span>
-            )}
-          </div>
-
-          {/* Pied de page */}
-          <div className="flex justify-between items-center pt-4 border-t">
-            <button
-              onClick={onClose}
-              disabled={loading}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800"
-            >
-              Cancel
-            </button>
-            <div className="flex items-center space-x-2">
-              <div className="relative">
-                <button
-                  onClick={() => setShowScheduleDropdown(!showScheduleDropdown)}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg flex items-center"
-                  disabled={loading}
-                >
-                  Send Later <ChevronDown className="w-4 h-4 ml-1" />
-                </button>
-                {showScheduleDropdown && (
-                  <div className="absolute right-0 bottom-full mb-2 w-48 bg-white rounded-lg shadow-lg border z-10">
-                    <div className="p-2">
-                      {scheduleOptions.map(option => (
-                        <button
-                          key={option.id}
-                          onClick={() => {
-                            setScheduledFor(option.id);
-                            setShowScheduleDropdown(false);
-                          }}
-                          className="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded"
-                          disabled={loading}
-                        >
-                          {option.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+          {/* Boutons d'action */}
+          <div className="flex justify-between items-center pt-4">
+            <div className="relative">
               <button
-                onClick={handleSubmit}
-                disabled={loading || !subject.trim() || !content.trim()}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center"
+                onClick={() => setShowScheduleDropdown(!showScheduleDropdown)}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg flex items-center"
+                disabled={loading}
               >
-                {loading ? 'Envoi...' : 'Send Email'} <Send className="w-4 h-4 ml-2" />
+                Send Later <ChevronDown className="w-4 h-4 ml-1" />
               </button>
+              {showScheduleDropdown && (
+                <div className="absolute left-0 bottom-full mb-2 w-48 bg-white rounded-lg shadow-lg border z-10">
+                  <div className="p-2">
+                    {scheduleOptions.map(option => (
+                      <button
+                        key={option.id}
+                        onClick={() => {
+                          setScheduledFor(option.id);
+                          setShowScheduleDropdown(false);
+                        }}
+                        className="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded"
+                        disabled={loading}
+                      >
+                        {option.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
+            <button
+              onClick={handleSubmit}
+              disabled={loading || !subject.trim() || !content.trim()}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center"
+            >
+              {loading ? 'Sending...' : 'Send Email'} <Send className="w-4 h-4 ml-2" />
+            </button>
           </div>
         </div>
       </div>

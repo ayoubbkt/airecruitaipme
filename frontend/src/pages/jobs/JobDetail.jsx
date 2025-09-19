@@ -31,6 +31,7 @@ const JobDetail = () => {
       setError(null);
       
       const data = await jobService.getJobById(companyId, id);
+    
       
       setJob(data);
     } catch (error) {

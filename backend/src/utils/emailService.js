@@ -18,56 +18,57 @@ const initializeTransporter = () => {
   // Configuration basée sur l'environnement
   const emailConfig = {
     // Gmail/Google Workspace
+    // Gmail/Google Workspace
     gmail: {
       service: 'gmail',
       auth: {
-        user: config.email.gmail.user,
-        pass: config.email.gmail.password // App password
+        user: config.email.user,      // Correction ici
+        pass: config.email.pass       // Correction ici
       }
     },
     // SMTP générique
     smtp: {
-      host: config.email.smtp.host,
-      port: config.email.smtp.port,
-      secure: config.email.smtp.secure, // true pour 465, false pour autres ports
+      host: config.email.host,
+      port: config.email.port,
+      secure: false, // true pour 465, false pour autres ports
       auth: {
-        user: config.email.smtp.user,
-        pass: config.email.smtp.password
+        user: config.email.user,      // Correction ici
+        pass: config.email.pass       // Correction ici
       },
       tls: {
         rejectUnauthorized: false
       }
     },
-    // SendGrid
-    sendgrid: {
-      host: 'smtp.sendgrid.net',
-      port: 587,
-      secure: false,
-      auth: {
-        user: 'apikey',
-        pass: config.email.sendgrid.apiKey
-      }
-    },
-    // Mailgun
-    mailgun: {
-      host: 'smtp.mailgun.org',
-      port: 587,
-      secure: false,
-      auth: {
-        user: config.email.mailgun.user,
-        pass: config.email.mailgun.password
-      }
-    },
-    // Mode test (ethereal email pour développement)
-    test: {
-      host: 'smtp.ethereal.email',
-      port: 587,
-      secure: false,
-      auth: {
-        user: 'ethereal.user@ethereal.email',
-        pass: 'ethereal.password'
-      }
-    }
+    // // SendGrid
+    // sendgrid: {
+    //   host: 'smtp.sendgrid.net',
+    //   port: 587,
+    //   secure: false,
+    //   auth: {
+    //     user: 'apikey',
+    //     pass: config.email.sendgrid.apiKey
+    //   }
+    // },
+    // // Mailgun
+    // mailgun: {
+    //   host: 'smtp.mailgun.org',
+    //   port: 587,
+    //   secure: false,
+    //   auth: {
+    //     user: config.email.mailgun.user,
+    //     pass: config.email.mailgun.password
+    //   }
+    // },
+    // // Mode test (ethereal email pour développement)
+    // test: {
+    //   host: 'smtp.ethereal.email',
+    //   port: 587,
+    //   secure: false,
+    //   auth: {
+    //     user: 'ethereal.user@ethereal.email',
+    //     pass: 'ethereal.password'
+    //   }
+    // }
   };
 
   const provider = config.email.provider || 'smtp';
@@ -175,7 +176,30 @@ const EMAIL_TEMPLATES = {
     <a href="${config.app.baseUrl}/candidates/${candidateName}" class="button">Voir le profil candidat</a>
     <p>Connectez-vous à votre tableau de bord pour voir le commentaire complet et répondre.</p>
     <p>Cordialement,<br>L'équipe RecruitPME</p>
-  `
+  `,
+
+  meetingInvitation: (candidateName, organizerName, meetingTitle, meetingDate, meetingTime, meetingDuration, meetingLocation, meetingDescription, meetingLink) => `
+  <h2>Invitation à un entretien</h2>
+  <p>Bonjour ${candidateName},</p>
+  <p>Vous avez été invité(e) à un entretien par <strong>${organizerName}</strong>.</p>
+  
+  <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #4F46E5;">
+    <h3 style="margin-top: 0; color: #4F46E5;">${meetingTitle}</h3>
+    <p><strong>Date:</strong> ${meetingDate}</p>
+    <p><strong>Heure:</strong> ${meetingTime}</p>
+    <p><strong>Durée:</strong> ${meetingDuration} minutes</p>
+    <p><strong>Lieu:</strong> ${meetingLocation}</p>
+    ${meetingLink ? `<p><strong>Lien visioconférence:</strong> <a href="${meetingLink}" style="color: #4F46E5;">${meetingLink}</a></p>` : ''}
+  </div>
+  
+  ${meetingDescription ? `<h4>Description:</h4><p>${meetingDescription}</p>` : ''}
+  
+  <p>Veuillez confirmer votre présence en répondant à cet email.</p>
+  <p>Si vous avez des questions ou si vous souhaitez reporter cet entretien, n'hésitez pas à nous contacter.</p>
+  
+  <p>Cordialement,<br>${organizerName}</p>
+`,
+
 };
 
 /**
@@ -199,24 +223,44 @@ export const sendEmail = async ({
     // Générer le contenu HTML si un template est spécifié
     let htmlContent = html;
     if (template && EMAIL_TEMPLATES[template]) {
-      const templateContent = EMAIL_TEMPLATES[template](...Object.values(templateData));
-      htmlContent = EMAIL_TEMPLATES.base(templateContent, subject);
+      try {
+        const templateContent = EMAIL_TEMPLATES[template](...Object.values(templateData));
+        htmlContent = EMAIL_TEMPLATES.base(templateContent, subject);
+      } catch (templateError) {
+        console.error('Erreur lors de la génération du template:', templateError);
+        // Fallback vers HTML brut en cas d'erreur de template
+        htmlContent = html || `<p>${subject}</p>`;
+      }
     }
+
+    // S'assurer que to est bien défini
+    if (!to) {
+      throw new Error('Recipient email is required');
+    }
+
+    // Vérifier si config.app et config.email sont définis
+    const fromName = config.app?.name || 'RecruitPME';
+    const fromEmail = config.email?.from || 'noreply@recruitpme.com';
+    const fromAddress = `${fromName} <${fromEmail}>`;
 
     // Configuration de l'email
     const mailOptions = {
-      from: `${config.app.name} <${config.email.from}>`,
+      from: fromAddress,
       to: Array.isArray(to) ? to.join(', ') : to,
       subject,
       html: htmlContent,
       text: text || htmlContent?.replace(/<[^>]*>/g, ''), // Fallback text sans HTML
-      attachments: attachments.map(attachment => ({
+    };
+
+    // Ajouter les pièces jointes si présentes
+    if (attachments && attachments.length > 0) {
+      mailOptions.attachments = attachments.map(attachment => ({
         filename: attachment.filename,
         path: attachment.path || undefined,
         content: attachment.content || undefined,
         contentType: attachment.contentType || undefined
-      }))
-    };
+      }));
+    }
 
     // Envoyer l'email
     const info = await transporter.sendMail(mailOptions);

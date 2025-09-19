@@ -7,8 +7,8 @@ import {
   Eye, EyeOff, Trash2, Pin, ChevronDown, Brain,
   Lock, Shield , MessageCircle, ChevronUp,  Reply, Check, X, Archive
 } from 'lucide-react';
+import WorkflowStageDropdown from '../../components/candidates/WorkflowStageDropdown';
 
- 
 
 import { 
   useCandidateManagement,
@@ -17,9 +17,10 @@ import {
 import { 
   CommentModal, 
   EmailModal, 
-  MeetingModal, 
+  // MeetingModal, 
   FileUploadModal 
 } from './modals/CandidateModals';
+import MeetingModal from './modals/MeetingModal';
 import { useAuth } from '../../contexts/AuthContext';
 import ActivityFeed from './modals/ActivityFeed'; 
 
@@ -450,40 +451,11 @@ const rootComments = organizeComments(comments);
               Disqualify
             </button>
              
-<button
-  onClick={() => setShowMoveToDropdown(!showMoveToDropdown)}
-  className="px-4 py-2 bg-blue-600 flex text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm relative"
->
-  Advance <ChevronDown className="w-4 h-4 ml-2" />
-  {showMoveToDropdown && (
-    <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg z-20 border">
-      <div className="p-2 text-xs text-gray-500 border-b">Move to:</div>
-      <div className="p-2">
-        {console.log("candidate.applications[0].job.jobWorkflow.stages : ",jobStages)}
-        {jobStages.map(stage => (
-          <button
-            key={stage.id}
-            onClick={() => handleMoveToStage(stage.id)}
-            className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-          >
-            {/* Ajoute une icône selon le type de stage */}
-            {stage.name === 'Leads' && <User className="w-4 h-4" />}
-            {stage.name === 'Applicants' && <FileText className="w-4 h-4" />}
-            {stage.name === 'Short List' && <Star className="w-4 h-4" />}
-            {stage.name === 'Screening Call' && <Phone className="w-4 h-4" />}
-            {stage.name === 'Interview' && <Calendar className="w-4 h-4" />}
-            {stage.name === 'Final review' && <Activity className="w-4 h-4" />}
-            {stage.name === 'Offer' && <Mail className="w-4 h-4" />}
-            {stage.name === 'Hired' && <Check className="w-4 h-4" />}
-            {stage.name === 'Disqualified' && <X className="w-4 h-4" />}
-            {stage.name === 'Archived' && <Archive className="w-4 h-4" />}
-            {stage.name}
-          </button>
-        ))}
-      </div>
-    </div>
-  )}
-</button>
+<WorkflowStageDropdown 
+  candidate={candidateData} 
+  companyId={companyId} 
+  onStageUpdate={() => refreshAll()} 
+/>
  
           </div>
         </div>

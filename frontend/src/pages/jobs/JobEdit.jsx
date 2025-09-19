@@ -319,11 +319,18 @@ const JobEdit = () => {
         settings.autoAdvanceThreshold = stageDraft.autoAdvanceThreshold || 'NONE';
         settings.autoDisqualifyThreshold = stageDraft.autoDisqualifyThreshold || 'NONE';
       } else if (type === 'interview') {
-        settings.interviewType = stageDraft.interviewType || 'Video call';
-        settings.meetingTemplateId = stageDraft.meetingTemplateId || '';
-        settings.attendees = Array.isArray(stageDraft.attendees) ? stageDraft.attendees : [];
-        settings.aiScheduling = !!stageDraft.aiScheduling;
-        settings.noteTaking = !!stageDraft.noteTaking;
+        // settings.interviewType = stageDraft.interviewType || 'Video call';
+        // settings.meetingTemplateId = stageDraft.meetingTemplateId || '';
+        // settings.attendees = Array.isArray(stageDraft.attendees) ? stageDraft.attendees : [];
+        // settings.aiScheduling = !!stageDraft.aiScheduling;
+        // settings.noteTaking = !!stageDraft.noteTaking;
+
+          settings.interviewType = stageDraft.interviewType || 'Video call';
+  settings.meetingTemplateId = stageDraft.meetingTemplateId || '';
+  settings.attendees = Array.isArray(stageDraft.attendees) ? stageDraft.attendees : [];
+  settings.aiScheduling = !!stageDraft.aiScheduling;
+  settings.noteTaking = !!stageDraft.noteTaking;
+
       } else if (['offer','hired','disqualified'].includes(type)) {
         settings.emailTemplateId = stageDraft.emailTemplateId || '';
       }

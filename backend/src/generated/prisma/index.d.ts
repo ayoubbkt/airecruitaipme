@@ -5269,8 +5269,7 @@ export namespace Prisma {
     companyMemberships: number
     jobHiringMembers: number
     meetingAttendees: number
-    sentMessages: number
-    receivedMessages: number
+    sentCandidateEmails: number
     meetingsOwned: number
     notifications: number
     comments: number
@@ -5285,8 +5284,7 @@ export namespace Prisma {
     companyMemberships?: boolean | UserCountOutputTypeCountCompanyMembershipsArgs
     jobHiringMembers?: boolean | UserCountOutputTypeCountJobHiringMembersArgs
     meetingAttendees?: boolean | UserCountOutputTypeCountMeetingAttendeesArgs
-    sentMessages?: boolean | UserCountOutputTypeCountSentMessagesArgs
-    receivedMessages?: boolean | UserCountOutputTypeCountReceivedMessagesArgs
+    sentCandidateEmails?: boolean | UserCountOutputTypeCountSentCandidateEmailsArgs
     meetingsOwned?: boolean | UserCountOutputTypeCountMeetingsOwnedArgs
     notifications?: boolean | UserCountOutputTypeCountNotificationsArgs
     comments?: boolean | UserCountOutputTypeCountCommentsArgs
@@ -5344,14 +5342,7 @@ export namespace Prisma {
   /**
    * UserCountOutputType without action
    */
-  export type UserCountOutputTypeCountSentMessagesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: MessageWhereInput
-  }
-
-  /**
-   * UserCountOutputType without action
-   */
-  export type UserCountOutputTypeCountReceivedMessagesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type UserCountOutputTypeCountSentCandidateEmailsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: MessageWhereInput
   }
 
@@ -5692,6 +5683,7 @@ export namespace Prisma {
     meetings: number
     interviewNotes: number
     ratings: number
+    receivedEmails: number
   }
 
   export type CandidateCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -5703,6 +5695,7 @@ export namespace Prisma {
     meetings?: boolean | CandidateCountOutputTypeCountMeetingsArgs
     interviewNotes?: boolean | CandidateCountOutputTypeCountInterviewNotesArgs
     ratings?: boolean | CandidateCountOutputTypeCountRatingsArgs
+    receivedEmails?: boolean | CandidateCountOutputTypeCountReceivedEmailsArgs
   }
 
   // Custom InputTypes
@@ -5770,6 +5763,13 @@ export namespace Prisma {
    */
   export type CandidateCountOutputTypeCountRatingsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: CandidateRatingWhereInput
+  }
+
+  /**
+   * CandidateCountOutputType without action
+   */
+  export type CandidateCountOutputTypeCountReceivedEmailsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: MessageWhereInput
   }
 
 
@@ -6435,8 +6435,7 @@ export namespace Prisma {
     companyMemberships?: boolean | User$companyMembershipsArgs<ExtArgs>
     jobHiringMembers?: boolean | User$jobHiringMembersArgs<ExtArgs>
     meetingAttendees?: boolean | User$meetingAttendeesArgs<ExtArgs>
-    sentMessages?: boolean | User$sentMessagesArgs<ExtArgs>
-    receivedMessages?: boolean | User$receivedMessagesArgs<ExtArgs>
+    sentCandidateEmails?: boolean | User$sentCandidateEmailsArgs<ExtArgs>
     meetingsOwned?: boolean | User$meetingsOwnedArgs<ExtArgs>
     notifications?: boolean | User$notificationsArgs<ExtArgs>
     profile?: boolean | User$profileArgs<ExtArgs>
@@ -6494,8 +6493,7 @@ export namespace Prisma {
     companyMemberships?: boolean | User$companyMembershipsArgs<ExtArgs>
     jobHiringMembers?: boolean | User$jobHiringMembersArgs<ExtArgs>
     meetingAttendees?: boolean | User$meetingAttendeesArgs<ExtArgs>
-    sentMessages?: boolean | User$sentMessagesArgs<ExtArgs>
-    receivedMessages?: boolean | User$receivedMessagesArgs<ExtArgs>
+    sentCandidateEmails?: boolean | User$sentCandidateEmailsArgs<ExtArgs>
     meetingsOwned?: boolean | User$meetingsOwnedArgs<ExtArgs>
     notifications?: boolean | User$notificationsArgs<ExtArgs>
     profile?: boolean | User$profileArgs<ExtArgs>
@@ -6517,8 +6515,7 @@ export namespace Prisma {
       companyMemberships: Prisma.$CompanyMemberPayload<ExtArgs>[]
       jobHiringMembers: Prisma.$JobHiringMemberPayload<ExtArgs>[]
       meetingAttendees: Prisma.$MeetingAttendeePayload<ExtArgs>[]
-      sentMessages: Prisma.$MessagePayload<ExtArgs>[]
-      receivedMessages: Prisma.$MessagePayload<ExtArgs>[]
+      sentCandidateEmails: Prisma.$MessagePayload<ExtArgs>[]
       meetingsOwned: Prisma.$MeetingPayload<ExtArgs>[]
       notifications: Prisma.$NotificationPayload<ExtArgs>[]
       profile: Prisma.$UserProfilePayload<ExtArgs> | null
@@ -6938,8 +6935,7 @@ export namespace Prisma {
     companyMemberships<T extends User$companyMembershipsArgs<ExtArgs> = {}>(args?: Subset<T, User$companyMembershipsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CompanyMemberPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     jobHiringMembers<T extends User$jobHiringMembersArgs<ExtArgs> = {}>(args?: Subset<T, User$jobHiringMembersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$JobHiringMemberPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     meetingAttendees<T extends User$meetingAttendeesArgs<ExtArgs> = {}>(args?: Subset<T, User$meetingAttendeesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MeetingAttendeePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-    sentMessages<T extends User$sentMessagesArgs<ExtArgs> = {}>(args?: Subset<T, User$sentMessagesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-    receivedMessages<T extends User$receivedMessagesArgs<ExtArgs> = {}>(args?: Subset<T, User$receivedMessagesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    sentCandidateEmails<T extends User$sentCandidateEmailsArgs<ExtArgs> = {}>(args?: Subset<T, User$sentCandidateEmailsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     meetingsOwned<T extends User$meetingsOwnedArgs<ExtArgs> = {}>(args?: Subset<T, User$meetingsOwnedArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MeetingPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     notifications<T extends User$notificationsArgs<ExtArgs> = {}>(args?: Subset<T, User$notificationsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$NotificationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     profile<T extends User$profileArgs<ExtArgs> = {}>(args?: Subset<T, User$profileArgs<ExtArgs>>): Prisma__UserProfileClient<$Result.GetResult<Prisma.$UserProfilePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
@@ -7513,33 +7509,9 @@ export namespace Prisma {
   }
 
   /**
-   * User.sentMessages
+   * User.sentCandidateEmails
    */
-  export type User$sentMessagesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Message
-     */
-    select?: MessageSelect<ExtArgs> | null
-    /**
-     * Omit specific fields from the Message
-     */
-    omit?: MessageOmit<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: MessageInclude<ExtArgs> | null
-    where?: MessageWhereInput
-    orderBy?: MessageOrderByWithRelationInput | MessageOrderByWithRelationInput[]
-    cursor?: MessageWhereUniqueInput
-    take?: number
-    skip?: number
-    distinct?: MessageScalarFieldEnum | MessageScalarFieldEnum[]
-  }
-
-  /**
-   * User.receivedMessages
-   */
-  export type User$receivedMessagesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type User$sentCandidateEmailsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
      * Select specific fields to fetch from the Message
      */
@@ -17647,6 +17619,7 @@ export namespace Prisma {
     meetings?: boolean | Candidate$meetingsArgs<ExtArgs>
     interviewNotes?: boolean | Candidate$interviewNotesArgs<ExtArgs>
     ratings?: boolean | Candidate$ratingsArgs<ExtArgs>
+    receivedEmails?: boolean | Candidate$receivedEmailsArgs<ExtArgs>
     _count?: boolean | CandidateCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["candidate"]>
 
@@ -17711,6 +17684,7 @@ export namespace Prisma {
     meetings?: boolean | Candidate$meetingsArgs<ExtArgs>
     interviewNotes?: boolean | Candidate$interviewNotesArgs<ExtArgs>
     ratings?: boolean | Candidate$ratingsArgs<ExtArgs>
+    receivedEmails?: boolean | Candidate$receivedEmailsArgs<ExtArgs>
     _count?: boolean | CandidateCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type CandidateIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
@@ -17727,6 +17701,7 @@ export namespace Prisma {
       meetings: Prisma.$MeetingPayload<ExtArgs>[]
       interviewNotes: Prisma.$InterviewNotePayload<ExtArgs>[]
       ratings: Prisma.$CandidateRatingPayload<ExtArgs>[]
+      receivedEmails: Prisma.$MessagePayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -18145,6 +18120,7 @@ export namespace Prisma {
     meetings<T extends Candidate$meetingsArgs<ExtArgs> = {}>(args?: Subset<T, Candidate$meetingsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MeetingPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     interviewNotes<T extends Candidate$interviewNotesArgs<ExtArgs> = {}>(args?: Subset<T, Candidate$interviewNotesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$InterviewNotePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     ratings<T extends Candidate$ratingsArgs<ExtArgs> = {}>(args?: Subset<T, Candidate$ratingsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CandidateRatingPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    receivedEmails<T extends Candidate$receivedEmailsArgs<ExtArgs> = {}>(args?: Subset<T, Candidate$receivedEmailsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -18765,6 +18741,30 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: CandidateRatingScalarFieldEnum | CandidateRatingScalarFieldEnum[]
+  }
+
+  /**
+   * Candidate.receivedEmails
+   */
+  export type Candidate$receivedEmailsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Message
+     */
+    select?: MessageSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Message
+     */
+    omit?: MessageOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageInclude<ExtArgs> | null
+    where?: MessageWhereInput
+    orderBy?: MessageOrderByWithRelationInput | MessageOrderByWithRelationInput[]
+    cursor?: MessageWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: MessageScalarFieldEnum | MessageScalarFieldEnum[]
   }
 
   /**
@@ -36874,7 +36874,7 @@ export namespace Prisma {
   export type MessageMinAggregateOutputType = {
     id: string | null
     senderId: string | null
-    recipientId: string | null
+    candidateId: string | null
     threadId: string | null
     subject: string | null
     content: string | null
@@ -36889,7 +36889,7 @@ export namespace Prisma {
   export type MessageMaxAggregateOutputType = {
     id: string | null
     senderId: string | null
-    recipientId: string | null
+    candidateId: string | null
     threadId: string | null
     subject: string | null
     content: string | null
@@ -36904,7 +36904,7 @@ export namespace Prisma {
   export type MessageCountAggregateOutputType = {
     id: number
     senderId: number
-    recipientId: number
+    candidateId: number
     threadId: number
     subject: number
     content: number
@@ -36922,7 +36922,7 @@ export namespace Prisma {
   export type MessageMinAggregateInputType = {
     id?: true
     senderId?: true
-    recipientId?: true
+    candidateId?: true
     threadId?: true
     subject?: true
     content?: true
@@ -36937,7 +36937,7 @@ export namespace Prisma {
   export type MessageMaxAggregateInputType = {
     id?: true
     senderId?: true
-    recipientId?: true
+    candidateId?: true
     threadId?: true
     subject?: true
     content?: true
@@ -36952,7 +36952,7 @@ export namespace Prisma {
   export type MessageCountAggregateInputType = {
     id?: true
     senderId?: true
-    recipientId?: true
+    candidateId?: true
     threadId?: true
     subject?: true
     content?: true
@@ -37041,7 +37041,7 @@ export namespace Prisma {
   export type MessageGroupByOutputType = {
     id: string
     senderId: string
-    recipientId: string
+    candidateId: string
     threadId: string | null
     subject: string | null
     content: string
@@ -37074,7 +37074,7 @@ export namespace Prisma {
   export type MessageSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     senderId?: boolean
-    recipientId?: boolean
+    candidateId?: boolean
     threadId?: boolean
     subject?: boolean
     content?: boolean
@@ -37086,7 +37086,7 @@ export namespace Prisma {
     createdAt?: boolean
     readAt?: boolean
     sender?: boolean | UserDefaultArgs<ExtArgs>
-    recipient?: boolean | UserDefaultArgs<ExtArgs>
+    candidate?: boolean | CandidateDefaultArgs<ExtArgs>
     thread?: boolean | Message$threadArgs<ExtArgs>
     template?: boolean | Message$templateArgs<ExtArgs>
   }, ExtArgs["result"]["message"]>
@@ -37094,7 +37094,7 @@ export namespace Prisma {
   export type MessageSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     senderId?: boolean
-    recipientId?: boolean
+    candidateId?: boolean
     threadId?: boolean
     subject?: boolean
     content?: boolean
@@ -37106,7 +37106,7 @@ export namespace Prisma {
     createdAt?: boolean
     readAt?: boolean
     sender?: boolean | UserDefaultArgs<ExtArgs>
-    recipient?: boolean | UserDefaultArgs<ExtArgs>
+    candidate?: boolean | CandidateDefaultArgs<ExtArgs>
     thread?: boolean | Message$threadArgs<ExtArgs>
     template?: boolean | Message$templateArgs<ExtArgs>
   }, ExtArgs["result"]["message"]>
@@ -37114,7 +37114,7 @@ export namespace Prisma {
   export type MessageSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     senderId?: boolean
-    recipientId?: boolean
+    candidateId?: boolean
     threadId?: boolean
     subject?: boolean
     content?: boolean
@@ -37126,7 +37126,7 @@ export namespace Prisma {
     createdAt?: boolean
     readAt?: boolean
     sender?: boolean | UserDefaultArgs<ExtArgs>
-    recipient?: boolean | UserDefaultArgs<ExtArgs>
+    candidate?: boolean | CandidateDefaultArgs<ExtArgs>
     thread?: boolean | Message$threadArgs<ExtArgs>
     template?: boolean | Message$templateArgs<ExtArgs>
   }, ExtArgs["result"]["message"]>
@@ -37134,7 +37134,7 @@ export namespace Prisma {
   export type MessageSelectScalar = {
     id?: boolean
     senderId?: boolean
-    recipientId?: boolean
+    candidateId?: boolean
     threadId?: boolean
     subject?: boolean
     content?: boolean
@@ -37147,22 +37147,22 @@ export namespace Prisma {
     readAt?: boolean
   }
 
-  export type MessageOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "senderId" | "recipientId" | "threadId" | "subject" | "content" | "type" | "status" | "scheduledFor" | "templateId" | "attachments" | "createdAt" | "readAt", ExtArgs["result"]["message"]>
+  export type MessageOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "senderId" | "candidateId" | "threadId" | "subject" | "content" | "type" | "status" | "scheduledFor" | "templateId" | "attachments" | "createdAt" | "readAt", ExtArgs["result"]["message"]>
   export type MessageInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     sender?: boolean | UserDefaultArgs<ExtArgs>
-    recipient?: boolean | UserDefaultArgs<ExtArgs>
+    candidate?: boolean | CandidateDefaultArgs<ExtArgs>
     thread?: boolean | Message$threadArgs<ExtArgs>
     template?: boolean | Message$templateArgs<ExtArgs>
   }
   export type MessageIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     sender?: boolean | UserDefaultArgs<ExtArgs>
-    recipient?: boolean | UserDefaultArgs<ExtArgs>
+    candidate?: boolean | CandidateDefaultArgs<ExtArgs>
     thread?: boolean | Message$threadArgs<ExtArgs>
     template?: boolean | Message$templateArgs<ExtArgs>
   }
   export type MessageIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     sender?: boolean | UserDefaultArgs<ExtArgs>
-    recipient?: boolean | UserDefaultArgs<ExtArgs>
+    candidate?: boolean | CandidateDefaultArgs<ExtArgs>
     thread?: boolean | Message$threadArgs<ExtArgs>
     template?: boolean | Message$templateArgs<ExtArgs>
   }
@@ -37171,14 +37171,14 @@ export namespace Prisma {
     name: "Message"
     objects: {
       sender: Prisma.$UserPayload<ExtArgs>
-      recipient: Prisma.$UserPayload<ExtArgs>
+      candidate: Prisma.$CandidatePayload<ExtArgs>
       thread: Prisma.$MessageThreadPayload<ExtArgs> | null
       template: Prisma.$MessageTemplatePayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
       senderId: string
-      recipientId: string
+      candidateId: string
       threadId: string | null
       subject: string | null
       content: string
@@ -37584,7 +37584,7 @@ export namespace Prisma {
   export interface Prisma__MessageClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     sender<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-    recipient<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    candidate<T extends CandidateDefaultArgs<ExtArgs> = {}>(args?: Subset<T, CandidateDefaultArgs<ExtArgs>>): Prisma__CandidateClient<$Result.GetResult<Prisma.$CandidatePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     thread<T extends Message$threadArgs<ExtArgs> = {}>(args?: Subset<T, Message$threadArgs<ExtArgs>>): Prisma__MessageThreadClient<$Result.GetResult<Prisma.$MessageThreadPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     template<T extends Message$templateArgs<ExtArgs> = {}>(args?: Subset<T, Message$templateArgs<ExtArgs>>): Prisma__MessageTemplateClient<$Result.GetResult<Prisma.$MessageTemplatePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     /**
@@ -37618,7 +37618,7 @@ export namespace Prisma {
   interface MessageFieldRefs {
     readonly id: FieldRef<"Message", 'String'>
     readonly senderId: FieldRef<"Message", 'String'>
-    readonly recipientId: FieldRef<"Message", 'String'>
+    readonly candidateId: FieldRef<"Message", 'String'>
     readonly threadId: FieldRef<"Message", 'String'>
     readonly subject: FieldRef<"Message", 'String'>
     readonly content: FieldRef<"Message", 'String'>
@@ -58246,7 +58246,7 @@ export namespace Prisma {
   export const MessageScalarFieldEnum: {
     id: 'id',
     senderId: 'senderId',
-    recipientId: 'recipientId',
+    candidateId: 'candidateId',
     threadId: 'threadId',
     subject: 'subject',
     content: 'content',
@@ -58958,8 +58958,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberListRelationFilter
     jobHiringMembers?: JobHiringMemberListRelationFilter
     meetingAttendees?: MeetingAttendeeListRelationFilter
-    sentMessages?: MessageListRelationFilter
-    receivedMessages?: MessageListRelationFilter
+    sentCandidateEmails?: MessageListRelationFilter
     meetingsOwned?: MeetingListRelationFilter
     notifications?: NotificationListRelationFilter
     profile?: XOR<UserProfileNullableScalarRelationFilter, UserProfileWhereInput> | null
@@ -58986,8 +58985,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberOrderByRelationAggregateInput
     jobHiringMembers?: JobHiringMemberOrderByRelationAggregateInput
     meetingAttendees?: MeetingAttendeeOrderByRelationAggregateInput
-    sentMessages?: MessageOrderByRelationAggregateInput
-    receivedMessages?: MessageOrderByRelationAggregateInput
+    sentCandidateEmails?: MessageOrderByRelationAggregateInput
     meetingsOwned?: MeetingOrderByRelationAggregateInput
     notifications?: NotificationOrderByRelationAggregateInput
     profile?: UserProfileOrderByWithRelationInput
@@ -59017,8 +59015,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberListRelationFilter
     jobHiringMembers?: JobHiringMemberListRelationFilter
     meetingAttendees?: MeetingAttendeeListRelationFilter
-    sentMessages?: MessageListRelationFilter
-    receivedMessages?: MessageListRelationFilter
+    sentCandidateEmails?: MessageListRelationFilter
     meetingsOwned?: MeetingListRelationFilter
     notifications?: NotificationListRelationFilter
     profile?: XOR<UserProfileNullableScalarRelationFilter, UserProfileWhereInput> | null
@@ -59760,6 +59757,7 @@ export namespace Prisma {
     meetings?: MeetingListRelationFilter
     interviewNotes?: InterviewNoteListRelationFilter
     ratings?: CandidateRatingListRelationFilter
+    receivedEmails?: MessageListRelationFilter
   }
 
   export type CandidateOrderByWithRelationInput = {
@@ -59785,6 +59783,7 @@ export namespace Prisma {
     meetings?: MeetingOrderByRelationAggregateInput
     interviewNotes?: InterviewNoteOrderByRelationAggregateInput
     ratings?: CandidateRatingOrderByRelationAggregateInput
+    receivedEmails?: MessageOrderByRelationAggregateInput
   }
 
   export type CandidateWhereUniqueInput = Prisma.AtLeast<{
@@ -59813,6 +59812,7 @@ export namespace Prisma {
     meetings?: MeetingListRelationFilter
     interviewNotes?: InterviewNoteListRelationFilter
     ratings?: CandidateRatingListRelationFilter
+    receivedEmails?: MessageListRelationFilter
   }, "id" | "email">
 
   export type CandidateOrderByWithAggregationInput = {
@@ -61013,7 +61013,7 @@ export namespace Prisma {
     NOT?: MessageWhereInput | MessageWhereInput[]
     id?: StringFilter<"Message"> | string
     senderId?: StringFilter<"Message"> | string
-    recipientId?: StringFilter<"Message"> | string
+    candidateId?: StringFilter<"Message"> | string
     threadId?: StringNullableFilter<"Message"> | string | null
     subject?: StringNullableFilter<"Message"> | string | null
     content?: StringFilter<"Message"> | string
@@ -61025,7 +61025,7 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"Message"> | Date | string
     readAt?: DateTimeNullableFilter<"Message"> | Date | string | null
     sender?: XOR<UserScalarRelationFilter, UserWhereInput>
-    recipient?: XOR<UserScalarRelationFilter, UserWhereInput>
+    candidate?: XOR<CandidateScalarRelationFilter, CandidateWhereInput>
     thread?: XOR<MessageThreadNullableScalarRelationFilter, MessageThreadWhereInput> | null
     template?: XOR<MessageTemplateNullableScalarRelationFilter, MessageTemplateWhereInput> | null
   }
@@ -61033,7 +61033,7 @@ export namespace Prisma {
   export type MessageOrderByWithRelationInput = {
     id?: SortOrder
     senderId?: SortOrder
-    recipientId?: SortOrder
+    candidateId?: SortOrder
     threadId?: SortOrderInput | SortOrder
     subject?: SortOrderInput | SortOrder
     content?: SortOrder
@@ -61045,7 +61045,7 @@ export namespace Prisma {
     createdAt?: SortOrder
     readAt?: SortOrderInput | SortOrder
     sender?: UserOrderByWithRelationInput
-    recipient?: UserOrderByWithRelationInput
+    candidate?: CandidateOrderByWithRelationInput
     thread?: MessageThreadOrderByWithRelationInput
     template?: MessageTemplateOrderByWithRelationInput
   }
@@ -61056,7 +61056,7 @@ export namespace Prisma {
     OR?: MessageWhereInput[]
     NOT?: MessageWhereInput | MessageWhereInput[]
     senderId?: StringFilter<"Message"> | string
-    recipientId?: StringFilter<"Message"> | string
+    candidateId?: StringFilter<"Message"> | string
     threadId?: StringNullableFilter<"Message"> | string | null
     subject?: StringNullableFilter<"Message"> | string | null
     content?: StringFilter<"Message"> | string
@@ -61068,7 +61068,7 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"Message"> | Date | string
     readAt?: DateTimeNullableFilter<"Message"> | Date | string | null
     sender?: XOR<UserScalarRelationFilter, UserWhereInput>
-    recipient?: XOR<UserScalarRelationFilter, UserWhereInput>
+    candidate?: XOR<CandidateScalarRelationFilter, CandidateWhereInput>
     thread?: XOR<MessageThreadNullableScalarRelationFilter, MessageThreadWhereInput> | null
     template?: XOR<MessageTemplateNullableScalarRelationFilter, MessageTemplateWhereInput> | null
   }, "id">
@@ -61076,7 +61076,7 @@ export namespace Prisma {
   export type MessageOrderByWithAggregationInput = {
     id?: SortOrder
     senderId?: SortOrder
-    recipientId?: SortOrder
+    candidateId?: SortOrder
     threadId?: SortOrderInput | SortOrder
     subject?: SortOrderInput | SortOrder
     content?: SortOrder
@@ -61098,7 +61098,7 @@ export namespace Prisma {
     NOT?: MessageScalarWhereWithAggregatesInput | MessageScalarWhereWithAggregatesInput[]
     id?: StringWithAggregatesFilter<"Message"> | string
     senderId?: StringWithAggregatesFilter<"Message"> | string
-    recipientId?: StringWithAggregatesFilter<"Message"> | string
+    candidateId?: StringWithAggregatesFilter<"Message"> | string
     threadId?: StringNullableWithAggregatesFilter<"Message"> | string | null
     subject?: StringNullableWithAggregatesFilter<"Message"> | string | null
     content?: StringWithAggregatesFilter<"Message"> | string
@@ -62342,8 +62342,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberCreateNestedManyWithoutUserInput
     jobHiringMembers?: JobHiringMemberCreateNestedManyWithoutUserInput
     meetingAttendees?: MeetingAttendeeCreateNestedManyWithoutUserInput
-    sentMessages?: MessageCreateNestedManyWithoutSenderInput
-    receivedMessages?: MessageCreateNestedManyWithoutRecipientInput
+    sentCandidateEmails?: MessageCreateNestedManyWithoutSenderInput
     meetingsOwned?: MeetingCreateNestedManyWithoutOrganizerInput
     notifications?: NotificationCreateNestedManyWithoutUserInput
     profile?: UserProfileCreateNestedOneWithoutUserInput
@@ -62370,8 +62369,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberUncheckedCreateNestedManyWithoutUserInput
     jobHiringMembers?: JobHiringMemberUncheckedCreateNestedManyWithoutUserInput
     meetingAttendees?: MeetingAttendeeUncheckedCreateNestedManyWithoutUserInput
-    sentMessages?: MessageUncheckedCreateNestedManyWithoutSenderInput
-    receivedMessages?: MessageUncheckedCreateNestedManyWithoutRecipientInput
+    sentCandidateEmails?: MessageUncheckedCreateNestedManyWithoutSenderInput
     meetingsOwned?: MeetingUncheckedCreateNestedManyWithoutOrganizerInput
     notifications?: NotificationUncheckedCreateNestedManyWithoutUserInput
     profile?: UserProfileUncheckedCreateNestedOneWithoutUserInput
@@ -62398,8 +62396,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberUpdateManyWithoutUserNestedInput
     jobHiringMembers?: JobHiringMemberUpdateManyWithoutUserNestedInput
     meetingAttendees?: MeetingAttendeeUpdateManyWithoutUserNestedInput
-    sentMessages?: MessageUpdateManyWithoutSenderNestedInput
-    receivedMessages?: MessageUpdateManyWithoutRecipientNestedInput
+    sentCandidateEmails?: MessageUpdateManyWithoutSenderNestedInput
     meetingsOwned?: MeetingUpdateManyWithoutOrganizerNestedInput
     notifications?: NotificationUpdateManyWithoutUserNestedInput
     profile?: UserProfileUpdateOneWithoutUserNestedInput
@@ -62426,8 +62423,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberUncheckedUpdateManyWithoutUserNestedInput
     jobHiringMembers?: JobHiringMemberUncheckedUpdateManyWithoutUserNestedInput
     meetingAttendees?: MeetingAttendeeUncheckedUpdateManyWithoutUserNestedInput
-    sentMessages?: MessageUncheckedUpdateManyWithoutSenderNestedInput
-    receivedMessages?: MessageUncheckedUpdateManyWithoutRecipientNestedInput
+    sentCandidateEmails?: MessageUncheckedUpdateManyWithoutSenderNestedInput
     meetingsOwned?: MeetingUncheckedUpdateManyWithoutOrganizerNestedInput
     notifications?: NotificationUncheckedUpdateManyWithoutUserNestedInput
     profile?: UserProfileUncheckedUpdateOneWithoutUserNestedInput
@@ -63238,6 +63234,7 @@ export namespace Prisma {
     meetings?: MeetingCreateNestedManyWithoutCandidateInput
     interviewNotes?: InterviewNoteCreateNestedManyWithoutCandidateInput
     ratings?: CandidateRatingCreateNestedManyWithoutCandidateInput
+    receivedEmails?: MessageCreateNestedManyWithoutCandidateInput
   }
 
   export type CandidateUncheckedCreateInput = {
@@ -63263,6 +63260,7 @@ export namespace Prisma {
     meetings?: MeetingUncheckedCreateNestedManyWithoutCandidateInput
     interviewNotes?: InterviewNoteUncheckedCreateNestedManyWithoutCandidateInput
     ratings?: CandidateRatingUncheckedCreateNestedManyWithoutCandidateInput
+    receivedEmails?: MessageUncheckedCreateNestedManyWithoutCandidateInput
   }
 
   export type CandidateUpdateInput = {
@@ -63288,6 +63286,7 @@ export namespace Prisma {
     meetings?: MeetingUpdateManyWithoutCandidateNestedInput
     interviewNotes?: InterviewNoteUpdateManyWithoutCandidateNestedInput
     ratings?: CandidateRatingUpdateManyWithoutCandidateNestedInput
+    receivedEmails?: MessageUpdateManyWithoutCandidateNestedInput
   }
 
   export type CandidateUncheckedUpdateInput = {
@@ -63313,6 +63312,7 @@ export namespace Prisma {
     meetings?: MeetingUncheckedUpdateManyWithoutCandidateNestedInput
     interviewNotes?: InterviewNoteUncheckedUpdateManyWithoutCandidateNestedInput
     ratings?: CandidateRatingUncheckedUpdateManyWithoutCandidateNestedInput
+    receivedEmails?: MessageUncheckedUpdateManyWithoutCandidateNestedInput
   }
 
   export type CandidateCreateManyInput = {
@@ -64533,8 +64533,8 @@ export namespace Prisma {
     attachments?: JsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     readAt?: Date | string | null
-    sender: UserCreateNestedOneWithoutSentMessagesInput
-    recipient: UserCreateNestedOneWithoutReceivedMessagesInput
+    sender: UserCreateNestedOneWithoutSentCandidateEmailsInput
+    candidate: CandidateCreateNestedOneWithoutReceivedEmailsInput
     thread?: MessageThreadCreateNestedOneWithoutMessagesInput
     template?: MessageTemplateCreateNestedOneWithoutMessagesInput
   }
@@ -64542,7 +64542,7 @@ export namespace Prisma {
   export type MessageUncheckedCreateInput = {
     id?: string
     senderId: string
-    recipientId: string
+    candidateId: string
     threadId?: string | null
     subject?: string | null
     content: string
@@ -64565,8 +64565,8 @@ export namespace Prisma {
     attachments?: JsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     readAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    sender?: UserUpdateOneRequiredWithoutSentMessagesNestedInput
-    recipient?: UserUpdateOneRequiredWithoutReceivedMessagesNestedInput
+    sender?: UserUpdateOneRequiredWithoutSentCandidateEmailsNestedInput
+    candidate?: CandidateUpdateOneRequiredWithoutReceivedEmailsNestedInput
     thread?: MessageThreadUpdateOneWithoutMessagesNestedInput
     template?: MessageTemplateUpdateOneWithoutMessagesNestedInput
   }
@@ -64574,7 +64574,7 @@ export namespace Prisma {
   export type MessageUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     senderId?: StringFieldUpdateOperationsInput | string
-    recipientId?: StringFieldUpdateOperationsInput | string
+    candidateId?: StringFieldUpdateOperationsInput | string
     threadId?: NullableStringFieldUpdateOperationsInput | string | null
     subject?: NullableStringFieldUpdateOperationsInput | string | null
     content?: StringFieldUpdateOperationsInput | string
@@ -64590,7 +64590,7 @@ export namespace Prisma {
   export type MessageCreateManyInput = {
     id?: string
     senderId: string
-    recipientId: string
+    candidateId: string
     threadId?: string | null
     subject?: string | null
     content: string
@@ -64618,7 +64618,7 @@ export namespace Prisma {
   export type MessageUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
     senderId?: StringFieldUpdateOperationsInput | string
-    recipientId?: StringFieldUpdateOperationsInput | string
+    candidateId?: StringFieldUpdateOperationsInput | string
     threadId?: NullableStringFieldUpdateOperationsInput | string | null
     subject?: NullableStringFieldUpdateOperationsInput | string | null
     content?: StringFieldUpdateOperationsInput | string
@@ -67885,7 +67885,7 @@ export namespace Prisma {
   export type MessageCountOrderByAggregateInput = {
     id?: SortOrder
     senderId?: SortOrder
-    recipientId?: SortOrder
+    candidateId?: SortOrder
     threadId?: SortOrder
     subject?: SortOrder
     content?: SortOrder
@@ -67901,7 +67901,7 @@ export namespace Prisma {
   export type MessageMaxOrderByAggregateInput = {
     id?: SortOrder
     senderId?: SortOrder
-    recipientId?: SortOrder
+    candidateId?: SortOrder
     threadId?: SortOrder
     subject?: SortOrder
     content?: SortOrder
@@ -67916,7 +67916,7 @@ export namespace Prisma {
   export type MessageMinOrderByAggregateInput = {
     id?: SortOrder
     senderId?: SortOrder
-    recipientId?: SortOrder
+    candidateId?: SortOrder
     threadId?: SortOrder
     subject?: SortOrder
     content?: SortOrder
@@ -68728,13 +68728,6 @@ export namespace Prisma {
     connect?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
   }
 
-  export type MessageCreateNestedManyWithoutRecipientInput = {
-    create?: XOR<MessageCreateWithoutRecipientInput, MessageUncheckedCreateWithoutRecipientInput> | MessageCreateWithoutRecipientInput[] | MessageUncheckedCreateWithoutRecipientInput[]
-    connectOrCreate?: MessageCreateOrConnectWithoutRecipientInput | MessageCreateOrConnectWithoutRecipientInput[]
-    createMany?: MessageCreateManyRecipientInputEnvelope
-    connect?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
-  }
-
   export type MeetingCreateNestedManyWithoutOrganizerInput = {
     create?: XOR<MeetingCreateWithoutOrganizerInput, MeetingUncheckedCreateWithoutOrganizerInput> | MeetingCreateWithoutOrganizerInput[] | MeetingUncheckedCreateWithoutOrganizerInput[]
     connectOrCreate?: MeetingCreateOrConnectWithoutOrganizerInput | MeetingCreateOrConnectWithoutOrganizerInput[]
@@ -68828,13 +68821,6 @@ export namespace Prisma {
     create?: XOR<MessageCreateWithoutSenderInput, MessageUncheckedCreateWithoutSenderInput> | MessageCreateWithoutSenderInput[] | MessageUncheckedCreateWithoutSenderInput[]
     connectOrCreate?: MessageCreateOrConnectWithoutSenderInput | MessageCreateOrConnectWithoutSenderInput[]
     createMany?: MessageCreateManySenderInputEnvelope
-    connect?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
-  }
-
-  export type MessageUncheckedCreateNestedManyWithoutRecipientInput = {
-    create?: XOR<MessageCreateWithoutRecipientInput, MessageUncheckedCreateWithoutRecipientInput> | MessageCreateWithoutRecipientInput[] | MessageUncheckedCreateWithoutRecipientInput[]
-    connectOrCreate?: MessageCreateOrConnectWithoutRecipientInput | MessageCreateOrConnectWithoutRecipientInput[]
-    createMany?: MessageCreateManyRecipientInputEnvelope
     connect?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
   }
 
@@ -68993,20 +68979,6 @@ export namespace Prisma {
     connect?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
     update?: MessageUpdateWithWhereUniqueWithoutSenderInput | MessageUpdateWithWhereUniqueWithoutSenderInput[]
     updateMany?: MessageUpdateManyWithWhereWithoutSenderInput | MessageUpdateManyWithWhereWithoutSenderInput[]
-    deleteMany?: MessageScalarWhereInput | MessageScalarWhereInput[]
-  }
-
-  export type MessageUpdateManyWithoutRecipientNestedInput = {
-    create?: XOR<MessageCreateWithoutRecipientInput, MessageUncheckedCreateWithoutRecipientInput> | MessageCreateWithoutRecipientInput[] | MessageUncheckedCreateWithoutRecipientInput[]
-    connectOrCreate?: MessageCreateOrConnectWithoutRecipientInput | MessageCreateOrConnectWithoutRecipientInput[]
-    upsert?: MessageUpsertWithWhereUniqueWithoutRecipientInput | MessageUpsertWithWhereUniqueWithoutRecipientInput[]
-    createMany?: MessageCreateManyRecipientInputEnvelope
-    set?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
-    disconnect?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
-    delete?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
-    connect?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
-    update?: MessageUpdateWithWhereUniqueWithoutRecipientInput | MessageUpdateWithWhereUniqueWithoutRecipientInput[]
-    updateMany?: MessageUpdateManyWithWhereWithoutRecipientInput | MessageUpdateManyWithWhereWithoutRecipientInput[]
     deleteMany?: MessageScalarWhereInput | MessageScalarWhereInput[]
   }
 
@@ -69195,20 +69167,6 @@ export namespace Prisma {
     connect?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
     update?: MessageUpdateWithWhereUniqueWithoutSenderInput | MessageUpdateWithWhereUniqueWithoutSenderInput[]
     updateMany?: MessageUpdateManyWithWhereWithoutSenderInput | MessageUpdateManyWithWhereWithoutSenderInput[]
-    deleteMany?: MessageScalarWhereInput | MessageScalarWhereInput[]
-  }
-
-  export type MessageUncheckedUpdateManyWithoutRecipientNestedInput = {
-    create?: XOR<MessageCreateWithoutRecipientInput, MessageUncheckedCreateWithoutRecipientInput> | MessageCreateWithoutRecipientInput[] | MessageUncheckedCreateWithoutRecipientInput[]
-    connectOrCreate?: MessageCreateOrConnectWithoutRecipientInput | MessageCreateOrConnectWithoutRecipientInput[]
-    upsert?: MessageUpsertWithWhereUniqueWithoutRecipientInput | MessageUpsertWithWhereUniqueWithoutRecipientInput[]
-    createMany?: MessageCreateManyRecipientInputEnvelope
-    set?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
-    disconnect?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
-    delete?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
-    connect?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
-    update?: MessageUpdateWithWhereUniqueWithoutRecipientInput | MessageUpdateWithWhereUniqueWithoutRecipientInput[]
-    updateMany?: MessageUpdateManyWithWhereWithoutRecipientInput | MessageUpdateManyWithWhereWithoutRecipientInput[]
     deleteMany?: MessageScalarWhereInput | MessageScalarWhereInput[]
   }
 
@@ -70504,6 +70462,13 @@ export namespace Prisma {
     connect?: CandidateRatingWhereUniqueInput | CandidateRatingWhereUniqueInput[]
   }
 
+  export type MessageCreateNestedManyWithoutCandidateInput = {
+    create?: XOR<MessageCreateWithoutCandidateInput, MessageUncheckedCreateWithoutCandidateInput> | MessageCreateWithoutCandidateInput[] | MessageUncheckedCreateWithoutCandidateInput[]
+    connectOrCreate?: MessageCreateOrConnectWithoutCandidateInput | MessageCreateOrConnectWithoutCandidateInput[]
+    createMany?: MessageCreateManyCandidateInputEnvelope
+    connect?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+  }
+
   export type ApplicationUncheckedCreateNestedManyWithoutCandidateInput = {
     create?: XOR<ApplicationCreateWithoutCandidateInput, ApplicationUncheckedCreateWithoutCandidateInput> | ApplicationCreateWithoutCandidateInput[] | ApplicationUncheckedCreateWithoutCandidateInput[]
     connectOrCreate?: ApplicationCreateOrConnectWithoutCandidateInput | ApplicationCreateOrConnectWithoutCandidateInput[]
@@ -70558,6 +70523,13 @@ export namespace Prisma {
     connectOrCreate?: CandidateRatingCreateOrConnectWithoutCandidateInput | CandidateRatingCreateOrConnectWithoutCandidateInput[]
     createMany?: CandidateRatingCreateManyCandidateInputEnvelope
     connect?: CandidateRatingWhereUniqueInput | CandidateRatingWhereUniqueInput[]
+  }
+
+  export type MessageUncheckedCreateNestedManyWithoutCandidateInput = {
+    create?: XOR<MessageCreateWithoutCandidateInput, MessageUncheckedCreateWithoutCandidateInput> | MessageCreateWithoutCandidateInput[] | MessageUncheckedCreateWithoutCandidateInput[]
+    connectOrCreate?: MessageCreateOrConnectWithoutCandidateInput | MessageCreateOrConnectWithoutCandidateInput[]
+    createMany?: MessageCreateManyCandidateInputEnvelope
+    connect?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
   }
 
   export type ApplicationUpdateManyWithoutCandidateNestedInput = {
@@ -70672,6 +70644,20 @@ export namespace Prisma {
     deleteMany?: CandidateRatingScalarWhereInput | CandidateRatingScalarWhereInput[]
   }
 
+  export type MessageUpdateManyWithoutCandidateNestedInput = {
+    create?: XOR<MessageCreateWithoutCandidateInput, MessageUncheckedCreateWithoutCandidateInput> | MessageCreateWithoutCandidateInput[] | MessageUncheckedCreateWithoutCandidateInput[]
+    connectOrCreate?: MessageCreateOrConnectWithoutCandidateInput | MessageCreateOrConnectWithoutCandidateInput[]
+    upsert?: MessageUpsertWithWhereUniqueWithoutCandidateInput | MessageUpsertWithWhereUniqueWithoutCandidateInput[]
+    createMany?: MessageCreateManyCandidateInputEnvelope
+    set?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+    disconnect?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+    delete?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+    connect?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+    update?: MessageUpdateWithWhereUniqueWithoutCandidateInput | MessageUpdateWithWhereUniqueWithoutCandidateInput[]
+    updateMany?: MessageUpdateManyWithWhereWithoutCandidateInput | MessageUpdateManyWithWhereWithoutCandidateInput[]
+    deleteMany?: MessageScalarWhereInput | MessageScalarWhereInput[]
+  }
+
   export type ApplicationUncheckedUpdateManyWithoutCandidateNestedInput = {
     create?: XOR<ApplicationCreateWithoutCandidateInput, ApplicationUncheckedCreateWithoutCandidateInput> | ApplicationCreateWithoutCandidateInput[] | ApplicationUncheckedCreateWithoutCandidateInput[]
     connectOrCreate?: ApplicationCreateOrConnectWithoutCandidateInput | ApplicationCreateOrConnectWithoutCandidateInput[]
@@ -70782,6 +70768,20 @@ export namespace Prisma {
     update?: CandidateRatingUpdateWithWhereUniqueWithoutCandidateInput | CandidateRatingUpdateWithWhereUniqueWithoutCandidateInput[]
     updateMany?: CandidateRatingUpdateManyWithWhereWithoutCandidateInput | CandidateRatingUpdateManyWithWhereWithoutCandidateInput[]
     deleteMany?: CandidateRatingScalarWhereInput | CandidateRatingScalarWhereInput[]
+  }
+
+  export type MessageUncheckedUpdateManyWithoutCandidateNestedInput = {
+    create?: XOR<MessageCreateWithoutCandidateInput, MessageUncheckedCreateWithoutCandidateInput> | MessageCreateWithoutCandidateInput[] | MessageUncheckedCreateWithoutCandidateInput[]
+    connectOrCreate?: MessageCreateOrConnectWithoutCandidateInput | MessageCreateOrConnectWithoutCandidateInput[]
+    upsert?: MessageUpsertWithWhereUniqueWithoutCandidateInput | MessageUpsertWithWhereUniqueWithoutCandidateInput[]
+    createMany?: MessageCreateManyCandidateInputEnvelope
+    set?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+    disconnect?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+    delete?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+    connect?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+    update?: MessageUpdateWithWhereUniqueWithoutCandidateInput | MessageUpdateWithWhereUniqueWithoutCandidateInput[]
+    updateMany?: MessageUpdateManyWithWhereWithoutCandidateInput | MessageUpdateManyWithWhereWithoutCandidateInput[]
+    deleteMany?: MessageScalarWhereInput | MessageScalarWhereInput[]
   }
 
   export type CandidateCreateNestedOneWithoutInterviewNotesInput = {
@@ -71758,16 +71758,16 @@ export namespace Prisma {
     update?: XOR<XOR<UserUpdateToOneWithWhereWithoutPerformedActivitiesInput, UserUpdateWithoutPerformedActivitiesInput>, UserUncheckedUpdateWithoutPerformedActivitiesInput>
   }
 
-  export type UserCreateNestedOneWithoutSentMessagesInput = {
-    create?: XOR<UserCreateWithoutSentMessagesInput, UserUncheckedCreateWithoutSentMessagesInput>
-    connectOrCreate?: UserCreateOrConnectWithoutSentMessagesInput
+  export type UserCreateNestedOneWithoutSentCandidateEmailsInput = {
+    create?: XOR<UserCreateWithoutSentCandidateEmailsInput, UserUncheckedCreateWithoutSentCandidateEmailsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutSentCandidateEmailsInput
     connect?: UserWhereUniqueInput
   }
 
-  export type UserCreateNestedOneWithoutReceivedMessagesInput = {
-    create?: XOR<UserCreateWithoutReceivedMessagesInput, UserUncheckedCreateWithoutReceivedMessagesInput>
-    connectOrCreate?: UserCreateOrConnectWithoutReceivedMessagesInput
-    connect?: UserWhereUniqueInput
+  export type CandidateCreateNestedOneWithoutReceivedEmailsInput = {
+    create?: XOR<CandidateCreateWithoutReceivedEmailsInput, CandidateUncheckedCreateWithoutReceivedEmailsInput>
+    connectOrCreate?: CandidateCreateOrConnectWithoutReceivedEmailsInput
+    connect?: CandidateWhereUniqueInput
   }
 
   export type MessageThreadCreateNestedOneWithoutMessagesInput = {
@@ -71790,20 +71790,20 @@ export namespace Prisma {
     set?: $Enums.MessageStatus
   }
 
-  export type UserUpdateOneRequiredWithoutSentMessagesNestedInput = {
-    create?: XOR<UserCreateWithoutSentMessagesInput, UserUncheckedCreateWithoutSentMessagesInput>
-    connectOrCreate?: UserCreateOrConnectWithoutSentMessagesInput
-    upsert?: UserUpsertWithoutSentMessagesInput
+  export type UserUpdateOneRequiredWithoutSentCandidateEmailsNestedInput = {
+    create?: XOR<UserCreateWithoutSentCandidateEmailsInput, UserUncheckedCreateWithoutSentCandidateEmailsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutSentCandidateEmailsInput
+    upsert?: UserUpsertWithoutSentCandidateEmailsInput
     connect?: UserWhereUniqueInput
-    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutSentMessagesInput, UserUpdateWithoutSentMessagesInput>, UserUncheckedUpdateWithoutSentMessagesInput>
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutSentCandidateEmailsInput, UserUpdateWithoutSentCandidateEmailsInput>, UserUncheckedUpdateWithoutSentCandidateEmailsInput>
   }
 
-  export type UserUpdateOneRequiredWithoutReceivedMessagesNestedInput = {
-    create?: XOR<UserCreateWithoutReceivedMessagesInput, UserUncheckedCreateWithoutReceivedMessagesInput>
-    connectOrCreate?: UserCreateOrConnectWithoutReceivedMessagesInput
-    upsert?: UserUpsertWithoutReceivedMessagesInput
-    connect?: UserWhereUniqueInput
-    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutReceivedMessagesInput, UserUpdateWithoutReceivedMessagesInput>, UserUncheckedUpdateWithoutReceivedMessagesInput>
+  export type CandidateUpdateOneRequiredWithoutReceivedEmailsNestedInput = {
+    create?: XOR<CandidateCreateWithoutReceivedEmailsInput, CandidateUncheckedCreateWithoutReceivedEmailsInput>
+    connectOrCreate?: CandidateCreateOrConnectWithoutReceivedEmailsInput
+    upsert?: CandidateUpsertWithoutReceivedEmailsInput
+    connect?: CandidateWhereUniqueInput
+    update?: XOR<XOR<CandidateUpdateToOneWithWhereWithoutReceivedEmailsInput, CandidateUpdateWithoutReceivedEmailsInput>, CandidateUncheckedUpdateWithoutReceivedEmailsInput>
   }
 
   export type MessageThreadUpdateOneWithoutMessagesNestedInput = {
@@ -73292,14 +73292,14 @@ export namespace Prisma {
     attachments?: JsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     readAt?: Date | string | null
-    recipient: UserCreateNestedOneWithoutReceivedMessagesInput
+    candidate: CandidateCreateNestedOneWithoutReceivedEmailsInput
     thread?: MessageThreadCreateNestedOneWithoutMessagesInput
     template?: MessageTemplateCreateNestedOneWithoutMessagesInput
   }
 
   export type MessageUncheckedCreateWithoutSenderInput = {
     id?: string
-    recipientId: string
+    candidateId: string
     threadId?: string | null
     subject?: string | null
     content: string
@@ -73319,46 +73319,6 @@ export namespace Prisma {
 
   export type MessageCreateManySenderInputEnvelope = {
     data: MessageCreateManySenderInput | MessageCreateManySenderInput[]
-    skipDuplicates?: boolean
-  }
-
-  export type MessageCreateWithoutRecipientInput = {
-    id?: string
-    subject?: string | null
-    content: string
-    type?: $Enums.MessageType
-    status?: $Enums.MessageStatus
-    scheduledFor?: Date | string | null
-    attachments?: JsonNullValueInput | InputJsonValue
-    createdAt?: Date | string
-    readAt?: Date | string | null
-    sender: UserCreateNestedOneWithoutSentMessagesInput
-    thread?: MessageThreadCreateNestedOneWithoutMessagesInput
-    template?: MessageTemplateCreateNestedOneWithoutMessagesInput
-  }
-
-  export type MessageUncheckedCreateWithoutRecipientInput = {
-    id?: string
-    senderId: string
-    threadId?: string | null
-    subject?: string | null
-    content: string
-    type?: $Enums.MessageType
-    status?: $Enums.MessageStatus
-    scheduledFor?: Date | string | null
-    templateId?: string | null
-    attachments?: JsonNullValueInput | InputJsonValue
-    createdAt?: Date | string
-    readAt?: Date | string | null
-  }
-
-  export type MessageCreateOrConnectWithoutRecipientInput = {
-    where: MessageWhereUniqueInput
-    create: XOR<MessageCreateWithoutRecipientInput, MessageUncheckedCreateWithoutRecipientInput>
-  }
-
-  export type MessageCreateManyRecipientInputEnvelope = {
-    data: MessageCreateManyRecipientInput | MessageCreateManyRecipientInput[]
     skipDuplicates?: boolean
   }
 
@@ -73782,7 +73742,7 @@ export namespace Prisma {
     NOT?: MessageScalarWhereInput | MessageScalarWhereInput[]
     id?: StringFilter<"Message"> | string
     senderId?: StringFilter<"Message"> | string
-    recipientId?: StringFilter<"Message"> | string
+    candidateId?: StringFilter<"Message"> | string
     threadId?: StringNullableFilter<"Message"> | string | null
     subject?: StringNullableFilter<"Message"> | string | null
     content?: StringFilter<"Message"> | string
@@ -73793,22 +73753,6 @@ export namespace Prisma {
     attachments?: JsonFilter<"Message">
     createdAt?: DateTimeFilter<"Message"> | Date | string
     readAt?: DateTimeNullableFilter<"Message"> | Date | string | null
-  }
-
-  export type MessageUpsertWithWhereUniqueWithoutRecipientInput = {
-    where: MessageWhereUniqueInput
-    update: XOR<MessageUpdateWithoutRecipientInput, MessageUncheckedUpdateWithoutRecipientInput>
-    create: XOR<MessageCreateWithoutRecipientInput, MessageUncheckedCreateWithoutRecipientInput>
-  }
-
-  export type MessageUpdateWithWhereUniqueWithoutRecipientInput = {
-    where: MessageWhereUniqueInput
-    data: XOR<MessageUpdateWithoutRecipientInput, MessageUncheckedUpdateWithoutRecipientInput>
-  }
-
-  export type MessageUpdateManyWithWhereWithoutRecipientInput = {
-    where: MessageScalarWhereInput
-    data: XOR<MessageUpdateManyMutationInput, MessageUncheckedUpdateManyWithoutRecipientInput>
   }
 
   export type MeetingUpsertWithWhereUniqueWithoutOrganizerInput = {
@@ -74039,8 +73983,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberCreateNestedManyWithoutUserInput
     jobHiringMembers?: JobHiringMemberCreateNestedManyWithoutUserInput
     meetingAttendees?: MeetingAttendeeCreateNestedManyWithoutUserInput
-    sentMessages?: MessageCreateNestedManyWithoutSenderInput
-    receivedMessages?: MessageCreateNestedManyWithoutRecipientInput
+    sentCandidateEmails?: MessageCreateNestedManyWithoutSenderInput
     meetingsOwned?: MeetingCreateNestedManyWithoutOrganizerInput
     notifications?: NotificationCreateNestedManyWithoutUserInput
     comments?: CommentCreateNestedManyWithoutAuthorInput
@@ -74066,8 +74009,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberUncheckedCreateNestedManyWithoutUserInput
     jobHiringMembers?: JobHiringMemberUncheckedCreateNestedManyWithoutUserInput
     meetingAttendees?: MeetingAttendeeUncheckedCreateNestedManyWithoutUserInput
-    sentMessages?: MessageUncheckedCreateNestedManyWithoutSenderInput
-    receivedMessages?: MessageUncheckedCreateNestedManyWithoutRecipientInput
+    sentCandidateEmails?: MessageUncheckedCreateNestedManyWithoutSenderInput
     meetingsOwned?: MeetingUncheckedCreateNestedManyWithoutOrganizerInput
     notifications?: NotificationUncheckedCreateNestedManyWithoutUserInput
     comments?: CommentUncheckedCreateNestedManyWithoutAuthorInput
@@ -74109,8 +74051,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberUpdateManyWithoutUserNestedInput
     jobHiringMembers?: JobHiringMemberUpdateManyWithoutUserNestedInput
     meetingAttendees?: MeetingAttendeeUpdateManyWithoutUserNestedInput
-    sentMessages?: MessageUpdateManyWithoutSenderNestedInput
-    receivedMessages?: MessageUpdateManyWithoutRecipientNestedInput
+    sentCandidateEmails?: MessageUpdateManyWithoutSenderNestedInput
     meetingsOwned?: MeetingUpdateManyWithoutOrganizerNestedInput
     notifications?: NotificationUpdateManyWithoutUserNestedInput
     comments?: CommentUpdateManyWithoutAuthorNestedInput
@@ -74136,8 +74077,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberUncheckedUpdateManyWithoutUserNestedInput
     jobHiringMembers?: JobHiringMemberUncheckedUpdateManyWithoutUserNestedInput
     meetingAttendees?: MeetingAttendeeUncheckedUpdateManyWithoutUserNestedInput
-    sentMessages?: MessageUncheckedUpdateManyWithoutSenderNestedInput
-    receivedMessages?: MessageUncheckedUpdateManyWithoutRecipientNestedInput
+    sentCandidateEmails?: MessageUncheckedUpdateManyWithoutSenderNestedInput
     meetingsOwned?: MeetingUncheckedUpdateManyWithoutOrganizerNestedInput
     notifications?: NotificationUncheckedUpdateManyWithoutUserNestedInput
     comments?: CommentUncheckedUpdateManyWithoutAuthorNestedInput
@@ -74193,8 +74133,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberCreateNestedManyWithoutUserInput
     jobHiringMembers?: JobHiringMemberCreateNestedManyWithoutUserInput
     meetingAttendees?: MeetingAttendeeCreateNestedManyWithoutUserInput
-    sentMessages?: MessageCreateNestedManyWithoutSenderInput
-    receivedMessages?: MessageCreateNestedManyWithoutRecipientInput
+    sentCandidateEmails?: MessageCreateNestedManyWithoutSenderInput
     meetingsOwned?: MeetingCreateNestedManyWithoutOrganizerInput
     notifications?: NotificationCreateNestedManyWithoutUserInput
     profile?: UserProfileCreateNestedOneWithoutUserInput
@@ -74220,8 +74159,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberUncheckedCreateNestedManyWithoutUserInput
     jobHiringMembers?: JobHiringMemberUncheckedCreateNestedManyWithoutUserInput
     meetingAttendees?: MeetingAttendeeUncheckedCreateNestedManyWithoutUserInput
-    sentMessages?: MessageUncheckedCreateNestedManyWithoutSenderInput
-    receivedMessages?: MessageUncheckedCreateNestedManyWithoutRecipientInput
+    sentCandidateEmails?: MessageUncheckedCreateNestedManyWithoutSenderInput
     meetingsOwned?: MeetingUncheckedCreateNestedManyWithoutOrganizerInput
     notifications?: NotificationUncheckedCreateNestedManyWithoutUserInput
     profile?: UserProfileUncheckedCreateNestedOneWithoutUserInput
@@ -74676,8 +74614,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberUpdateManyWithoutUserNestedInput
     jobHiringMembers?: JobHiringMemberUpdateManyWithoutUserNestedInput
     meetingAttendees?: MeetingAttendeeUpdateManyWithoutUserNestedInput
-    sentMessages?: MessageUpdateManyWithoutSenderNestedInput
-    receivedMessages?: MessageUpdateManyWithoutRecipientNestedInput
+    sentCandidateEmails?: MessageUpdateManyWithoutSenderNestedInput
     meetingsOwned?: MeetingUpdateManyWithoutOrganizerNestedInput
     notifications?: NotificationUpdateManyWithoutUserNestedInput
     profile?: UserProfileUpdateOneWithoutUserNestedInput
@@ -74703,8 +74640,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberUncheckedUpdateManyWithoutUserNestedInput
     jobHiringMembers?: JobHiringMemberUncheckedUpdateManyWithoutUserNestedInput
     meetingAttendees?: MeetingAttendeeUncheckedUpdateManyWithoutUserNestedInput
-    sentMessages?: MessageUncheckedUpdateManyWithoutSenderNestedInput
-    receivedMessages?: MessageUncheckedUpdateManyWithoutRecipientNestedInput
+    sentCandidateEmails?: MessageUncheckedUpdateManyWithoutSenderNestedInput
     meetingsOwned?: MeetingUncheckedUpdateManyWithoutOrganizerNestedInput
     notifications?: NotificationUncheckedUpdateManyWithoutUserNestedInput
     profile?: UserProfileUncheckedUpdateOneWithoutUserNestedInput
@@ -75102,8 +75038,7 @@ export namespace Prisma {
     companiesOwned?: CompanyCreateNestedManyWithoutOwnerInput
     jobHiringMembers?: JobHiringMemberCreateNestedManyWithoutUserInput
     meetingAttendees?: MeetingAttendeeCreateNestedManyWithoutUserInput
-    sentMessages?: MessageCreateNestedManyWithoutSenderInput
-    receivedMessages?: MessageCreateNestedManyWithoutRecipientInput
+    sentCandidateEmails?: MessageCreateNestedManyWithoutSenderInput
     meetingsOwned?: MeetingCreateNestedManyWithoutOrganizerInput
     notifications?: NotificationCreateNestedManyWithoutUserInput
     profile?: UserProfileCreateNestedOneWithoutUserInput
@@ -75129,8 +75064,7 @@ export namespace Prisma {
     companiesOwned?: CompanyUncheckedCreateNestedManyWithoutOwnerInput
     jobHiringMembers?: JobHiringMemberUncheckedCreateNestedManyWithoutUserInput
     meetingAttendees?: MeetingAttendeeUncheckedCreateNestedManyWithoutUserInput
-    sentMessages?: MessageUncheckedCreateNestedManyWithoutSenderInput
-    receivedMessages?: MessageUncheckedCreateNestedManyWithoutRecipientInput
+    sentCandidateEmails?: MessageUncheckedCreateNestedManyWithoutSenderInput
     meetingsOwned?: MeetingUncheckedCreateNestedManyWithoutOrganizerInput
     notifications?: NotificationUncheckedCreateNestedManyWithoutUserInput
     profile?: UserProfileUncheckedCreateNestedOneWithoutUserInput
@@ -75227,8 +75161,7 @@ export namespace Prisma {
     companiesOwned?: CompanyUpdateManyWithoutOwnerNestedInput
     jobHiringMembers?: JobHiringMemberUpdateManyWithoutUserNestedInput
     meetingAttendees?: MeetingAttendeeUpdateManyWithoutUserNestedInput
-    sentMessages?: MessageUpdateManyWithoutSenderNestedInput
-    receivedMessages?: MessageUpdateManyWithoutRecipientNestedInput
+    sentCandidateEmails?: MessageUpdateManyWithoutSenderNestedInput
     meetingsOwned?: MeetingUpdateManyWithoutOrganizerNestedInput
     notifications?: NotificationUpdateManyWithoutUserNestedInput
     profile?: UserProfileUpdateOneWithoutUserNestedInput
@@ -75254,8 +75187,7 @@ export namespace Prisma {
     companiesOwned?: CompanyUncheckedUpdateManyWithoutOwnerNestedInput
     jobHiringMembers?: JobHiringMemberUncheckedUpdateManyWithoutUserNestedInput
     meetingAttendees?: MeetingAttendeeUncheckedUpdateManyWithoutUserNestedInput
-    sentMessages?: MessageUncheckedUpdateManyWithoutSenderNestedInput
-    receivedMessages?: MessageUncheckedUpdateManyWithoutRecipientNestedInput
+    sentCandidateEmails?: MessageUncheckedUpdateManyWithoutSenderNestedInput
     meetingsOwned?: MeetingUncheckedUpdateManyWithoutOrganizerNestedInput
     notifications?: NotificationUncheckedUpdateManyWithoutUserNestedInput
     profile?: UserProfileUncheckedUpdateOneWithoutUserNestedInput
@@ -76818,6 +76750,46 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type MessageCreateWithoutCandidateInput = {
+    id?: string
+    subject?: string | null
+    content: string
+    type?: $Enums.MessageType
+    status?: $Enums.MessageStatus
+    scheduledFor?: Date | string | null
+    attachments?: JsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    readAt?: Date | string | null
+    sender: UserCreateNestedOneWithoutSentCandidateEmailsInput
+    thread?: MessageThreadCreateNestedOneWithoutMessagesInput
+    template?: MessageTemplateCreateNestedOneWithoutMessagesInput
+  }
+
+  export type MessageUncheckedCreateWithoutCandidateInput = {
+    id?: string
+    senderId: string
+    threadId?: string | null
+    subject?: string | null
+    content: string
+    type?: $Enums.MessageType
+    status?: $Enums.MessageStatus
+    scheduledFor?: Date | string | null
+    templateId?: string | null
+    attachments?: JsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    readAt?: Date | string | null
+  }
+
+  export type MessageCreateOrConnectWithoutCandidateInput = {
+    where: MessageWhereUniqueInput
+    create: XOR<MessageCreateWithoutCandidateInput, MessageUncheckedCreateWithoutCandidateInput>
+  }
+
+  export type MessageCreateManyCandidateInputEnvelope = {
+    data: MessageCreateManyCandidateInput | MessageCreateManyCandidateInput[]
+    skipDuplicates?: boolean
+  }
+
   export type ApplicationUpsertWithWhereUniqueWithoutCandidateInput = {
     where: ApplicationWhereUniqueInput
     update: XOR<ApplicationUpdateWithoutCandidateInput, ApplicationUncheckedUpdateWithoutCandidateInput>
@@ -76957,6 +76929,22 @@ export namespace Prisma {
     data: XOR<CandidateRatingUpdateManyMutationInput, CandidateRatingUncheckedUpdateManyWithoutCandidateInput>
   }
 
+  export type MessageUpsertWithWhereUniqueWithoutCandidateInput = {
+    where: MessageWhereUniqueInput
+    update: XOR<MessageUpdateWithoutCandidateInput, MessageUncheckedUpdateWithoutCandidateInput>
+    create: XOR<MessageCreateWithoutCandidateInput, MessageUncheckedCreateWithoutCandidateInput>
+  }
+
+  export type MessageUpdateWithWhereUniqueWithoutCandidateInput = {
+    where: MessageWhereUniqueInput
+    data: XOR<MessageUpdateWithoutCandidateInput, MessageUncheckedUpdateWithoutCandidateInput>
+  }
+
+  export type MessageUpdateManyWithWhereWithoutCandidateInput = {
+    where: MessageScalarWhereInput
+    data: XOR<MessageUpdateManyMutationInput, MessageUncheckedUpdateManyWithoutCandidateInput>
+  }
+
   export type CandidateCreateWithoutInterviewNotesInput = {
     id?: string
     firstName: string
@@ -76979,6 +76967,7 @@ export namespace Prisma {
     activities?: ActivityCreateNestedManyWithoutCandidateInput
     meetings?: MeetingCreateNestedManyWithoutCandidateInput
     ratings?: CandidateRatingCreateNestedManyWithoutCandidateInput
+    receivedEmails?: MessageCreateNestedManyWithoutCandidateInput
   }
 
   export type CandidateUncheckedCreateWithoutInterviewNotesInput = {
@@ -77003,6 +76992,7 @@ export namespace Prisma {
     activities?: ActivityUncheckedCreateNestedManyWithoutCandidateInput
     meetings?: MeetingUncheckedCreateNestedManyWithoutCandidateInput
     ratings?: CandidateRatingUncheckedCreateNestedManyWithoutCandidateInput
+    receivedEmails?: MessageUncheckedCreateNestedManyWithoutCandidateInput
   }
 
   export type CandidateCreateOrConnectWithoutInterviewNotesInput = {
@@ -77043,6 +77033,7 @@ export namespace Prisma {
     activities?: ActivityUpdateManyWithoutCandidateNestedInput
     meetings?: MeetingUpdateManyWithoutCandidateNestedInput
     ratings?: CandidateRatingUpdateManyWithoutCandidateNestedInput
+    receivedEmails?: MessageUpdateManyWithoutCandidateNestedInput
   }
 
   export type CandidateUncheckedUpdateWithoutInterviewNotesInput = {
@@ -77067,6 +77058,7 @@ export namespace Prisma {
     activities?: ActivityUncheckedUpdateManyWithoutCandidateNestedInput
     meetings?: MeetingUncheckedUpdateManyWithoutCandidateNestedInput
     ratings?: CandidateRatingUncheckedUpdateManyWithoutCandidateNestedInput
+    receivedEmails?: MessageUncheckedUpdateManyWithoutCandidateNestedInput
   }
 
   export type CandidateCreateWithoutApplicationsInput = {
@@ -77091,6 +77083,7 @@ export namespace Prisma {
     meetings?: MeetingCreateNestedManyWithoutCandidateInput
     interviewNotes?: InterviewNoteCreateNestedManyWithoutCandidateInput
     ratings?: CandidateRatingCreateNestedManyWithoutCandidateInput
+    receivedEmails?: MessageCreateNestedManyWithoutCandidateInput
   }
 
   export type CandidateUncheckedCreateWithoutApplicationsInput = {
@@ -77115,6 +77108,7 @@ export namespace Prisma {
     meetings?: MeetingUncheckedCreateNestedManyWithoutCandidateInput
     interviewNotes?: InterviewNoteUncheckedCreateNestedManyWithoutCandidateInput
     ratings?: CandidateRatingUncheckedCreateNestedManyWithoutCandidateInput
+    receivedEmails?: MessageUncheckedCreateNestedManyWithoutCandidateInput
   }
 
   export type CandidateCreateOrConnectWithoutApplicationsInput = {
@@ -77372,6 +77366,7 @@ export namespace Prisma {
     meetings?: MeetingUpdateManyWithoutCandidateNestedInput
     interviewNotes?: InterviewNoteUpdateManyWithoutCandidateNestedInput
     ratings?: CandidateRatingUpdateManyWithoutCandidateNestedInput
+    receivedEmails?: MessageUpdateManyWithoutCandidateNestedInput
   }
 
   export type CandidateUncheckedUpdateWithoutApplicationsInput = {
@@ -77396,6 +77391,7 @@ export namespace Prisma {
     meetings?: MeetingUncheckedUpdateManyWithoutCandidateNestedInput
     interviewNotes?: InterviewNoteUncheckedUpdateManyWithoutCandidateNestedInput
     ratings?: CandidateRatingUncheckedUpdateManyWithoutCandidateNestedInput
+    receivedEmails?: MessageUncheckedUpdateManyWithoutCandidateNestedInput
   }
 
   export type JobUpsertWithoutApplicationsInput = {
@@ -77632,6 +77628,7 @@ export namespace Prisma {
     meetings?: MeetingCreateNestedManyWithoutCandidateInput
     interviewNotes?: InterviewNoteCreateNestedManyWithoutCandidateInput
     ratings?: CandidateRatingCreateNestedManyWithoutCandidateInput
+    receivedEmails?: MessageCreateNestedManyWithoutCandidateInput
   }
 
   export type CandidateUncheckedCreateWithoutCandidateAnswersInput = {
@@ -77656,6 +77653,7 @@ export namespace Prisma {
     meetings?: MeetingUncheckedCreateNestedManyWithoutCandidateInput
     interviewNotes?: InterviewNoteUncheckedCreateNestedManyWithoutCandidateInput
     ratings?: CandidateRatingUncheckedCreateNestedManyWithoutCandidateInput
+    receivedEmails?: MessageUncheckedCreateNestedManyWithoutCandidateInput
   }
 
   export type CandidateCreateOrConnectWithoutCandidateAnswersInput = {
@@ -77772,6 +77770,7 @@ export namespace Prisma {
     meetings?: MeetingUpdateManyWithoutCandidateNestedInput
     interviewNotes?: InterviewNoteUpdateManyWithoutCandidateNestedInput
     ratings?: CandidateRatingUpdateManyWithoutCandidateNestedInput
+    receivedEmails?: MessageUpdateManyWithoutCandidateNestedInput
   }
 
   export type CandidateUncheckedUpdateWithoutCandidateAnswersInput = {
@@ -77796,6 +77795,7 @@ export namespace Prisma {
     meetings?: MeetingUncheckedUpdateManyWithoutCandidateNestedInput
     interviewNotes?: InterviewNoteUncheckedUpdateManyWithoutCandidateNestedInput
     ratings?: CandidateRatingUncheckedUpdateManyWithoutCandidateNestedInput
+    receivedEmails?: MessageUncheckedUpdateManyWithoutCandidateNestedInput
   }
 
   export type CustomQuestionUpsertWithoutCandidateAnswersInput = {
@@ -78549,8 +78549,7 @@ export namespace Prisma {
     companiesOwned?: CompanyCreateNestedManyWithoutOwnerInput
     companyMemberships?: CompanyMemberCreateNestedManyWithoutUserInput
     meetingAttendees?: MeetingAttendeeCreateNestedManyWithoutUserInput
-    sentMessages?: MessageCreateNestedManyWithoutSenderInput
-    receivedMessages?: MessageCreateNestedManyWithoutRecipientInput
+    sentCandidateEmails?: MessageCreateNestedManyWithoutSenderInput
     meetingsOwned?: MeetingCreateNestedManyWithoutOrganizerInput
     notifications?: NotificationCreateNestedManyWithoutUserInput
     profile?: UserProfileCreateNestedOneWithoutUserInput
@@ -78576,8 +78575,7 @@ export namespace Prisma {
     companiesOwned?: CompanyUncheckedCreateNestedManyWithoutOwnerInput
     companyMemberships?: CompanyMemberUncheckedCreateNestedManyWithoutUserInput
     meetingAttendees?: MeetingAttendeeUncheckedCreateNestedManyWithoutUserInput
-    sentMessages?: MessageUncheckedCreateNestedManyWithoutSenderInput
-    receivedMessages?: MessageUncheckedCreateNestedManyWithoutRecipientInput
+    sentCandidateEmails?: MessageUncheckedCreateNestedManyWithoutSenderInput
     meetingsOwned?: MeetingUncheckedCreateNestedManyWithoutOrganizerInput
     notifications?: NotificationUncheckedCreateNestedManyWithoutUserInput
     profile?: UserProfileUncheckedCreateNestedOneWithoutUserInput
@@ -78688,8 +78686,7 @@ export namespace Prisma {
     companiesOwned?: CompanyUpdateManyWithoutOwnerNestedInput
     companyMemberships?: CompanyMemberUpdateManyWithoutUserNestedInput
     meetingAttendees?: MeetingAttendeeUpdateManyWithoutUserNestedInput
-    sentMessages?: MessageUpdateManyWithoutSenderNestedInput
-    receivedMessages?: MessageUpdateManyWithoutRecipientNestedInput
+    sentCandidateEmails?: MessageUpdateManyWithoutSenderNestedInput
     meetingsOwned?: MeetingUpdateManyWithoutOrganizerNestedInput
     notifications?: NotificationUpdateManyWithoutUserNestedInput
     profile?: UserProfileUpdateOneWithoutUserNestedInput
@@ -78715,8 +78712,7 @@ export namespace Prisma {
     companiesOwned?: CompanyUncheckedUpdateManyWithoutOwnerNestedInput
     companyMemberships?: CompanyMemberUncheckedUpdateManyWithoutUserNestedInput
     meetingAttendees?: MeetingAttendeeUncheckedUpdateManyWithoutUserNestedInput
-    sentMessages?: MessageUncheckedUpdateManyWithoutSenderNestedInput
-    receivedMessages?: MessageUncheckedUpdateManyWithoutRecipientNestedInput
+    sentCandidateEmails?: MessageUncheckedUpdateManyWithoutSenderNestedInput
     meetingsOwned?: MeetingUncheckedUpdateManyWithoutOrganizerNestedInput
     notifications?: NotificationUncheckedUpdateManyWithoutUserNestedInput
     profile?: UserProfileUncheckedUpdateOneWithoutUserNestedInput
@@ -79115,6 +79111,7 @@ export namespace Prisma {
     activities?: ActivityCreateNestedManyWithoutCandidateInput
     meetings?: MeetingCreateNestedManyWithoutCandidateInput
     interviewNotes?: InterviewNoteCreateNestedManyWithoutCandidateInput
+    receivedEmails?: MessageCreateNestedManyWithoutCandidateInput
   }
 
   export type CandidateUncheckedCreateWithoutRatingsInput = {
@@ -79139,6 +79136,7 @@ export namespace Prisma {
     activities?: ActivityUncheckedCreateNestedManyWithoutCandidateInput
     meetings?: MeetingUncheckedCreateNestedManyWithoutCandidateInput
     interviewNotes?: InterviewNoteUncheckedCreateNestedManyWithoutCandidateInput
+    receivedEmails?: MessageUncheckedCreateNestedManyWithoutCandidateInput
   }
 
   export type CandidateCreateOrConnectWithoutRatingsInput = {
@@ -79163,8 +79161,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberCreateNestedManyWithoutUserInput
     jobHiringMembers?: JobHiringMemberCreateNestedManyWithoutUserInput
     meetingAttendees?: MeetingAttendeeCreateNestedManyWithoutUserInput
-    sentMessages?: MessageCreateNestedManyWithoutSenderInput
-    receivedMessages?: MessageCreateNestedManyWithoutRecipientInput
+    sentCandidateEmails?: MessageCreateNestedManyWithoutSenderInput
     meetingsOwned?: MeetingCreateNestedManyWithoutOrganizerInput
     notifications?: NotificationCreateNestedManyWithoutUserInput
     profile?: UserProfileCreateNestedOneWithoutUserInput
@@ -79190,8 +79187,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberUncheckedCreateNestedManyWithoutUserInput
     jobHiringMembers?: JobHiringMemberUncheckedCreateNestedManyWithoutUserInput
     meetingAttendees?: MeetingAttendeeUncheckedCreateNestedManyWithoutUserInput
-    sentMessages?: MessageUncheckedCreateNestedManyWithoutSenderInput
-    receivedMessages?: MessageUncheckedCreateNestedManyWithoutRecipientInput
+    sentCandidateEmails?: MessageUncheckedCreateNestedManyWithoutSenderInput
     meetingsOwned?: MeetingUncheckedCreateNestedManyWithoutOrganizerInput
     notifications?: NotificationUncheckedCreateNestedManyWithoutUserInput
     profile?: UserProfileUncheckedCreateNestedOneWithoutUserInput
@@ -79338,6 +79334,7 @@ export namespace Prisma {
     activities?: ActivityUpdateManyWithoutCandidateNestedInput
     meetings?: MeetingUpdateManyWithoutCandidateNestedInput
     interviewNotes?: InterviewNoteUpdateManyWithoutCandidateNestedInput
+    receivedEmails?: MessageUpdateManyWithoutCandidateNestedInput
   }
 
   export type CandidateUncheckedUpdateWithoutRatingsInput = {
@@ -79362,6 +79359,7 @@ export namespace Prisma {
     activities?: ActivityUncheckedUpdateManyWithoutCandidateNestedInput
     meetings?: MeetingUncheckedUpdateManyWithoutCandidateNestedInput
     interviewNotes?: InterviewNoteUncheckedUpdateManyWithoutCandidateNestedInput
+    receivedEmails?: MessageUncheckedUpdateManyWithoutCandidateNestedInput
   }
 
   export type UserUpsertWithoutRatingsInput = {
@@ -79392,8 +79390,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberUpdateManyWithoutUserNestedInput
     jobHiringMembers?: JobHiringMemberUpdateManyWithoutUserNestedInput
     meetingAttendees?: MeetingAttendeeUpdateManyWithoutUserNestedInput
-    sentMessages?: MessageUpdateManyWithoutSenderNestedInput
-    receivedMessages?: MessageUpdateManyWithoutRecipientNestedInput
+    sentCandidateEmails?: MessageUpdateManyWithoutSenderNestedInput
     meetingsOwned?: MeetingUpdateManyWithoutOrganizerNestedInput
     notifications?: NotificationUpdateManyWithoutUserNestedInput
     profile?: UserProfileUpdateOneWithoutUserNestedInput
@@ -79419,8 +79416,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberUncheckedUpdateManyWithoutUserNestedInput
     jobHiringMembers?: JobHiringMemberUncheckedUpdateManyWithoutUserNestedInput
     meetingAttendees?: MeetingAttendeeUncheckedUpdateManyWithoutUserNestedInput
-    sentMessages?: MessageUncheckedUpdateManyWithoutSenderNestedInput
-    receivedMessages?: MessageUncheckedUpdateManyWithoutRecipientNestedInput
+    sentCandidateEmails?: MessageUncheckedUpdateManyWithoutSenderNestedInput
     meetingsOwned?: MeetingUncheckedUpdateManyWithoutOrganizerNestedInput
     notifications?: NotificationUncheckedUpdateManyWithoutUserNestedInput
     profile?: UserProfileUncheckedUpdateOneWithoutUserNestedInput
@@ -79651,15 +79647,15 @@ export namespace Prisma {
     attachments?: JsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     readAt?: Date | string | null
-    sender: UserCreateNestedOneWithoutSentMessagesInput
-    recipient: UserCreateNestedOneWithoutReceivedMessagesInput
+    sender: UserCreateNestedOneWithoutSentCandidateEmailsInput
+    candidate: CandidateCreateNestedOneWithoutReceivedEmailsInput
     template?: MessageTemplateCreateNestedOneWithoutMessagesInput
   }
 
   export type MessageUncheckedCreateWithoutThreadInput = {
     id?: string
     senderId: string
-    recipientId: string
+    candidateId: string
     subject?: string | null
     content: string
     type?: $Enums.MessageType
@@ -79766,6 +79762,7 @@ export namespace Prisma {
     meetings?: MeetingCreateNestedManyWithoutCandidateInput
     interviewNotes?: InterviewNoteCreateNestedManyWithoutCandidateInput
     ratings?: CandidateRatingCreateNestedManyWithoutCandidateInput
+    receivedEmails?: MessageCreateNestedManyWithoutCandidateInput
   }
 
   export type CandidateUncheckedCreateWithoutCommentsInput = {
@@ -79790,6 +79787,7 @@ export namespace Prisma {
     meetings?: MeetingUncheckedCreateNestedManyWithoutCandidateInput
     interviewNotes?: InterviewNoteUncheckedCreateNestedManyWithoutCandidateInput
     ratings?: CandidateRatingUncheckedCreateNestedManyWithoutCandidateInput
+    receivedEmails?: MessageUncheckedCreateNestedManyWithoutCandidateInput
   }
 
   export type CandidateCreateOrConnectWithoutCommentsInput = {
@@ -79814,8 +79812,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberCreateNestedManyWithoutUserInput
     jobHiringMembers?: JobHiringMemberCreateNestedManyWithoutUserInput
     meetingAttendees?: MeetingAttendeeCreateNestedManyWithoutUserInput
-    sentMessages?: MessageCreateNestedManyWithoutSenderInput
-    receivedMessages?: MessageCreateNestedManyWithoutRecipientInput
+    sentCandidateEmails?: MessageCreateNestedManyWithoutSenderInput
     meetingsOwned?: MeetingCreateNestedManyWithoutOrganizerInput
     notifications?: NotificationCreateNestedManyWithoutUserInput
     profile?: UserProfileCreateNestedOneWithoutUserInput
@@ -79841,8 +79838,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberUncheckedCreateNestedManyWithoutUserInput
     jobHiringMembers?: JobHiringMemberUncheckedCreateNestedManyWithoutUserInput
     meetingAttendees?: MeetingAttendeeUncheckedCreateNestedManyWithoutUserInput
-    sentMessages?: MessageUncheckedCreateNestedManyWithoutSenderInput
-    receivedMessages?: MessageUncheckedCreateNestedManyWithoutRecipientInput
+    sentCandidateEmails?: MessageUncheckedCreateNestedManyWithoutSenderInput
     meetingsOwned?: MeetingUncheckedCreateNestedManyWithoutOrganizerInput
     notifications?: NotificationUncheckedCreateNestedManyWithoutUserInput
     profile?: UserProfileUncheckedCreateNestedOneWithoutUserInput
@@ -79889,6 +79885,7 @@ export namespace Prisma {
     meetings?: MeetingUpdateManyWithoutCandidateNestedInput
     interviewNotes?: InterviewNoteUpdateManyWithoutCandidateNestedInput
     ratings?: CandidateRatingUpdateManyWithoutCandidateNestedInput
+    receivedEmails?: MessageUpdateManyWithoutCandidateNestedInput
   }
 
   export type CandidateUncheckedUpdateWithoutCommentsInput = {
@@ -79913,6 +79910,7 @@ export namespace Prisma {
     meetings?: MeetingUncheckedUpdateManyWithoutCandidateNestedInput
     interviewNotes?: InterviewNoteUncheckedUpdateManyWithoutCandidateNestedInput
     ratings?: CandidateRatingUncheckedUpdateManyWithoutCandidateNestedInput
+    receivedEmails?: MessageUncheckedUpdateManyWithoutCandidateNestedInput
   }
 
   export type UserUpsertWithoutCommentsInput = {
@@ -79943,8 +79941,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberUpdateManyWithoutUserNestedInput
     jobHiringMembers?: JobHiringMemberUpdateManyWithoutUserNestedInput
     meetingAttendees?: MeetingAttendeeUpdateManyWithoutUserNestedInput
-    sentMessages?: MessageUpdateManyWithoutSenderNestedInput
-    receivedMessages?: MessageUpdateManyWithoutRecipientNestedInput
+    sentCandidateEmails?: MessageUpdateManyWithoutSenderNestedInput
     meetingsOwned?: MeetingUpdateManyWithoutOrganizerNestedInput
     notifications?: NotificationUpdateManyWithoutUserNestedInput
     profile?: UserProfileUpdateOneWithoutUserNestedInput
@@ -79970,8 +79967,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberUncheckedUpdateManyWithoutUserNestedInput
     jobHiringMembers?: JobHiringMemberUncheckedUpdateManyWithoutUserNestedInput
     meetingAttendees?: MeetingAttendeeUncheckedUpdateManyWithoutUserNestedInput
-    sentMessages?: MessageUncheckedUpdateManyWithoutSenderNestedInput
-    receivedMessages?: MessageUncheckedUpdateManyWithoutRecipientNestedInput
+    sentCandidateEmails?: MessageUncheckedUpdateManyWithoutSenderNestedInput
     meetingsOwned?: MeetingUncheckedUpdateManyWithoutOrganizerNestedInput
     notifications?: NotificationUncheckedUpdateManyWithoutUserNestedInput
     profile?: UserProfileUncheckedUpdateOneWithoutUserNestedInput
@@ -80002,6 +79998,7 @@ export namespace Prisma {
     meetings?: MeetingCreateNestedManyWithoutCandidateInput
     interviewNotes?: InterviewNoteCreateNestedManyWithoutCandidateInput
     ratings?: CandidateRatingCreateNestedManyWithoutCandidateInput
+    receivedEmails?: MessageCreateNestedManyWithoutCandidateInput
   }
 
   export type CandidateUncheckedCreateWithoutFilesInput = {
@@ -80026,6 +80023,7 @@ export namespace Prisma {
     meetings?: MeetingUncheckedCreateNestedManyWithoutCandidateInput
     interviewNotes?: InterviewNoteUncheckedCreateNestedManyWithoutCandidateInput
     ratings?: CandidateRatingUncheckedCreateNestedManyWithoutCandidateInput
+    receivedEmails?: MessageUncheckedCreateNestedManyWithoutCandidateInput
   }
 
   export type CandidateCreateOrConnectWithoutFilesInput = {
@@ -80050,8 +80048,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberCreateNestedManyWithoutUserInput
     jobHiringMembers?: JobHiringMemberCreateNestedManyWithoutUserInput
     meetingAttendees?: MeetingAttendeeCreateNestedManyWithoutUserInput
-    sentMessages?: MessageCreateNestedManyWithoutSenderInput
-    receivedMessages?: MessageCreateNestedManyWithoutRecipientInput
+    sentCandidateEmails?: MessageCreateNestedManyWithoutSenderInput
     meetingsOwned?: MeetingCreateNestedManyWithoutOrganizerInput
     notifications?: NotificationCreateNestedManyWithoutUserInput
     profile?: UserProfileCreateNestedOneWithoutUserInput
@@ -80077,8 +80074,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberUncheckedCreateNestedManyWithoutUserInput
     jobHiringMembers?: JobHiringMemberUncheckedCreateNestedManyWithoutUserInput
     meetingAttendees?: MeetingAttendeeUncheckedCreateNestedManyWithoutUserInput
-    sentMessages?: MessageUncheckedCreateNestedManyWithoutSenderInput
-    receivedMessages?: MessageUncheckedCreateNestedManyWithoutRecipientInput
+    sentCandidateEmails?: MessageUncheckedCreateNestedManyWithoutSenderInput
     meetingsOwned?: MeetingUncheckedCreateNestedManyWithoutOrganizerInput
     notifications?: NotificationUncheckedCreateNestedManyWithoutUserInput
     profile?: UserProfileUncheckedCreateNestedOneWithoutUserInput
@@ -80125,6 +80121,7 @@ export namespace Prisma {
     meetings?: MeetingUpdateManyWithoutCandidateNestedInput
     interviewNotes?: InterviewNoteUpdateManyWithoutCandidateNestedInput
     ratings?: CandidateRatingUpdateManyWithoutCandidateNestedInput
+    receivedEmails?: MessageUpdateManyWithoutCandidateNestedInput
   }
 
   export type CandidateUncheckedUpdateWithoutFilesInput = {
@@ -80149,6 +80146,7 @@ export namespace Prisma {
     meetings?: MeetingUncheckedUpdateManyWithoutCandidateNestedInput
     interviewNotes?: InterviewNoteUncheckedUpdateManyWithoutCandidateNestedInput
     ratings?: CandidateRatingUncheckedUpdateManyWithoutCandidateNestedInput
+    receivedEmails?: MessageUncheckedUpdateManyWithoutCandidateNestedInput
   }
 
   export type UserUpsertWithoutUploadedFilesInput = {
@@ -80179,8 +80177,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberUpdateManyWithoutUserNestedInput
     jobHiringMembers?: JobHiringMemberUpdateManyWithoutUserNestedInput
     meetingAttendees?: MeetingAttendeeUpdateManyWithoutUserNestedInput
-    sentMessages?: MessageUpdateManyWithoutSenderNestedInput
-    receivedMessages?: MessageUpdateManyWithoutRecipientNestedInput
+    sentCandidateEmails?: MessageUpdateManyWithoutSenderNestedInput
     meetingsOwned?: MeetingUpdateManyWithoutOrganizerNestedInput
     notifications?: NotificationUpdateManyWithoutUserNestedInput
     profile?: UserProfileUpdateOneWithoutUserNestedInput
@@ -80206,8 +80203,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberUncheckedUpdateManyWithoutUserNestedInput
     jobHiringMembers?: JobHiringMemberUncheckedUpdateManyWithoutUserNestedInput
     meetingAttendees?: MeetingAttendeeUncheckedUpdateManyWithoutUserNestedInput
-    sentMessages?: MessageUncheckedUpdateManyWithoutSenderNestedInput
-    receivedMessages?: MessageUncheckedUpdateManyWithoutRecipientNestedInput
+    sentCandidateEmails?: MessageUncheckedUpdateManyWithoutSenderNestedInput
     meetingsOwned?: MeetingUncheckedUpdateManyWithoutOrganizerNestedInput
     notifications?: NotificationUncheckedUpdateManyWithoutUserNestedInput
     profile?: UserProfileUncheckedUpdateOneWithoutUserNestedInput
@@ -80238,6 +80234,7 @@ export namespace Prisma {
     meetings?: MeetingCreateNestedManyWithoutCandidateInput
     interviewNotes?: InterviewNoteCreateNestedManyWithoutCandidateInput
     ratings?: CandidateRatingCreateNestedManyWithoutCandidateInput
+    receivedEmails?: MessageCreateNestedManyWithoutCandidateInput
   }
 
   export type CandidateUncheckedCreateWithoutActivitiesInput = {
@@ -80262,6 +80259,7 @@ export namespace Prisma {
     meetings?: MeetingUncheckedCreateNestedManyWithoutCandidateInput
     interviewNotes?: InterviewNoteUncheckedCreateNestedManyWithoutCandidateInput
     ratings?: CandidateRatingUncheckedCreateNestedManyWithoutCandidateInput
+    receivedEmails?: MessageUncheckedCreateNestedManyWithoutCandidateInput
   }
 
   export type CandidateCreateOrConnectWithoutActivitiesInput = {
@@ -80286,8 +80284,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberCreateNestedManyWithoutUserInput
     jobHiringMembers?: JobHiringMemberCreateNestedManyWithoutUserInput
     meetingAttendees?: MeetingAttendeeCreateNestedManyWithoutUserInput
-    sentMessages?: MessageCreateNestedManyWithoutSenderInput
-    receivedMessages?: MessageCreateNestedManyWithoutRecipientInput
+    sentCandidateEmails?: MessageCreateNestedManyWithoutSenderInput
     meetingsOwned?: MeetingCreateNestedManyWithoutOrganizerInput
     notifications?: NotificationCreateNestedManyWithoutUserInput
     profile?: UserProfileCreateNestedOneWithoutUserInput
@@ -80313,8 +80310,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberUncheckedCreateNestedManyWithoutUserInput
     jobHiringMembers?: JobHiringMemberUncheckedCreateNestedManyWithoutUserInput
     meetingAttendees?: MeetingAttendeeUncheckedCreateNestedManyWithoutUserInput
-    sentMessages?: MessageUncheckedCreateNestedManyWithoutSenderInput
-    receivedMessages?: MessageUncheckedCreateNestedManyWithoutRecipientInput
+    sentCandidateEmails?: MessageUncheckedCreateNestedManyWithoutSenderInput
     meetingsOwned?: MeetingUncheckedCreateNestedManyWithoutOrganizerInput
     notifications?: NotificationUncheckedCreateNestedManyWithoutUserInput
     profile?: UserProfileUncheckedCreateNestedOneWithoutUserInput
@@ -80361,6 +80357,7 @@ export namespace Prisma {
     meetings?: MeetingUpdateManyWithoutCandidateNestedInput
     interviewNotes?: InterviewNoteUpdateManyWithoutCandidateNestedInput
     ratings?: CandidateRatingUpdateManyWithoutCandidateNestedInput
+    receivedEmails?: MessageUpdateManyWithoutCandidateNestedInput
   }
 
   export type CandidateUncheckedUpdateWithoutActivitiesInput = {
@@ -80385,6 +80382,7 @@ export namespace Prisma {
     meetings?: MeetingUncheckedUpdateManyWithoutCandidateNestedInput
     interviewNotes?: InterviewNoteUncheckedUpdateManyWithoutCandidateNestedInput
     ratings?: CandidateRatingUncheckedUpdateManyWithoutCandidateNestedInput
+    receivedEmails?: MessageUncheckedUpdateManyWithoutCandidateNestedInput
   }
 
   export type UserUpsertWithoutPerformedActivitiesInput = {
@@ -80415,8 +80413,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberUpdateManyWithoutUserNestedInput
     jobHiringMembers?: JobHiringMemberUpdateManyWithoutUserNestedInput
     meetingAttendees?: MeetingAttendeeUpdateManyWithoutUserNestedInput
-    sentMessages?: MessageUpdateManyWithoutSenderNestedInput
-    receivedMessages?: MessageUpdateManyWithoutRecipientNestedInput
+    sentCandidateEmails?: MessageUpdateManyWithoutSenderNestedInput
     meetingsOwned?: MeetingUpdateManyWithoutOrganizerNestedInput
     notifications?: NotificationUpdateManyWithoutUserNestedInput
     profile?: UserProfileUpdateOneWithoutUserNestedInput
@@ -80442,8 +80439,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberUncheckedUpdateManyWithoutUserNestedInput
     jobHiringMembers?: JobHiringMemberUncheckedUpdateManyWithoutUserNestedInput
     meetingAttendees?: MeetingAttendeeUncheckedUpdateManyWithoutUserNestedInput
-    sentMessages?: MessageUncheckedUpdateManyWithoutSenderNestedInput
-    receivedMessages?: MessageUncheckedUpdateManyWithoutRecipientNestedInput
+    sentCandidateEmails?: MessageUncheckedUpdateManyWithoutSenderNestedInput
     meetingsOwned?: MeetingUncheckedUpdateManyWithoutOrganizerNestedInput
     notifications?: NotificationUncheckedUpdateManyWithoutUserNestedInput
     profile?: UserProfileUncheckedUpdateOneWithoutUserNestedInput
@@ -80452,7 +80448,7 @@ export namespace Prisma {
     ratings?: CandidateRatingUncheckedUpdateManyWithoutRaterNestedInput
   }
 
-  export type UserCreateWithoutSentMessagesInput = {
+  export type UserCreateWithoutSentCandidateEmailsInput = {
     id?: string
     email: string
     password: string
@@ -80469,7 +80465,6 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberCreateNestedManyWithoutUserInput
     jobHiringMembers?: JobHiringMemberCreateNestedManyWithoutUserInput
     meetingAttendees?: MeetingAttendeeCreateNestedManyWithoutUserInput
-    receivedMessages?: MessageCreateNestedManyWithoutRecipientInput
     meetingsOwned?: MeetingCreateNestedManyWithoutOrganizerInput
     notifications?: NotificationCreateNestedManyWithoutUserInput
     profile?: UserProfileCreateNestedOneWithoutUserInput
@@ -80479,7 +80474,7 @@ export namespace Prisma {
     ratings?: CandidateRatingCreateNestedManyWithoutRaterInput
   }
 
-  export type UserUncheckedCreateWithoutSentMessagesInput = {
+  export type UserUncheckedCreateWithoutSentCandidateEmailsInput = {
     id?: string
     email: string
     password: string
@@ -80496,7 +80491,6 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberUncheckedCreateNestedManyWithoutUserInput
     jobHiringMembers?: JobHiringMemberUncheckedCreateNestedManyWithoutUserInput
     meetingAttendees?: MeetingAttendeeUncheckedCreateNestedManyWithoutUserInput
-    receivedMessages?: MessageUncheckedCreateNestedManyWithoutRecipientInput
     meetingsOwned?: MeetingUncheckedCreateNestedManyWithoutOrganizerInput
     notifications?: NotificationUncheckedCreateNestedManyWithoutUserInput
     profile?: UserProfileUncheckedCreateNestedOneWithoutUserInput
@@ -80506,68 +80500,64 @@ export namespace Prisma {
     ratings?: CandidateRatingUncheckedCreateNestedManyWithoutRaterInput
   }
 
-  export type UserCreateOrConnectWithoutSentMessagesInput = {
+  export type UserCreateOrConnectWithoutSentCandidateEmailsInput = {
     where: UserWhereUniqueInput
-    create: XOR<UserCreateWithoutSentMessagesInput, UserUncheckedCreateWithoutSentMessagesInput>
+    create: XOR<UserCreateWithoutSentCandidateEmailsInput, UserUncheckedCreateWithoutSentCandidateEmailsInput>
   }
 
-  export type UserCreateWithoutReceivedMessagesInput = {
+  export type CandidateCreateWithoutReceivedEmailsInput = {
     id?: string
+    firstName: string
+    lastName: string
     email: string
-    password: string
-    firstName?: string | null
-    lastName?: string | null
-    jobTitle?: string | null
-    departmentName?: string | null
-    role?: $Enums.UserRole
+    phoneNumber?: string | null
+    resumeUrl?: string | null
+    score?: number | null
+    ai_screening_score?: number | null
+    ai_screening_summary?: string | null
+    ai_screening_pros?: string | null
+    ai_screening_cons?: string | null
+    coverLetterText?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
-    aiInteractionLogs?: AIInteractionLogCreateNestedManyWithoutUserInput
-    calendarIntegrations?: CalendarIntegrationCreateNestedOneWithoutUserInput
-    companiesOwned?: CompanyCreateNestedManyWithoutOwnerInput
-    companyMemberships?: CompanyMemberCreateNestedManyWithoutUserInput
-    jobHiringMembers?: JobHiringMemberCreateNestedManyWithoutUserInput
-    meetingAttendees?: MeetingAttendeeCreateNestedManyWithoutUserInput
-    sentMessages?: MessageCreateNestedManyWithoutSenderInput
-    meetingsOwned?: MeetingCreateNestedManyWithoutOrganizerInput
-    notifications?: NotificationCreateNestedManyWithoutUserInput
-    profile?: UserProfileCreateNestedOneWithoutUserInput
-    comments?: CommentCreateNestedManyWithoutAuthorInput
-    uploadedFiles?: CandidateFileCreateNestedManyWithoutUploaderInput
-    performedActivities?: ActivityCreateNestedManyWithoutPerformerInput
-    ratings?: CandidateRatingCreateNestedManyWithoutRaterInput
+    applications?: ApplicationCreateNestedManyWithoutCandidateInput
+    candidateAnswers?: CandidateAnswerCreateNestedManyWithoutCandidateInput
+    comments?: CommentCreateNestedManyWithoutCandidateInput
+    files?: CandidateFileCreateNestedManyWithoutCandidateInput
+    activities?: ActivityCreateNestedManyWithoutCandidateInput
+    meetings?: MeetingCreateNestedManyWithoutCandidateInput
+    interviewNotes?: InterviewNoteCreateNestedManyWithoutCandidateInput
+    ratings?: CandidateRatingCreateNestedManyWithoutCandidateInput
   }
 
-  export type UserUncheckedCreateWithoutReceivedMessagesInput = {
+  export type CandidateUncheckedCreateWithoutReceivedEmailsInput = {
     id?: string
+    firstName: string
+    lastName: string
     email: string
-    password: string
-    firstName?: string | null
-    lastName?: string | null
-    jobTitle?: string | null
-    departmentName?: string | null
-    role?: $Enums.UserRole
+    phoneNumber?: string | null
+    resumeUrl?: string | null
+    score?: number | null
+    ai_screening_score?: number | null
+    ai_screening_summary?: string | null
+    ai_screening_pros?: string | null
+    ai_screening_cons?: string | null
+    coverLetterText?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
-    aiInteractionLogs?: AIInteractionLogUncheckedCreateNestedManyWithoutUserInput
-    calendarIntegrations?: CalendarIntegrationUncheckedCreateNestedOneWithoutUserInput
-    companiesOwned?: CompanyUncheckedCreateNestedManyWithoutOwnerInput
-    companyMemberships?: CompanyMemberUncheckedCreateNestedManyWithoutUserInput
-    jobHiringMembers?: JobHiringMemberUncheckedCreateNestedManyWithoutUserInput
-    meetingAttendees?: MeetingAttendeeUncheckedCreateNestedManyWithoutUserInput
-    sentMessages?: MessageUncheckedCreateNestedManyWithoutSenderInput
-    meetingsOwned?: MeetingUncheckedCreateNestedManyWithoutOrganizerInput
-    notifications?: NotificationUncheckedCreateNestedManyWithoutUserInput
-    profile?: UserProfileUncheckedCreateNestedOneWithoutUserInput
-    comments?: CommentUncheckedCreateNestedManyWithoutAuthorInput
-    uploadedFiles?: CandidateFileUncheckedCreateNestedManyWithoutUploaderInput
-    performedActivities?: ActivityUncheckedCreateNestedManyWithoutPerformerInput
-    ratings?: CandidateRatingUncheckedCreateNestedManyWithoutRaterInput
+    applications?: ApplicationUncheckedCreateNestedManyWithoutCandidateInput
+    candidateAnswers?: CandidateAnswerUncheckedCreateNestedManyWithoutCandidateInput
+    comments?: CommentUncheckedCreateNestedManyWithoutCandidateInput
+    files?: CandidateFileUncheckedCreateNestedManyWithoutCandidateInput
+    activities?: ActivityUncheckedCreateNestedManyWithoutCandidateInput
+    meetings?: MeetingUncheckedCreateNestedManyWithoutCandidateInput
+    interviewNotes?: InterviewNoteUncheckedCreateNestedManyWithoutCandidateInput
+    ratings?: CandidateRatingUncheckedCreateNestedManyWithoutCandidateInput
   }
 
-  export type UserCreateOrConnectWithoutReceivedMessagesInput = {
-    where: UserWhereUniqueInput
-    create: XOR<UserCreateWithoutReceivedMessagesInput, UserUncheckedCreateWithoutReceivedMessagesInput>
+  export type CandidateCreateOrConnectWithoutReceivedEmailsInput = {
+    where: CandidateWhereUniqueInput
+    create: XOR<CandidateCreateWithoutReceivedEmailsInput, CandidateUncheckedCreateWithoutReceivedEmailsInput>
   }
 
   export type MessageThreadCreateWithoutMessagesInput = {
@@ -80618,18 +80608,18 @@ export namespace Prisma {
     create: XOR<MessageTemplateCreateWithoutMessagesInput, MessageTemplateUncheckedCreateWithoutMessagesInput>
   }
 
-  export type UserUpsertWithoutSentMessagesInput = {
-    update: XOR<UserUpdateWithoutSentMessagesInput, UserUncheckedUpdateWithoutSentMessagesInput>
-    create: XOR<UserCreateWithoutSentMessagesInput, UserUncheckedCreateWithoutSentMessagesInput>
+  export type UserUpsertWithoutSentCandidateEmailsInput = {
+    update: XOR<UserUpdateWithoutSentCandidateEmailsInput, UserUncheckedUpdateWithoutSentCandidateEmailsInput>
+    create: XOR<UserCreateWithoutSentCandidateEmailsInput, UserUncheckedCreateWithoutSentCandidateEmailsInput>
     where?: UserWhereInput
   }
 
-  export type UserUpdateToOneWithWhereWithoutSentMessagesInput = {
+  export type UserUpdateToOneWithWhereWithoutSentCandidateEmailsInput = {
     where?: UserWhereInput
-    data: XOR<UserUpdateWithoutSentMessagesInput, UserUncheckedUpdateWithoutSentMessagesInput>
+    data: XOR<UserUpdateWithoutSentCandidateEmailsInput, UserUncheckedUpdateWithoutSentCandidateEmailsInput>
   }
 
-  export type UserUpdateWithoutSentMessagesInput = {
+  export type UserUpdateWithoutSentCandidateEmailsInput = {
     id?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
@@ -80646,7 +80636,6 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberUpdateManyWithoutUserNestedInput
     jobHiringMembers?: JobHiringMemberUpdateManyWithoutUserNestedInput
     meetingAttendees?: MeetingAttendeeUpdateManyWithoutUserNestedInput
-    receivedMessages?: MessageUpdateManyWithoutRecipientNestedInput
     meetingsOwned?: MeetingUpdateManyWithoutOrganizerNestedInput
     notifications?: NotificationUpdateManyWithoutUserNestedInput
     profile?: UserProfileUpdateOneWithoutUserNestedInput
@@ -80656,7 +80645,7 @@ export namespace Prisma {
     ratings?: CandidateRatingUpdateManyWithoutRaterNestedInput
   }
 
-  export type UserUncheckedUpdateWithoutSentMessagesInput = {
+  export type UserUncheckedUpdateWithoutSentCandidateEmailsInput = {
     id?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
@@ -80673,7 +80662,6 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberUncheckedUpdateManyWithoutUserNestedInput
     jobHiringMembers?: JobHiringMemberUncheckedUpdateManyWithoutUserNestedInput
     meetingAttendees?: MeetingAttendeeUncheckedUpdateManyWithoutUserNestedInput
-    receivedMessages?: MessageUncheckedUpdateManyWithoutRecipientNestedInput
     meetingsOwned?: MeetingUncheckedUpdateManyWithoutOrganizerNestedInput
     notifications?: NotificationUncheckedUpdateManyWithoutUserNestedInput
     profile?: UserProfileUncheckedUpdateOneWithoutUserNestedInput
@@ -80683,69 +80671,65 @@ export namespace Prisma {
     ratings?: CandidateRatingUncheckedUpdateManyWithoutRaterNestedInput
   }
 
-  export type UserUpsertWithoutReceivedMessagesInput = {
-    update: XOR<UserUpdateWithoutReceivedMessagesInput, UserUncheckedUpdateWithoutReceivedMessagesInput>
-    create: XOR<UserCreateWithoutReceivedMessagesInput, UserUncheckedCreateWithoutReceivedMessagesInput>
-    where?: UserWhereInput
+  export type CandidateUpsertWithoutReceivedEmailsInput = {
+    update: XOR<CandidateUpdateWithoutReceivedEmailsInput, CandidateUncheckedUpdateWithoutReceivedEmailsInput>
+    create: XOR<CandidateCreateWithoutReceivedEmailsInput, CandidateUncheckedCreateWithoutReceivedEmailsInput>
+    where?: CandidateWhereInput
   }
 
-  export type UserUpdateToOneWithWhereWithoutReceivedMessagesInput = {
-    where?: UserWhereInput
-    data: XOR<UserUpdateWithoutReceivedMessagesInput, UserUncheckedUpdateWithoutReceivedMessagesInput>
+  export type CandidateUpdateToOneWithWhereWithoutReceivedEmailsInput = {
+    where?: CandidateWhereInput
+    data: XOR<CandidateUpdateWithoutReceivedEmailsInput, CandidateUncheckedUpdateWithoutReceivedEmailsInput>
   }
 
-  export type UserUpdateWithoutReceivedMessagesInput = {
+  export type CandidateUpdateWithoutReceivedEmailsInput = {
     id?: StringFieldUpdateOperationsInput | string
+    firstName?: StringFieldUpdateOperationsInput | string
+    lastName?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
-    password?: StringFieldUpdateOperationsInput | string
-    firstName?: NullableStringFieldUpdateOperationsInput | string | null
-    lastName?: NullableStringFieldUpdateOperationsInput | string | null
-    jobTitle?: NullableStringFieldUpdateOperationsInput | string | null
-    departmentName?: NullableStringFieldUpdateOperationsInput | string | null
-    role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    resumeUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_summary?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_pros?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_cons?: NullableStringFieldUpdateOperationsInput | string | null
+    coverLetterText?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    aiInteractionLogs?: AIInteractionLogUpdateManyWithoutUserNestedInput
-    calendarIntegrations?: CalendarIntegrationUpdateOneWithoutUserNestedInput
-    companiesOwned?: CompanyUpdateManyWithoutOwnerNestedInput
-    companyMemberships?: CompanyMemberUpdateManyWithoutUserNestedInput
-    jobHiringMembers?: JobHiringMemberUpdateManyWithoutUserNestedInput
-    meetingAttendees?: MeetingAttendeeUpdateManyWithoutUserNestedInput
-    sentMessages?: MessageUpdateManyWithoutSenderNestedInput
-    meetingsOwned?: MeetingUpdateManyWithoutOrganizerNestedInput
-    notifications?: NotificationUpdateManyWithoutUserNestedInput
-    profile?: UserProfileUpdateOneWithoutUserNestedInput
-    comments?: CommentUpdateManyWithoutAuthorNestedInput
-    uploadedFiles?: CandidateFileUpdateManyWithoutUploaderNestedInput
-    performedActivities?: ActivityUpdateManyWithoutPerformerNestedInput
-    ratings?: CandidateRatingUpdateManyWithoutRaterNestedInput
+    applications?: ApplicationUpdateManyWithoutCandidateNestedInput
+    candidateAnswers?: CandidateAnswerUpdateManyWithoutCandidateNestedInput
+    comments?: CommentUpdateManyWithoutCandidateNestedInput
+    files?: CandidateFileUpdateManyWithoutCandidateNestedInput
+    activities?: ActivityUpdateManyWithoutCandidateNestedInput
+    meetings?: MeetingUpdateManyWithoutCandidateNestedInput
+    interviewNotes?: InterviewNoteUpdateManyWithoutCandidateNestedInput
+    ratings?: CandidateRatingUpdateManyWithoutCandidateNestedInput
   }
 
-  export type UserUncheckedUpdateWithoutReceivedMessagesInput = {
+  export type CandidateUncheckedUpdateWithoutReceivedEmailsInput = {
     id?: StringFieldUpdateOperationsInput | string
+    firstName?: StringFieldUpdateOperationsInput | string
+    lastName?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
-    password?: StringFieldUpdateOperationsInput | string
-    firstName?: NullableStringFieldUpdateOperationsInput | string | null
-    lastName?: NullableStringFieldUpdateOperationsInput | string | null
-    jobTitle?: NullableStringFieldUpdateOperationsInput | string | null
-    departmentName?: NullableStringFieldUpdateOperationsInput | string | null
-    role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    resumeUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_score?: NullableIntFieldUpdateOperationsInput | number | null
+    ai_screening_summary?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_pros?: NullableStringFieldUpdateOperationsInput | string | null
+    ai_screening_cons?: NullableStringFieldUpdateOperationsInput | string | null
+    coverLetterText?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    aiInteractionLogs?: AIInteractionLogUncheckedUpdateManyWithoutUserNestedInput
-    calendarIntegrations?: CalendarIntegrationUncheckedUpdateOneWithoutUserNestedInput
-    companiesOwned?: CompanyUncheckedUpdateManyWithoutOwnerNestedInput
-    companyMemberships?: CompanyMemberUncheckedUpdateManyWithoutUserNestedInput
-    jobHiringMembers?: JobHiringMemberUncheckedUpdateManyWithoutUserNestedInput
-    meetingAttendees?: MeetingAttendeeUncheckedUpdateManyWithoutUserNestedInput
-    sentMessages?: MessageUncheckedUpdateManyWithoutSenderNestedInput
-    meetingsOwned?: MeetingUncheckedUpdateManyWithoutOrganizerNestedInput
-    notifications?: NotificationUncheckedUpdateManyWithoutUserNestedInput
-    profile?: UserProfileUncheckedUpdateOneWithoutUserNestedInput
-    comments?: CommentUncheckedUpdateManyWithoutAuthorNestedInput
-    uploadedFiles?: CandidateFileUncheckedUpdateManyWithoutUploaderNestedInput
-    performedActivities?: ActivityUncheckedUpdateManyWithoutPerformerNestedInput
-    ratings?: CandidateRatingUncheckedUpdateManyWithoutRaterNestedInput
+    applications?: ApplicationUncheckedUpdateManyWithoutCandidateNestedInput
+    candidateAnswers?: CandidateAnswerUncheckedUpdateManyWithoutCandidateNestedInput
+    comments?: CommentUncheckedUpdateManyWithoutCandidateNestedInput
+    files?: CandidateFileUncheckedUpdateManyWithoutCandidateNestedInput
+    activities?: ActivityUncheckedUpdateManyWithoutCandidateNestedInput
+    meetings?: MeetingUncheckedUpdateManyWithoutCandidateNestedInput
+    interviewNotes?: InterviewNoteUncheckedUpdateManyWithoutCandidateNestedInput
+    ratings?: CandidateRatingUncheckedUpdateManyWithoutCandidateNestedInput
   }
 
   export type MessageThreadUpsertWithoutMessagesInput = {
@@ -80825,8 +80809,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberCreateNestedManyWithoutUserInput
     jobHiringMembers?: JobHiringMemberCreateNestedManyWithoutUserInput
     meetingAttendees?: MeetingAttendeeCreateNestedManyWithoutUserInput
-    sentMessages?: MessageCreateNestedManyWithoutSenderInput
-    receivedMessages?: MessageCreateNestedManyWithoutRecipientInput
+    sentCandidateEmails?: MessageCreateNestedManyWithoutSenderInput
     notifications?: NotificationCreateNestedManyWithoutUserInput
     profile?: UserProfileCreateNestedOneWithoutUserInput
     comments?: CommentCreateNestedManyWithoutAuthorInput
@@ -80852,8 +80835,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberUncheckedCreateNestedManyWithoutUserInput
     jobHiringMembers?: JobHiringMemberUncheckedCreateNestedManyWithoutUserInput
     meetingAttendees?: MeetingAttendeeUncheckedCreateNestedManyWithoutUserInput
-    sentMessages?: MessageUncheckedCreateNestedManyWithoutSenderInput
-    receivedMessages?: MessageUncheckedCreateNestedManyWithoutRecipientInput
+    sentCandidateEmails?: MessageUncheckedCreateNestedManyWithoutSenderInput
     notifications?: NotificationUncheckedCreateNestedManyWithoutUserInput
     profile?: UserProfileUncheckedCreateNestedOneWithoutUserInput
     comments?: CommentUncheckedCreateNestedManyWithoutAuthorInput
@@ -80889,6 +80871,7 @@ export namespace Prisma {
     activities?: ActivityCreateNestedManyWithoutCandidateInput
     interviewNotes?: InterviewNoteCreateNestedManyWithoutCandidateInput
     ratings?: CandidateRatingCreateNestedManyWithoutCandidateInput
+    receivedEmails?: MessageCreateNestedManyWithoutCandidateInput
   }
 
   export type CandidateUncheckedCreateWithoutMeetingsInput = {
@@ -80913,6 +80896,7 @@ export namespace Prisma {
     activities?: ActivityUncheckedCreateNestedManyWithoutCandidateInput
     interviewNotes?: InterviewNoteUncheckedCreateNestedManyWithoutCandidateInput
     ratings?: CandidateRatingUncheckedCreateNestedManyWithoutCandidateInput
+    receivedEmails?: MessageUncheckedCreateNestedManyWithoutCandidateInput
   }
 
   export type CandidateCreateOrConnectWithoutMeetingsInput = {
@@ -81130,8 +81114,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberUpdateManyWithoutUserNestedInput
     jobHiringMembers?: JobHiringMemberUpdateManyWithoutUserNestedInput
     meetingAttendees?: MeetingAttendeeUpdateManyWithoutUserNestedInput
-    sentMessages?: MessageUpdateManyWithoutSenderNestedInput
-    receivedMessages?: MessageUpdateManyWithoutRecipientNestedInput
+    sentCandidateEmails?: MessageUpdateManyWithoutSenderNestedInput
     notifications?: NotificationUpdateManyWithoutUserNestedInput
     profile?: UserProfileUpdateOneWithoutUserNestedInput
     comments?: CommentUpdateManyWithoutAuthorNestedInput
@@ -81157,8 +81140,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberUncheckedUpdateManyWithoutUserNestedInput
     jobHiringMembers?: JobHiringMemberUncheckedUpdateManyWithoutUserNestedInput
     meetingAttendees?: MeetingAttendeeUncheckedUpdateManyWithoutUserNestedInput
-    sentMessages?: MessageUncheckedUpdateManyWithoutSenderNestedInput
-    receivedMessages?: MessageUncheckedUpdateManyWithoutRecipientNestedInput
+    sentCandidateEmails?: MessageUncheckedUpdateManyWithoutSenderNestedInput
     notifications?: NotificationUncheckedUpdateManyWithoutUserNestedInput
     profile?: UserProfileUncheckedUpdateOneWithoutUserNestedInput
     comments?: CommentUncheckedUpdateManyWithoutAuthorNestedInput
@@ -81200,6 +81182,7 @@ export namespace Prisma {
     activities?: ActivityUpdateManyWithoutCandidateNestedInput
     interviewNotes?: InterviewNoteUpdateManyWithoutCandidateNestedInput
     ratings?: CandidateRatingUpdateManyWithoutCandidateNestedInput
+    receivedEmails?: MessageUpdateManyWithoutCandidateNestedInput
   }
 
   export type CandidateUncheckedUpdateWithoutMeetingsInput = {
@@ -81224,6 +81207,7 @@ export namespace Prisma {
     activities?: ActivityUncheckedUpdateManyWithoutCandidateNestedInput
     interviewNotes?: InterviewNoteUncheckedUpdateManyWithoutCandidateNestedInput
     ratings?: CandidateRatingUncheckedUpdateManyWithoutCandidateNestedInput
+    receivedEmails?: MessageUncheckedUpdateManyWithoutCandidateNestedInput
   }
 
   export type JobUpsertWithoutMeetingsInput = {
@@ -81475,8 +81459,7 @@ export namespace Prisma {
     companiesOwned?: CompanyCreateNestedManyWithoutOwnerInput
     companyMemberships?: CompanyMemberCreateNestedManyWithoutUserInput
     jobHiringMembers?: JobHiringMemberCreateNestedManyWithoutUserInput
-    sentMessages?: MessageCreateNestedManyWithoutSenderInput
-    receivedMessages?: MessageCreateNestedManyWithoutRecipientInput
+    sentCandidateEmails?: MessageCreateNestedManyWithoutSenderInput
     meetingsOwned?: MeetingCreateNestedManyWithoutOrganizerInput
     notifications?: NotificationCreateNestedManyWithoutUserInput
     profile?: UserProfileCreateNestedOneWithoutUserInput
@@ -81502,8 +81485,7 @@ export namespace Prisma {
     companiesOwned?: CompanyUncheckedCreateNestedManyWithoutOwnerInput
     companyMemberships?: CompanyMemberUncheckedCreateNestedManyWithoutUserInput
     jobHiringMembers?: JobHiringMemberUncheckedCreateNestedManyWithoutUserInput
-    sentMessages?: MessageUncheckedCreateNestedManyWithoutSenderInput
-    receivedMessages?: MessageUncheckedCreateNestedManyWithoutRecipientInput
+    sentCandidateEmails?: MessageUncheckedCreateNestedManyWithoutSenderInput
     meetingsOwned?: MeetingUncheckedCreateNestedManyWithoutOrganizerInput
     notifications?: NotificationUncheckedCreateNestedManyWithoutUserInput
     profile?: UserProfileUncheckedCreateNestedOneWithoutUserInput
@@ -81592,8 +81574,7 @@ export namespace Prisma {
     companiesOwned?: CompanyUpdateManyWithoutOwnerNestedInput
     companyMemberships?: CompanyMemberUpdateManyWithoutUserNestedInput
     jobHiringMembers?: JobHiringMemberUpdateManyWithoutUserNestedInput
-    sentMessages?: MessageUpdateManyWithoutSenderNestedInput
-    receivedMessages?: MessageUpdateManyWithoutRecipientNestedInput
+    sentCandidateEmails?: MessageUpdateManyWithoutSenderNestedInput
     meetingsOwned?: MeetingUpdateManyWithoutOrganizerNestedInput
     notifications?: NotificationUpdateManyWithoutUserNestedInput
     profile?: UserProfileUpdateOneWithoutUserNestedInput
@@ -81619,8 +81600,7 @@ export namespace Prisma {
     companiesOwned?: CompanyUncheckedUpdateManyWithoutOwnerNestedInput
     companyMemberships?: CompanyMemberUncheckedUpdateManyWithoutUserNestedInput
     jobHiringMembers?: JobHiringMemberUncheckedUpdateManyWithoutUserNestedInput
-    sentMessages?: MessageUncheckedUpdateManyWithoutSenderNestedInput
-    receivedMessages?: MessageUncheckedUpdateManyWithoutRecipientNestedInput
+    sentCandidateEmails?: MessageUncheckedUpdateManyWithoutSenderNestedInput
     meetingsOwned?: MeetingUncheckedUpdateManyWithoutOrganizerNestedInput
     notifications?: NotificationUncheckedUpdateManyWithoutUserNestedInput
     profile?: UserProfileUncheckedUpdateOneWithoutUserNestedInput
@@ -81917,8 +81897,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberCreateNestedManyWithoutUserInput
     jobHiringMembers?: JobHiringMemberCreateNestedManyWithoutUserInput
     meetingAttendees?: MeetingAttendeeCreateNestedManyWithoutUserInput
-    sentMessages?: MessageCreateNestedManyWithoutSenderInput
-    receivedMessages?: MessageCreateNestedManyWithoutRecipientInput
+    sentCandidateEmails?: MessageCreateNestedManyWithoutSenderInput
     meetingsOwned?: MeetingCreateNestedManyWithoutOrganizerInput
     profile?: UserProfileCreateNestedOneWithoutUserInput
     comments?: CommentCreateNestedManyWithoutAuthorInput
@@ -81944,8 +81923,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberUncheckedCreateNestedManyWithoutUserInput
     jobHiringMembers?: JobHiringMemberUncheckedCreateNestedManyWithoutUserInput
     meetingAttendees?: MeetingAttendeeUncheckedCreateNestedManyWithoutUserInput
-    sentMessages?: MessageUncheckedCreateNestedManyWithoutSenderInput
-    receivedMessages?: MessageUncheckedCreateNestedManyWithoutRecipientInput
+    sentCandidateEmails?: MessageUncheckedCreateNestedManyWithoutSenderInput
     meetingsOwned?: MeetingUncheckedCreateNestedManyWithoutOrganizerInput
     profile?: UserProfileUncheckedCreateNestedOneWithoutUserInput
     comments?: CommentUncheckedCreateNestedManyWithoutAuthorInput
@@ -81987,8 +81965,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberUpdateManyWithoutUserNestedInput
     jobHiringMembers?: JobHiringMemberUpdateManyWithoutUserNestedInput
     meetingAttendees?: MeetingAttendeeUpdateManyWithoutUserNestedInput
-    sentMessages?: MessageUpdateManyWithoutSenderNestedInput
-    receivedMessages?: MessageUpdateManyWithoutRecipientNestedInput
+    sentCandidateEmails?: MessageUpdateManyWithoutSenderNestedInput
     meetingsOwned?: MeetingUpdateManyWithoutOrganizerNestedInput
     profile?: UserProfileUpdateOneWithoutUserNestedInput
     comments?: CommentUpdateManyWithoutAuthorNestedInput
@@ -82014,8 +81991,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberUncheckedUpdateManyWithoutUserNestedInput
     jobHiringMembers?: JobHiringMemberUncheckedUpdateManyWithoutUserNestedInput
     meetingAttendees?: MeetingAttendeeUncheckedUpdateManyWithoutUserNestedInput
-    sentMessages?: MessageUncheckedUpdateManyWithoutSenderNestedInput
-    receivedMessages?: MessageUncheckedUpdateManyWithoutRecipientNestedInput
+    sentCandidateEmails?: MessageUncheckedUpdateManyWithoutSenderNestedInput
     meetingsOwned?: MeetingUncheckedUpdateManyWithoutOrganizerNestedInput
     profile?: UserProfileUncheckedUpdateOneWithoutUserNestedInput
     comments?: CommentUncheckedUpdateManyWithoutAuthorNestedInput
@@ -82392,8 +82368,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberCreateNestedManyWithoutUserInput
     jobHiringMembers?: JobHiringMemberCreateNestedManyWithoutUserInput
     meetingAttendees?: MeetingAttendeeCreateNestedManyWithoutUserInput
-    sentMessages?: MessageCreateNestedManyWithoutSenderInput
-    receivedMessages?: MessageCreateNestedManyWithoutRecipientInput
+    sentCandidateEmails?: MessageCreateNestedManyWithoutSenderInput
     meetingsOwned?: MeetingCreateNestedManyWithoutOrganizerInput
     notifications?: NotificationCreateNestedManyWithoutUserInput
     profile?: UserProfileCreateNestedOneWithoutUserInput
@@ -82419,8 +82394,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberUncheckedCreateNestedManyWithoutUserInput
     jobHiringMembers?: JobHiringMemberUncheckedCreateNestedManyWithoutUserInput
     meetingAttendees?: MeetingAttendeeUncheckedCreateNestedManyWithoutUserInput
-    sentMessages?: MessageUncheckedCreateNestedManyWithoutSenderInput
-    receivedMessages?: MessageUncheckedCreateNestedManyWithoutRecipientInput
+    sentCandidateEmails?: MessageUncheckedCreateNestedManyWithoutSenderInput
     meetingsOwned?: MeetingUncheckedCreateNestedManyWithoutOrganizerInput
     notifications?: NotificationUncheckedCreateNestedManyWithoutUserInput
     profile?: UserProfileUncheckedCreateNestedOneWithoutUserInput
@@ -82462,8 +82436,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberUpdateManyWithoutUserNestedInput
     jobHiringMembers?: JobHiringMemberUpdateManyWithoutUserNestedInput
     meetingAttendees?: MeetingAttendeeUpdateManyWithoutUserNestedInput
-    sentMessages?: MessageUpdateManyWithoutSenderNestedInput
-    receivedMessages?: MessageUpdateManyWithoutRecipientNestedInput
+    sentCandidateEmails?: MessageUpdateManyWithoutSenderNestedInput
     meetingsOwned?: MeetingUpdateManyWithoutOrganizerNestedInput
     notifications?: NotificationUpdateManyWithoutUserNestedInput
     profile?: UserProfileUpdateOneWithoutUserNestedInput
@@ -82489,8 +82462,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberUncheckedUpdateManyWithoutUserNestedInput
     jobHiringMembers?: JobHiringMemberUncheckedUpdateManyWithoutUserNestedInput
     meetingAttendees?: MeetingAttendeeUncheckedUpdateManyWithoutUserNestedInput
-    sentMessages?: MessageUncheckedUpdateManyWithoutSenderNestedInput
-    receivedMessages?: MessageUncheckedUpdateManyWithoutRecipientNestedInput
+    sentCandidateEmails?: MessageUncheckedUpdateManyWithoutSenderNestedInput
     meetingsOwned?: MeetingUncheckedUpdateManyWithoutOrganizerNestedInput
     notifications?: NotificationUncheckedUpdateManyWithoutUserNestedInput
     profile?: UserProfileUncheckedUpdateOneWithoutUserNestedInput
@@ -82516,8 +82488,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberCreateNestedManyWithoutUserInput
     jobHiringMembers?: JobHiringMemberCreateNestedManyWithoutUserInput
     meetingAttendees?: MeetingAttendeeCreateNestedManyWithoutUserInput
-    sentMessages?: MessageCreateNestedManyWithoutSenderInput
-    receivedMessages?: MessageCreateNestedManyWithoutRecipientInput
+    sentCandidateEmails?: MessageCreateNestedManyWithoutSenderInput
     meetingsOwned?: MeetingCreateNestedManyWithoutOrganizerInput
     notifications?: NotificationCreateNestedManyWithoutUserInput
     profile?: UserProfileCreateNestedOneWithoutUserInput
@@ -82543,8 +82514,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberUncheckedCreateNestedManyWithoutUserInput
     jobHiringMembers?: JobHiringMemberUncheckedCreateNestedManyWithoutUserInput
     meetingAttendees?: MeetingAttendeeUncheckedCreateNestedManyWithoutUserInput
-    sentMessages?: MessageUncheckedCreateNestedManyWithoutSenderInput
-    receivedMessages?: MessageUncheckedCreateNestedManyWithoutRecipientInput
+    sentCandidateEmails?: MessageUncheckedCreateNestedManyWithoutSenderInput
     meetingsOwned?: MeetingUncheckedCreateNestedManyWithoutOrganizerInput
     notifications?: NotificationUncheckedCreateNestedManyWithoutUserInput
     profile?: UserProfileUncheckedCreateNestedOneWithoutUserInput
@@ -82586,8 +82556,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberUpdateManyWithoutUserNestedInput
     jobHiringMembers?: JobHiringMemberUpdateManyWithoutUserNestedInput
     meetingAttendees?: MeetingAttendeeUpdateManyWithoutUserNestedInput
-    sentMessages?: MessageUpdateManyWithoutSenderNestedInput
-    receivedMessages?: MessageUpdateManyWithoutRecipientNestedInput
+    sentCandidateEmails?: MessageUpdateManyWithoutSenderNestedInput
     meetingsOwned?: MeetingUpdateManyWithoutOrganizerNestedInput
     notifications?: NotificationUpdateManyWithoutUserNestedInput
     profile?: UserProfileUpdateOneWithoutUserNestedInput
@@ -82613,8 +82582,7 @@ export namespace Prisma {
     companyMemberships?: CompanyMemberUncheckedUpdateManyWithoutUserNestedInput
     jobHiringMembers?: JobHiringMemberUncheckedUpdateManyWithoutUserNestedInput
     meetingAttendees?: MeetingAttendeeUncheckedUpdateManyWithoutUserNestedInput
-    sentMessages?: MessageUncheckedUpdateManyWithoutSenderNestedInput
-    receivedMessages?: MessageUncheckedUpdateManyWithoutRecipientNestedInput
+    sentCandidateEmails?: MessageUncheckedUpdateManyWithoutSenderNestedInput
     meetingsOwned?: MeetingUncheckedUpdateManyWithoutOrganizerNestedInput
     notifications?: NotificationUncheckedUpdateManyWithoutUserNestedInput
     profile?: UserProfileUncheckedUpdateOneWithoutUserNestedInput
@@ -82787,15 +82755,15 @@ export namespace Prisma {
     attachments?: JsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     readAt?: Date | string | null
-    sender: UserCreateNestedOneWithoutSentMessagesInput
-    recipient: UserCreateNestedOneWithoutReceivedMessagesInput
+    sender: UserCreateNestedOneWithoutSentCandidateEmailsInput
+    candidate: CandidateCreateNestedOneWithoutReceivedEmailsInput
     thread?: MessageThreadCreateNestedOneWithoutMessagesInput
   }
 
   export type MessageUncheckedCreateWithoutTemplateInput = {
     id?: string
     senderId: string
-    recipientId: string
+    candidateId: string
     threadId?: string | null
     subject?: string | null
     content: string
@@ -83435,22 +83403,7 @@ export namespace Prisma {
 
   export type MessageCreateManySenderInput = {
     id?: string
-    recipientId: string
-    threadId?: string | null
-    subject?: string | null
-    content: string
-    type?: $Enums.MessageType
-    status?: $Enums.MessageStatus
-    scheduledFor?: Date | string | null
-    templateId?: string | null
-    attachments?: JsonNullValueInput | InputJsonValue
-    createdAt?: Date | string
-    readAt?: Date | string | null
-  }
-
-  export type MessageCreateManyRecipientInput = {
-    id?: string
-    senderId: string
+    candidateId: string
     threadId?: string | null
     subject?: string | null
     content: string
@@ -83697,14 +83650,14 @@ export namespace Prisma {
     attachments?: JsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     readAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    recipient?: UserUpdateOneRequiredWithoutReceivedMessagesNestedInput
+    candidate?: CandidateUpdateOneRequiredWithoutReceivedEmailsNestedInput
     thread?: MessageThreadUpdateOneWithoutMessagesNestedInput
     template?: MessageTemplateUpdateOneWithoutMessagesNestedInput
   }
 
   export type MessageUncheckedUpdateWithoutSenderInput = {
     id?: StringFieldUpdateOperationsInput | string
-    recipientId?: StringFieldUpdateOperationsInput | string
+    candidateId?: StringFieldUpdateOperationsInput | string
     threadId?: NullableStringFieldUpdateOperationsInput | string | null
     subject?: NullableStringFieldUpdateOperationsInput | string | null
     content?: StringFieldUpdateOperationsInput | string
@@ -83719,52 +83672,7 @@ export namespace Prisma {
 
   export type MessageUncheckedUpdateManyWithoutSenderInput = {
     id?: StringFieldUpdateOperationsInput | string
-    recipientId?: StringFieldUpdateOperationsInput | string
-    threadId?: NullableStringFieldUpdateOperationsInput | string | null
-    subject?: NullableStringFieldUpdateOperationsInput | string | null
-    content?: StringFieldUpdateOperationsInput | string
-    type?: EnumMessageTypeFieldUpdateOperationsInput | $Enums.MessageType
-    status?: EnumMessageStatusFieldUpdateOperationsInput | $Enums.MessageStatus
-    scheduledFor?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    templateId?: NullableStringFieldUpdateOperationsInput | string | null
-    attachments?: JsonNullValueInput | InputJsonValue
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    readAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  }
-
-  export type MessageUpdateWithoutRecipientInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    subject?: NullableStringFieldUpdateOperationsInput | string | null
-    content?: StringFieldUpdateOperationsInput | string
-    type?: EnumMessageTypeFieldUpdateOperationsInput | $Enums.MessageType
-    status?: EnumMessageStatusFieldUpdateOperationsInput | $Enums.MessageStatus
-    scheduledFor?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    attachments?: JsonNullValueInput | InputJsonValue
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    readAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    sender?: UserUpdateOneRequiredWithoutSentMessagesNestedInput
-    thread?: MessageThreadUpdateOneWithoutMessagesNestedInput
-    template?: MessageTemplateUpdateOneWithoutMessagesNestedInput
-  }
-
-  export type MessageUncheckedUpdateWithoutRecipientInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    senderId?: StringFieldUpdateOperationsInput | string
-    threadId?: NullableStringFieldUpdateOperationsInput | string | null
-    subject?: NullableStringFieldUpdateOperationsInput | string | null
-    content?: StringFieldUpdateOperationsInput | string
-    type?: EnumMessageTypeFieldUpdateOperationsInput | $Enums.MessageType
-    status?: EnumMessageStatusFieldUpdateOperationsInput | $Enums.MessageStatus
-    scheduledFor?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    templateId?: NullableStringFieldUpdateOperationsInput | string | null
-    attachments?: JsonNullValueInput | InputJsonValue
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    readAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  }
-
-  export type MessageUncheckedUpdateManyWithoutRecipientInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    senderId?: StringFieldUpdateOperationsInput | string
+    candidateId?: StringFieldUpdateOperationsInput | string
     threadId?: NullableStringFieldUpdateOperationsInput | string | null
     subject?: NullableStringFieldUpdateOperationsInput | string | null
     content?: StringFieldUpdateOperationsInput | string
@@ -85072,6 +84980,21 @@ export namespace Prisma {
     updatedAt?: Date | string
   }
 
+  export type MessageCreateManyCandidateInput = {
+    id?: string
+    senderId: string
+    threadId?: string | null
+    subject?: string | null
+    content: string
+    type?: $Enums.MessageType
+    status?: $Enums.MessageStatus
+    scheduledFor?: Date | string | null
+    templateId?: string | null
+    attachments?: JsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    readAt?: Date | string | null
+  }
+
   export type ApplicationUpdateWithoutCandidateInput = {
     id?: StringFieldUpdateOperationsInput | string
     appliedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -85351,6 +85274,51 @@ export namespace Prisma {
     submittedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type MessageUpdateWithoutCandidateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    subject?: NullableStringFieldUpdateOperationsInput | string | null
+    content?: StringFieldUpdateOperationsInput | string
+    type?: EnumMessageTypeFieldUpdateOperationsInput | $Enums.MessageType
+    status?: EnumMessageStatusFieldUpdateOperationsInput | $Enums.MessageStatus
+    scheduledFor?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    attachments?: JsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    readAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    sender?: UserUpdateOneRequiredWithoutSentCandidateEmailsNestedInput
+    thread?: MessageThreadUpdateOneWithoutMessagesNestedInput
+    template?: MessageTemplateUpdateOneWithoutMessagesNestedInput
+  }
+
+  export type MessageUncheckedUpdateWithoutCandidateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    senderId?: StringFieldUpdateOperationsInput | string
+    threadId?: NullableStringFieldUpdateOperationsInput | string | null
+    subject?: NullableStringFieldUpdateOperationsInput | string | null
+    content?: StringFieldUpdateOperationsInput | string
+    type?: EnumMessageTypeFieldUpdateOperationsInput | $Enums.MessageType
+    status?: EnumMessageStatusFieldUpdateOperationsInput | $Enums.MessageStatus
+    scheduledFor?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    templateId?: NullableStringFieldUpdateOperationsInput | string | null
+    attachments?: JsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    readAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type MessageUncheckedUpdateManyWithoutCandidateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    senderId?: StringFieldUpdateOperationsInput | string
+    threadId?: NullableStringFieldUpdateOperationsInput | string | null
+    subject?: NullableStringFieldUpdateOperationsInput | string | null
+    content?: StringFieldUpdateOperationsInput | string
+    type?: EnumMessageTypeFieldUpdateOperationsInput | $Enums.MessageType
+    status?: EnumMessageStatusFieldUpdateOperationsInput | $Enums.MessageStatus
+    scheduledFor?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    templateId?: NullableStringFieldUpdateOperationsInput | string | null
+    attachments?: JsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    readAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type CandidateAnswerCreateManyApplicationInput = {
@@ -85830,7 +85798,7 @@ export namespace Prisma {
   export type MessageCreateManyThreadInput = {
     id?: string
     senderId: string
-    recipientId: string
+    candidateId: string
     subject?: string | null
     content: string
     type?: $Enums.MessageType
@@ -85852,15 +85820,15 @@ export namespace Prisma {
     attachments?: JsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     readAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    sender?: UserUpdateOneRequiredWithoutSentMessagesNestedInput
-    recipient?: UserUpdateOneRequiredWithoutReceivedMessagesNestedInput
+    sender?: UserUpdateOneRequiredWithoutSentCandidateEmailsNestedInput
+    candidate?: CandidateUpdateOneRequiredWithoutReceivedEmailsNestedInput
     template?: MessageTemplateUpdateOneWithoutMessagesNestedInput
   }
 
   export type MessageUncheckedUpdateWithoutThreadInput = {
     id?: StringFieldUpdateOperationsInput | string
     senderId?: StringFieldUpdateOperationsInput | string
-    recipientId?: StringFieldUpdateOperationsInput | string
+    candidateId?: StringFieldUpdateOperationsInput | string
     subject?: NullableStringFieldUpdateOperationsInput | string | null
     content?: StringFieldUpdateOperationsInput | string
     type?: EnumMessageTypeFieldUpdateOperationsInput | $Enums.MessageType
@@ -85875,7 +85843,7 @@ export namespace Prisma {
   export type MessageUncheckedUpdateManyWithoutThreadInput = {
     id?: StringFieldUpdateOperationsInput | string
     senderId?: StringFieldUpdateOperationsInput | string
-    recipientId?: StringFieldUpdateOperationsInput | string
+    candidateId?: StringFieldUpdateOperationsInput | string
     subject?: NullableStringFieldUpdateOperationsInput | string | null
     content?: StringFieldUpdateOperationsInput | string
     type?: EnumMessageTypeFieldUpdateOperationsInput | $Enums.MessageType
@@ -85998,7 +85966,7 @@ export namespace Prisma {
   export type MessageCreateManyTemplateInput = {
     id?: string
     senderId: string
-    recipientId: string
+    candidateId: string
     threadId?: string | null
     subject?: string | null
     content: string
@@ -86020,15 +85988,15 @@ export namespace Prisma {
     attachments?: JsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     readAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    sender?: UserUpdateOneRequiredWithoutSentMessagesNestedInput
-    recipient?: UserUpdateOneRequiredWithoutReceivedMessagesNestedInput
+    sender?: UserUpdateOneRequiredWithoutSentCandidateEmailsNestedInput
+    candidate?: CandidateUpdateOneRequiredWithoutReceivedEmailsNestedInput
     thread?: MessageThreadUpdateOneWithoutMessagesNestedInput
   }
 
   export type MessageUncheckedUpdateWithoutTemplateInput = {
     id?: StringFieldUpdateOperationsInput | string
     senderId?: StringFieldUpdateOperationsInput | string
-    recipientId?: StringFieldUpdateOperationsInput | string
+    candidateId?: StringFieldUpdateOperationsInput | string
     threadId?: NullableStringFieldUpdateOperationsInput | string | null
     subject?: NullableStringFieldUpdateOperationsInput | string | null
     content?: StringFieldUpdateOperationsInput | string
@@ -86043,7 +86011,7 @@ export namespace Prisma {
   export type MessageUncheckedUpdateManyWithoutTemplateInput = {
     id?: StringFieldUpdateOperationsInput | string
     senderId?: StringFieldUpdateOperationsInput | string
-    recipientId?: StringFieldUpdateOperationsInput | string
+    candidateId?: StringFieldUpdateOperationsInput | string
     threadId?: NullableStringFieldUpdateOperationsInput | string | null
     subject?: NullableStringFieldUpdateOperationsInput | string | null
     content?: StringFieldUpdateOperationsInput | string

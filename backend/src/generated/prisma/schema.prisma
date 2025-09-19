@@ -26,11 +26,11 @@ model User {
   companyMemberships CompanyMember[]
   jobHiringMembers   JobHiringMember[]
   meetingAttendees   MeetingAttendee[] @relation("UserAttendances")
-  sentMessages       Message[]         @relation("SentMessages")
-  receivedMessages   Message[]         @relation("ReceivedMessages")
-  meetingsOwned      Meeting[]         @relation("MeetingOrganizer")
-  notifications      Notification[]
-  profile            UserProfile?
+
+  sentCandidateEmails Message[]      @relation("SentCandidateEmails")
+  meetingsOwned       Meeting[]      @relation("MeetingOrganizer")
+  notifications       Notification[]
+  profile             UserProfile?
 
   comments            Comment[]         @relation("UserComments")
   uploadedFiles       CandidateFile[]   @relation("UserUploads")
@@ -210,6 +210,8 @@ model Candidate {
   meetings             Meeting[]
   interviewNotes       InterviewNote[]
   ratings              CandidateRating[] @relation("CandidateRatings")
+
+  receivedEmails Message[] @relation("CandidateEmails")
 
   @@map("candidates")
 }
@@ -466,7 +468,7 @@ model Activity {
 model Message {
   id           String        @id @default(cuid())
   senderId     String
-  recipientId  String
+  candidateId  String
   threadId     String? // Si vous utilisez des threads
   subject      String?
   content      String        @db.Text
@@ -478,8 +480,8 @@ model Message {
   createdAt    DateTime      @default(now())
   readAt       DateTime?
 
-  sender    User             @relation("SentMessages", fields: [senderId], references: [id])
-  recipient User             @relation("ReceivedMessages", fields: [recipientId], references: [id])
+  sender    User             @relation("SentCandidateEmails", fields: [senderId], references: [id])
+  candidate Candidate        @relation("CandidateEmails", fields: [candidateId], references: [id], onDelete: Cascade)
   thread    MessageThread?   @relation("ThreadMessages", fields: [threadId], references: [id])
   template  MessageTemplate? @relation(fields: [templateId], references: [id])
 

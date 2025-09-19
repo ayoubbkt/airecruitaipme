@@ -409,7 +409,7 @@ exports.Prisma.ActivityScalarFieldEnum = {
 exports.Prisma.MessageScalarFieldEnum = {
   id: 'id',
   senderId: 'senderId',
-  recipientId: 'recipientId',
+  candidateId: 'candidateId',
   threadId: 'threadId',
   subject: 'subject',
   content: 'content',

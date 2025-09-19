@@ -26,8 +26,11 @@ import { useAuth } from '../../contexts/AuthContext'; // Import AuthContext
 import axios from 'axios';
 import { toast } from 'react-toastify';
  
+import WorkflowStageDropdown from '../../components/candidates/WorkflowStageDropdown';
+import BulkWorkflowStageDropdown from '../../components/candidates/BulkWorkflowStageDropdown';
 
-// Helper pour normaliser la réponse jobs (peut être un array direct ou { data, meta })
+
+
 const normalizeJobsResponse = (resp) => {
   if (Array.isArray(resp)) return resp;
   if (Array.isArray(resp?.data)) return resp.data;
@@ -422,11 +425,12 @@ const CandidateManagement = () => {
       // Charger toutes les données en parallèle
   const [candidatesData, jobsData, locationsData, departmentsData] = await Promise.all([
         cvService.getCandidates(companyId),
-        
+       
         jobService.getJobs(companyId),
         companyService.getCompanyLocations(companyId),
         companyService.getDepartments(companyId)
       ]);
+       console.log("candidatesData",candidatesData)
 
      
       const { data: list, pagination } =candidatesData; 
@@ -678,7 +682,7 @@ const sortedCandidates = [...filteredCandidates].sort((a, b) => {
     (currentPage - 1) * candidatesPerPage,
     currentPage * candidatesPerPage
   );
-
+  
   const totalPages = Math.ceil(filteredCandidates.length / candidatesPerPage);
 
 const timeSince = (date) => {
@@ -706,10 +710,14 @@ const timeSince = (date) => {
         stagesObj[jobId] = [];
       }
     }
+    
     setStagesByJob(stagesObj);
   }
   if (candidates.length > 0) fetchStages();
 }, [candidates]);
+
+
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
@@ -794,48 +802,14 @@ const timeSince = (date) => {
                 
                 <div className="flex items-center space-x-3">
                   {/* Dropdown Advance */}
-                  <div className="relative">
-                    <button 
-                      onClick={() => setShowAdvanceDropdown(showAdvanceDropdown ? null : 'bulk')}
-                      className="px-4 py-2 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-colors flex items-center space-x-2 shadow-md"
-                    >
-                      <ArrowRight className="w-4 h-4" />
-                      <span>Faire avancer</span>
-                      <ChevronDown className="w-4 h-4" />
-                    </button>
-                    
-                    {showAdvanceDropdown === 'bulk' && (
-                      <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 z-50">
-                        <div className="p-3">
-                          <p className="text-sm font-medium text-gray-700 mb-3">Déplacer vers:</p>
-                          <div className="space-y-2">
-                            {[
-                              { icon: '👥', label: 'Leads', value: 'leads' },
-                              { icon: '📋', label: 'Candidatures', value: 'applicants' },
-                              { icon: '👤', label: 'Sélection', value: 'shortlist' },
-                              { icon: '📞', label: 'Entretien téléphonique', value: 'screening' },
-                              { icon: '💼', label: 'Entretien', value: 'interview' },
-                              { icon: '👤', label: 'Examen final', value: 'final' },
-                              { icon: '💰', label: 'Offre', value: 'offer' },
-                              { icon: '✅', label: 'Embauché', value: 'hired' }
-                            ].map((stage) => (
-                              <button
-                                key={stage.value}
-                                onClick={() => {
-                                  handleBulkAdvance(stage.value);
-                                  setShowAdvanceDropdown(null);
-                                }}
-                                className="flex items-center space-x-3 w-full p-2 text-left hover:bg-gray-50 rounded-lg text-sm text-gray-700 transition-colors"
-                              >
-                                <span>{stage.icon}</span>
-                                <span>{stage.label}</span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  {/* Bulk Workflow Stage Dropdown */}
+ 
+<BulkWorkflowStageDropdown 
+  selectedCandidates={selectedCandidates}
+  companyId={companyId}
+  onStageUpdate={fetchData}
+/>
+ 
 
                   <button
                     onClick={handleBulkDisqualify}
@@ -1146,50 +1120,16 @@ const timeSince = (date) => {
                           </button>
 
                           {/* Dropdown Advance */}
-                         
- 
-<div className="relative">
-  <button
-    onClick={(e) => {
-      e.stopPropagation();
-      setShowAdvanceDropdown(showAdvanceDropdown === candidate.id ? null : candidate.id);
-    }}
-    className="px-4 py-2 bg-blue-600 flex items-center text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm relative"
-  >
-    Advance <ChevronDown className="w-4 h-4 ml-2" />
-  </button>
-  {showAdvanceDropdown === candidate.id && (
-    <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg z-20 border">
-      <div className="p-2 text-xs text-gray-500 border-b">Move to:</div>
-      <div className="p-2">
-        {(stagesByJob[candidate.applications?.[0]?.jobId] || []).map(stage => (
-          <button
-            key={stage.id}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleStageChange(candidate.id, stage.id); // ENVOIE L'ID !
-              setShowAdvanceDropdown(null);
-            }}
-            className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-          >
-            {/* Ajoute une icône selon le type de stage */}
-            {stage.name === 'Leads' && <Users className="w-4 h-4" />}
-            {stage.name === 'Applicants' && <FileText className="w-4 h-4" />}
-            {stage.name === 'Short List' && <Star className="w-4 h-4" />}
-            {stage.name === 'Screening Call' && <Phone className="w-4 h-4" />}
-            {stage.name === 'Interview' && <Calendar className="w-4 h-4" />}
-            {stage.name === 'Final review' && <Activity className="w-4 h-4" />}
-            {stage.name === 'Offer' && <Mail className="w-4 h-4" />}
-            {stage.name === 'Hired' && <Check className="w-4 h-4" />}
-            {stage.name === 'Disqualified' && <X className="w-4 h-4" />}
-            {stage.name === 'Archived' && <Archive className="w-4 h-4" />}
-            {stage.name}
-          </button>
-        ))}
-      </div>
-    </div>
-  )}
+                        
+ <div  onClick={(e) => e.stopPropagation()}>
+  <WorkflowStageDropdown 
+    candidate={candidate}
+    companyId={companyId}
+    onStageUpdate={() => fetchData()}
+  />
 </div>
+ 
+
 
  
                         </div>

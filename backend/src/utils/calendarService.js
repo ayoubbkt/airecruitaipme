@@ -341,20 +341,25 @@ export const createMeetingInvitation = async ({
   organizerEmail
 }) => {
   try {
+    // Définir une timezone par défaut si non définie dans la config
+    const defaultTimezone = 'Europe/Paris'; // ou toute autre timezone par défaut
+    
     // Préparer les données de l'événement
     const eventData = {
       summary: title,
-      description: `${description}\n\nOrganisé par: ${organizerEmail}`,
+      description: `${description || ''}\n\nOrganisé par: ${organizerEmail || 'L\'équipe recrutement'}`,
       start: {
         dateTime: startDateTime,
-        timeZone: config.app.timezone || 'UTC'
+        // Utiliser une timezone par défaut si config.app.timezone n'existe pas
+        timeZone: (config.app && config.app.timezone) ? config.app.timezone : defaultTimezone
       },
       end: {
         dateTime: endDateTime,
-        timeZone: config.app.timezone || 'UTC'
+        // Utiliser une timezone par défaut si config.app.timezone n'existe pas
+        timeZone: (config.app && config.app.timezone) ? config.app.timezone : defaultTimezone
       },
       attendees: attendeeEmails,
-      location
+      location: location || ''
     };
 
     // Ajouter Google Meet si demandé

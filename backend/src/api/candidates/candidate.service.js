@@ -4,6 +4,11 @@ import prisma from '../../config/db.js';
 import pkg from '../../generated/prisma/index.js';
 import fs from 'fs/promises';
 import path from 'path';
+import emailService from '../../utils/emailService.js';
+import { createMeetingInvitation, formatDateTime } from '../../utils/calendarService.js';
+import icalGenerator from '../../utils/icalGenerator.js';
+import config from '../../config/index.js';
+
 
 const { UserRole, CompanyMemberRole, CommentVisibility, ActivityType, MessageType, MessageStatus } = pkg;
 
@@ -31,8 +36,7 @@ class CandidateService {
     await checkCandidatePermission(userId, companyId);
 
     const { 
-      page = 1, 
-      limit = 10, 
+      page = 1,  
       stage, 
       jobId, 
       search,
@@ -41,8 +45,8 @@ class CandidateService {
     } = queryParams;
     // Coerce pagination to integers (req.query provides strings)
     const pageNum = parseInt(page, 10) || 1;
-    const limitNum = parseInt(limit, 10) || 10;
-    const skip = (pageNum - 1) * limitNum;
+    const limitNum = queryParams.limit ? parseInt(queryParams.limit, 10) : undefined;
+const skip = limitNum ? (pageNum - 1) * limitNum : undefined;
     const whereClause = {
       applications: {
         some: {
@@ -68,8 +72,8 @@ class CandidateService {
 
     const candidates = await prisma.candidate.findMany({
       where: whereClause,
-      skip,
-      take: limitNum,
+       ...(skip !== undefined ? { skip } : {}),
+  ...(limitNum !== undefined ? { take: limitNum } : {}),
       orderBy: { [sortBy]: sortOrder },
       include: {
         applications: {
@@ -232,193 +236,447 @@ class CandidateService {
     }));
   }
 
-  async moveCandidateToStage(userId, companyId, candidateId, stageId, comment = null) {
-    await checkCandidatePermission(userId, companyId);
+  // async moveCandidateToStage(userId, companyId, candidateId, stageId, comment = null) {
+  //   await checkCandidatePermission(userId, companyId);
 
-    const application = await prisma.application.findFirst({
-      where: {
-        candidateId,
-        job: { companyId },
-      },
-      include: {
-        candidate: true,
-        job: {
-          include: {
-            jobWorkflow: true,
-          },
-        },
-        currentStage: true,
-      },
-    });
+  //   const application = await prisma.application.findFirst({
+  //     where: {
+  //       candidateId,
+  //       job: { companyId },
+  //     },
+  //     include: {
+  //       candidate: true,
+  //       job: {
+  //         include: {
+  //           jobWorkflow: true,
+  //         },
+  //       },
+  //       currentStage: true,
+  //     },
+  //   });
 
-    if (!application) {
-      const error = new Error('Application not found.');
-      error.statusCode = 404;
-      throw error;
-    }
+  //   if (!application) {
+  //     const error = new Error('Application not found.');
+  //     error.statusCode = 404;
+  //     throw error;
+  //   }
 
-    // Check if job workflow exists, if not create one
-    let jobWorkflow = application.job.jobWorkflow;
+  //   // Check if job workflow exists, if not create one
+  //   let jobWorkflow = application.job.jobWorkflow;
     
-    if (!jobWorkflow) {
-      console.log('Creating job workflow for job:', application.job.id);
-      jobWorkflow = await prisma.jobWorkflow.create({
-        data: {
-          jobId: application.job.id,
-          name: `Workflow for ${application.job.title || 'Untitled Job'}`,
-        }
-      });
-    }
+  //   if (!jobWorkflow) {
+  //     console.log('Creating job workflow for job:', application.job.id);
+  //     jobWorkflow = await prisma.jobWorkflow.create({
+  //       data: {
+  //         jobId: application.job.id,
+  //         name: `Workflow for ${application.job.title || 'Untitled Job'}`,
+  //       }
+  //     });
+  //   }
     
-    console.log('moveCandidateToStage - stageId: ', stageId);
-    const isNumericOrder = typeof stageId === 'number' || (/^\d+$/.test(String(stageId)));
-    let newStage = null;
+  //   console.log('moveCandidateToStage - stageId: ', stageId);
+  //   const isNumericOrder = typeof stageId === 'number' || (/^\d+$/.test(String(stageId)));
+  //   let newStage = null;
 
-    if (isNumericOrder) {
-      // Legacy path: stageId represents an order index
-      newStage = await prisma.jobWorkflowStage.findFirst({
-        where: {
-          jobWorkflowId: jobWorkflow.id,
-          order: Number(stageId),
-        },
-      });
+  //   if (isNumericOrder) {
+  //     // Legacy path: stageId represents an order index
+  //     newStage = await prisma.jobWorkflowStage.findFirst({
+  //       where: {
+  //         jobWorkflowId: jobWorkflow.id,
+  //         order: Number(stageId),
+  //       },
+  //     });
 
-      // If stage doesn't exist, check if any stages exist or create default stages
-      if (!newStage) {
-        console.log('Stage (by order) not found, checking for existing stages');
+  //     // If stage doesn't exist, check if any stages exist or create default stages
+  //     if (!newStage) {
+  //       console.log('Stage (by order) not found, checking for existing stages');
 
-        const existingStages = await prisma.jobWorkflowStage.findMany({
-          where: { jobWorkflowId: jobWorkflow.id }
-        });
+  //       const existingStages = await prisma.jobWorkflowStage.findMany({
+  //         where: { jobWorkflowId: jobWorkflow.id }
+  //       });
 
-        if (existingStages.length === 0) {
-          console.log('No stages found, creating default stages');
-          const defaultStages = [
-            { name: 'Initial Review', type: 'AI_SCREENING', order: 0 },
-            { name: 'Phone Screen', type: 'INTERVIEW', order: 1 },
-            { name: 'Interview', type: 'INTERVIEW', order: 2 },
-            { name: 'Offer', type: 'OFFER', order: 3 },
-            { name: 'Hired', type: 'HIRED', order: 4 }
-          ];
-          for (const stage of defaultStages) {
-            try {
-              await prisma.jobWorkflowStage.create({
-                data: { jobWorkflowId: jobWorkflow.id, name: stage.name, type: stage.type, order: stage.order }
-              });
-            } catch (error) {
-              console.log(`Error creating stage with order ${stage.order}:`, error.message);
+  //       if (existingStages.length === 0) {
+  //         console.log('No stages found, creating default stages');
+  //         const defaultStages = [
+  //           { name: 'Initial Review', type: 'AI_SCREENING', order: 0 },
+  //           { name: 'Phone Screen', type: 'INTERVIEW', order: 1 },
+  //           { name: 'Interview', type: 'INTERVIEW', order: 2 },
+  //           { name: 'Offer', type: 'OFFER', order: 3 },
+  //           { name: 'Hired', type: 'HIRED', order: 4 }
+  //         ];
+  //         for (const stage of defaultStages) {
+  //           try {
+  //             await prisma.jobWorkflowStage.create({
+  //               data: { jobWorkflowId: jobWorkflow.id, name: stage.name, type: stage.type, order: stage.order }
+  //             });
+  //           } catch (error) {
+  //             console.log(`Error creating stage with order ${stage.order}:`, error.message);
+  //           }
+  //         }
+  //       } else {
+  //         console.log('Found existing stages, not creating defaults');
+  //         // Ensure any missing default orders exist (legacy safety)
+  //         const defaultStages = [
+  //           { name: 'Initial Review', type: 'AI_SCREENING', order: 0 },
+  //           { name: 'Phone Screen', type: 'INTERVIEW', order: 1 },
+  //           { name: 'Interview', type: 'INTERVIEW', order: 2 },
+  //           { name: 'Offer', type: 'OFFER', order: 3 },
+  //           { name: 'Hired', type: 'HIRED', order: 4 }
+  //         ];
+  //         const existingOrders = new Set(existingStages.map(s => s.order));
+  //         for (const stage of defaultStages) {
+  //           if (!existingOrders.has(stage.order)) {
+  //             try {
+  //               console.log(`Creating missing stage order=${stage.order} name=${stage.name}`);
+  //               await prisma.jobWorkflowStage.create({
+  //                 data: { jobWorkflowId: jobWorkflow.id, name: stage.name, type: stage.type, order: stage.order }
+  //               });
+  //             } catch (err) {
+  //               console.log(`Skipped creating missing stage order ${stage.order}:`, err.message);
+  //             }
+  //           }
+  //         }
+  //       }
+
+  //       // Try to find the requested stage again by order
+  //       newStage = await prisma.jobWorkflowStage.findFirst({
+  //         where: { jobWorkflowId: jobWorkflow.id, order: Number(stageId) },
+  //       });
+
+  //       // Final fallback: pick closest by order
+  //       if (!newStage) {
+  //         const allStages = await prisma.jobWorkflowStage.findMany({
+  //           where: { jobWorkflowId: jobWorkflow.id },
+  //           orderBy: { order: 'asc' },
+  //         });
+  //         if (allStages.length > 0) {
+  //           if (Number(stageId) >= allStages.length) newStage = allStages[allStages.length - 1];
+  //           else newStage = allStages[Math.min(Number(stageId), allStages.length - 1)];
+  //           console.log(`Using stage with order ${newStage.order} as fallback`);
+  //         }
+  //       }
+  //     }
+  //   } else {
+  //     // Preferred path: stageId is the actual stage row id (UUID/ID)
+  //     newStage = await prisma.jobWorkflowStage.findFirst({
+  //       where: {
+  //         id: String(stageId),
+  //         jobWorkflowId: jobWorkflow.id,
+  //       },
+  //     });
+
+  //     if (!newStage) {
+  //       const error = new Error('Stage not found for given stageId');
+  //       error.statusCode = 404;
+  //       throw error;
+  //     }
+  //   }
+    
+  //   if (!newStage) {
+  //     const error = new Error('No workflow stages found for this job.');
+  //     error.statusCode = 404;
+  //     throw error;
+  //   }
+
+  //   const result = await prisma.$transaction(async (tx) => {
+  //     // Mettre à jour l'application
+  //     const updatedApplication = await tx.application.update({
+  //       where: { id: application.id },
+  //       data: {
+  //         currentStageId: newStage.id,
+  //         updatedAt: new Date(),
+  //       },
+  //     });
+
+  //     // Créer une activité
+  //     await tx.activity.create({
+  //       data: {
+  //         candidateId,
+  //         type: 'STAGE_CHANGE',
+  //         description: `Moved from ${application.currentStage?.name || 'Unknown'} to ${newStage.name}`,
+  //         performedBy: userId,
+  //         metadata: {
+  //           fromStageId: application.currentStageId,
+  //           fromStageName: application.currentStage?.name,
+  //           toStageId: newStage.id,
+  //           toStageName: newStage.name,
+  //           comment,
+  //         },
+  //       },
+  //     });
+
+  //     // Ajouter un commentaire si fourni
+  //     if (comment) {
+  //       await tx.comment.create({
+  //         data: {
+  //           candidateId,
+  //           content: comment,
+  //           authorId: userId,
+  //           visibility: 'PUBLIC'
+  //         }
+  //       });
+  //     }
+
+  //     return updatedApplication;
+  //   });
+
+  //   return { message: 'Candidate moved successfully', data: result };
+  // }
+// Dans backend/src/api/candidates/candidate.service.js
+// Fonction moveCandidateToStage améliorée avec logs de débogage
+
+async moveCandidateToStage(userId, companyId, candidateId, stageId, comment = '') {
+  console.log(`Démarrage moveCandidateToStage: candidat=${candidateId}, étape=${stageId}`);
+  await checkCandidatePermission(userId, companyId);
+
+  // Trouver le candidat et vérifier qu'il existe et appartient à cette entreprise
+  const candidate = await prisma.candidate.findFirst({
+    where: {
+      id: candidateId,
+      applications: { some: { job: { companyId } } }
+    },
+    include: {
+      applications: {
+        take: 1,
+        include: {
+          job: {
+            select: { 
+              id: true, 
+              title: true, 
+              companyId: true
             }
-          }
-        } else {
-          console.log('Found existing stages, not creating defaults');
-          // Ensure any missing default orders exist (legacy safety)
-          const defaultStages = [
-            { name: 'Initial Review', type: 'AI_SCREENING', order: 0 },
-            { name: 'Phone Screen', type: 'INTERVIEW', order: 1 },
-            { name: 'Interview', type: 'INTERVIEW', order: 2 },
-            { name: 'Offer', type: 'OFFER', order: 3 },
-            { name: 'Hired', type: 'HIRED', order: 4 }
-          ];
-          const existingOrders = new Set(existingStages.map(s => s.order));
-          for (const stage of defaultStages) {
-            if (!existingOrders.has(stage.order)) {
-              try {
-                console.log(`Creating missing stage order=${stage.order} name=${stage.name}`);
-                await prisma.jobWorkflowStage.create({
-                  data: { jobWorkflowId: jobWorkflow.id, name: stage.name, type: stage.type, order: stage.order }
-                });
-              } catch (err) {
-                console.log(`Skipped creating missing stage order ${stage.order}:`, err.message);
-              }
-            }
-          }
-        }
-
-        // Try to find the requested stage again by order
-        newStage = await prisma.jobWorkflowStage.findFirst({
-          where: { jobWorkflowId: jobWorkflow.id, order: Number(stageId) },
-        });
-
-        // Final fallback: pick closest by order
-        if (!newStage) {
-          const allStages = await prisma.jobWorkflowStage.findMany({
-            where: { jobWorkflowId: jobWorkflow.id },
-            orderBy: { order: 'asc' },
-          });
-          if (allStages.length > 0) {
-            if (Number(stageId) >= allStages.length) newStage = allStages[allStages.length - 1];
-            else newStage = allStages[Math.min(Number(stageId), allStages.length - 1)];
-            console.log(`Using stage with order ${newStage.order} as fallback`);
-          }
-        }
-      }
-    } else {
-      // Preferred path: stageId is the actual stage row id (UUID/ID)
-      newStage = await prisma.jobWorkflowStage.findFirst({
-        where: {
-          id: String(stageId),
-          jobWorkflowId: jobWorkflow.id,
-        },
-      });
-
-      if (!newStage) {
-        const error = new Error('Stage not found for given stageId');
-        error.statusCode = 404;
-        throw error;
-      }
-    }
-    
-    if (!newStage) {
-      const error = new Error('No workflow stages found for this job.');
-      error.statusCode = 404;
-      throw error;
-    }
-
-    const result = await prisma.$transaction(async (tx) => {
-      // Mettre à jour l'application
-      const updatedApplication = await tx.application.update({
-        where: { id: application.id },
-        data: {
-          currentStageId: newStage.id,
-          updatedAt: new Date(),
-        },
-      });
-
-      // Créer une activité
-      await tx.activity.create({
-        data: {
-          candidateId,
-          type: 'STAGE_CHANGE',
-          description: `Moved from ${application.currentStage?.name || 'Unknown'} to ${newStage.name}`,
-          performedBy: userId,
-          metadata: {
-            fromStageId: application.currentStageId,
-            fromStageName: application.currentStage?.name,
-            toStageId: newStage.id,
-            toStageName: newStage.name,
-            comment,
           },
-        },
-      });
-
-      // Ajouter un commentaire si fourni
-      if (comment) {
-        await tx.comment.create({
-          data: {
-            candidateId,
-            content: comment,
-            authorId: userId,
-            visibility: 'PUBLIC'
-          }
-        });
+          currentStage: true
+        }
       }
+    }
+  });
 
-      return updatedApplication;
-    });
-
-    return { message: 'Candidate moved successfully', data: result };
+  if (!candidate) {
+    const error = new Error('Candidate not found or access denied.');
+    error.statusCode = 404;
+    throw error;
   }
 
+  console.log(`Candidat trouvé: ${candidate.firstName} ${candidate.lastName}, email: ${candidate.email}`);
+
+  // Vérifier que l'application existe
+  const application = candidate.applications[0];
+  if (!application) {
+    const error = new Error('No application found for this candidate.');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  // Obtenir les détails du Job
+  const jobId = application.job.id;
+  console.log(`Job ID: ${jobId}`);
+
+  // Récupérer le workflow et ses étapes
+  const jobWorkflow = await prisma.jobWorkflow.findUnique({
+    where: { jobId: jobId },
+    include: {
+      stages: true
+    }
+  });
+
+  if (!jobWorkflow) {
+    const error = new Error('No workflow found for this job.');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  console.log(`Workflow trouvé: ${jobWorkflow.id}, nombre d'étapes: ${jobWorkflow.stages.length}`);
+
+  // Vérifier que l'étape cible existe dans le workflow
+  let targetStage;
+  
+  // Si 'disqualified' ou 'archived' sont passés directement
+  if (stageId === 'disqualified' || stageId === 'DISQUALIFIED') {
+    targetStage = jobWorkflow.stages.find(s => 
+      s.type === 'DISQUALIFIED' || 
+      s.name.toLowerCase() === 'disqualified'
+    );
+  } else if (stageId === 'archived' || stageId === 'ARCHIVED') {
+    targetStage = jobWorkflow.stages.find(s => 
+      s.type === 'ARCHIVED' || 
+      s.name.toLowerCase() === 'archived'
+    );
+  } else {
+    // Chercher par ID
+    targetStage = jobWorkflow.stages.find(s => s.id === stageId);
+  }
+
+  if (!targetStage) {
+    const error = new Error(`Stage not found: ${stageId}`);
+    error.statusCode = 404;
+    throw error;
+  }
+
+  console.log(`Étape cible trouvée: ${targetStage.name}, type: ${targetStage.type}`);
+
+  // Obtenir l'étape actuelle pour logging et notifications
+  const currentStage = application.currentStage;
+  const currentStageName = currentStage?.name || 'Unknown';
+  const targetStageName = targetStage.name;
+
+  // Mettre à jour l'application avec la nouvelle étape
+  const updatedApplication = await prisma.application.update({
+    where: { id: application.id },
+    data: {
+      currentStageId: targetStage.id,
+      updatedAt: new Date()
+    }
+  });
+
+  console.log(`Application mise à jour: étape changée de ${currentStageName} à ${targetStageName}`);
+
+  // Créer une activité pour suivre le changement d'étape
+  await prisma.activity.create({
+    data: {
+      candidateId,
+      type: 'STAGE_CHANGE',
+      description: `Stage changed from ${currentStageName} to ${targetStageName}`,
+      performedBy: userId,
+      metadata: {
+        fromStage: currentStage?.id || null,
+        toStage: targetStage.id,
+        comment: comment || ''
+      }
+    }
+  });
+
+  // Ajouter un commentaire si fourni
+  if (comment) {
+    await prisma.comment.create({
+      data: {
+        candidateId,
+        content: comment,
+        authorId: userId,
+        visibility: 'PUBLIC'
+      }
+    });
+  }
+
+  // ====== FONCTIONNALITÉ : ENVOYER UNE INVITATION DE RÉUNION AUTOMATIQUE SI CONFIGURÉE ======
+  try {
+    console.log(`Vérification si réunion automatique pour l'étape: ${targetStage.id}`);
+    
+    // Vérifier directement les settings depuis targetStage
+    let stageSettings = targetStage.settings;
+    let meetingTemplateId = null;
+    
+    // Si settings n'est pas disponible directement, récupérer les paramètres de l'étape cible
+    if (!stageSettings || typeof stageSettings !== 'object') {
+      console.log("Settings non disponibles directement, récupération séparée...");
+      const targetStageDetail = await prisma.jobWorkflowStage.findUnique({
+        where: { id: targetStage.id },
+        select: { settings: true, type: true }
+      });
+      
+      if (targetStageDetail && targetStageDetail.settings) {
+        stageSettings = targetStageDetail.settings;
+        console.log(`Settings récupérés: ${JSON.stringify(stageSettings)}`);
+      }
+    }
+    
+    // Vérifier si settings est au format JSON string et le parser si nécessaire
+    if (typeof stageSettings === 'string') {
+      try {
+        stageSettings = JSON.parse(stageSettings);
+        console.log("Settings parsés depuis JSON string");
+      } catch (e) {
+        console.error("Erreur parsing JSON settings:", e);
+      }
+    }
+    
+    // Vérifier si l'étape a un template de réunion configuré
+    if (stageSettings && typeof stageSettings === 'object') {
+      meetingTemplateId = stageSettings.meetingTemplateId;
+      console.log(`Template de réunion trouvé: ${meetingTemplateId}`);
+    }
+    
+    // Vérifier si l'étape est de type INTERVIEW et a un template de réunion configuré
+    const isInterviewStage = targetStage.type === 'INTERVIEW' || 
+                             targetStage.type === 'PHONE_SCREEN' || 
+                             String(targetStage.type || '').toLowerCase().includes('interview');
+    
+    if (isInterviewStage && meetingTemplateId) {
+      console.log(`Étape ${targetStageName} est de type entretien et a un template de réunion: ${meetingTemplateId}`);
+      
+      // Récupérer le template de réunion
+      const meetingTemplate = await prisma.meetingTemplate.findUnique({
+        where: {
+          id: meetingTemplateId
+        }
+      });
+
+      if (meetingTemplate) {
+        console.log(`Template de réunion trouvé: ${meetingTemplate.name || meetingTemplate.title}`);
+        
+        // Récupérer les informations de l'organisateur (l'utilisateur actuel)
+        const organizer = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { id: true, email: true, firstName: true, lastName: true }
+        });
+
+        console.log(`Organisateur: ${organizer.firstName} ${organizer.lastName}`);
+
+        // Calculer les dates de début et de fin
+        const startTime = new Date();
+        startTime.setDate(startTime.getDate() + 2); // Par défaut à dans 2 jours
+        startTime.setHours(10, 0, 0, 0); // 10h00 du matin
+        
+        const endTime = new Date(startTime);
+        endTime.setMinutes(startTime.getMinutes() + (meetingTemplate.duration || 60)); // Durée du template ou 60 min par défaut
+
+        console.log(`Date/heure de réunion: ${startTime.toISOString()} - ${endTime.toISOString()}`);
+
+        // Préparer les participants (organisateur + candidat + participants configurés dans l'étape)
+        const attendees = [];
+        
+        // Ajouter les participants configurés dans l'étape si disponibles
+        if (stageSettings.attendees && Array.isArray(stageSettings.attendees)) {
+          console.log(`Ajout de ${stageSettings.attendees.length} participants configurés`);
+          attendees.push(...stageSettings.attendees);
+        }
+        
+        // Créer les données de réunion
+        const meetingData = {
+          title: meetingTemplate.title || `Entretien avec ${candidate.firstName} ${candidate.lastName}`,
+          description: meetingTemplate.description || '',
+          startTime: startTime.toISOString(),
+          endTime: endTime.toISOString(),
+          location: 'Google Meet', // Par défaut
+          isGoogleMeet: true,
+          attendees
+        };
+
+        console.log(`Planification de réunion avec données: ${JSON.stringify(meetingData)}`);
+
+        // Appeler scheduleMeeting pour créer la réunion
+        const meetingResult = await this.scheduleMeeting(userId, companyId, candidateId, meetingData);
+        console.log(`Réunion automatique planifiée avec succès: ${meetingResult?.id || 'ID non disponible'}`);
+      } else {
+        console.log(`Template de réunion ${meetingTemplateId} non trouvé`);
+      }
+    } else {
+      console.log(`Pas de réunion automatique: isInterviewStage=${isInterviewStage}, meetingTemplateId=${meetingTemplateId}`);
+    }
+  } catch (error) {
+    // Ne pas bloquer le processus si la planification de réunion échoue
+    console.error('Erreur lors de la planification automatique de réunion:', error);
+  }
+  // ====== FIN DE LA FONCTIONNALITÉ ======
+
+  return { 
+    success: true, 
+    message: `Candidate moved from ${currentStageName} to ${targetStageName}`,
+    candidate: { id: candidateId },
+    application: updatedApplication
+  };
+}
+  
   // Nouvelle fonction : Ajouter un commentaire
   async addComment(userId, companyId, candidateId, commentData) {
     await checkCandidatePermission(userId, companyId);
@@ -528,176 +786,396 @@ class CandidateService {
   }
 
   // Nouvelle fonction : Envoyer un email
-  async sendEmail(userId, companyId, candidateId, emailData) {
-    await checkCandidatePermission(userId, companyId);
+  // Dans backend/src/api/candidates/candidate.service.js
 
-    const { subject, content, templateId, scheduledFor } = emailData;
+async sendEmail(userId, companyId, candidateId, emailData) {
+  await checkCandidatePermission(userId, companyId);
 
-    const candidate = await prisma.candidate.findFirst({
-      where: {
-        id: candidateId,
-        applications: { some: { job: { companyId } } }
+  const { subject, content, templateId, scheduledFor } = emailData;
+
+  const candidate = await prisma.candidate.findFirst({
+    where: {
+      id: candidateId,
+      applications: { some: { job: { companyId } } }
+    }
+  });
+
+  if (!candidate) {
+    const error = new Error('Candidate not found or access denied.');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  // Vérifier si le template existe si un templateId est fourni
+  let template = null;
+  if (templateId) {
+    template = await prisma.messageTemplate.findUnique({
+      where: { id: templateId }
+    });
+    if (!template) {
+      // const error = new Error('Template not found.');
+      // error.statusCode = 404;
+      // throw error;
+      console.warn('Template not found for templateId:', templateId);
+    }
+  }
+
+  // Créer l'email et l'activité dans une transaction
+  const email = await prisma.$transaction(async (tx) => {
+    // 1. Créer l'email pour le candidat
+    const newEmail = await tx.message.create({
+      data: {
+        senderId: userId,
+        candidateId,
+        subject,
+        content,
+        type: 'EMAIL',
+        status: scheduledFor ? 'SCHEDULED' : 'SENT',
+        scheduledFor: scheduledFor ? new Date(scheduledFor) : null,
+        templateId
+      },
+      include: {
+        sender: { select: { id: true, firstName: true, lastName: true, email: true } }
       }
     });
 
-    if (!candidate) {
-      const error = new Error('Candidate not found or access denied.');
-      error.statusCode = 404;
-      throw error;
-    }
-
-    const email = await prisma.$transaction(async (tx) => {
-      const newMessage = await tx.message.create({
-        data: {
-          senderId: userId,
-          recipientId: candidateId, // Note: Ceci suppose que candidateId peut être utilisé comme recipientId
-          subject,
-          content,
-          type: 'EMAIL',
-          status: scheduledFor ? 'SCHEDULED' : 'SENT',
-          scheduledFor: scheduledFor ? new Date(scheduledFor) : null,
-          templateId
-        },
-        include: {
-          sender: { select: { id: true, firstName: true, lastName: true, email: true } }
+    // 2. Créer une activité
+    await tx.activity.create({
+      data: {
+        candidateId,
+        type: 'EMAIL_SENT',
+        description: `Email ${scheduledFor ? 'scheduled' : 'sent'}: ${subject}`,
+        performedBy: userId,
+        metadata: { 
+          emailId: newEmail.id, 
+          scheduled: !!scheduledFor,
+          subject
         }
-      });
-
-      // Créer une activité
-      await tx.activity.create({
-        data: {
-          candidateId,
-          type: 'EMAIL_SENT',
-          description: `Email ${scheduledFor ? 'scheduled' : 'sent'}: ${subject}`,
-          performedBy: userId,
-          metadata: { 
-            messageId: newMessage.id, 
-            scheduled: !!scheduledFor,
-            subject
-          }
-        }
-      });
-
-      return newMessage;
+      }
     });
 
-    return email;
+    return newEmail;
+  });
+
+  // Si l'email n'est pas programmé, l'envoyer immédiatement
+  if (!scheduledFor) {
+    try {
+      const sender = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { firstName: true, lastName: true, email: true }
+      });
+
+      const senderName = `${sender.firstName || ''} ${sender.lastName || ''}`.trim() || sender.email;
+
+      await emailService.sendEmail({
+        to: candidate.email,
+        subject,
+        html: content,
+        text: content.replace(/<[^>]*>/g, ''), // Version texte simple en enlevant les balises HTML
+        attachments: [],
+        from: `${senderName} <${config.email.user || 'noreply@recruitpme.com'}>`
+      });
+    } catch (emailError) {
+      console.error('Error sending email:', emailError);
+      // Ne pas échouer si l'envoi échoue, car l'email est déjà enregistré
+    }
   }
+
+  return email;
+}
 
   // Nouvelle fonction : Obtenir les emails
   async getEmails(userId, companyId, candidateId, queryParams = {}) {
-    await checkCandidatePermission(userId, companyId);
+  await checkCandidatePermission(userId, companyId);
 
-    const { page = 1, limit = 10 } = queryParams;
-    const skip = (page - 1) * limit;
+  const { page = 1, limit = 10 } = queryParams;
+  const skip = (page - 1) * limit;
 
-    const emails = await prisma.message.findMany({
-      where: {
-        recipientId: candidateId,
-        type: 'EMAIL'
-      },
-      skip,
-      take: limit,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        sender: { select: { id: true, firstName: true, lastName: true, email: true } },
-        template: { select: { id: true, name: true } }
-      }
-    });
+  // Vérifier que le candidat existe et est accessible
+  const candidate = await prisma.candidate.findFirst({
+    where: {
+      id: candidateId,
+      applications: { some: { job: { companyId } } }
+    }
+  });
 
-    const totalEmails = await prisma.message.count({
-      where: {
-        recipientId: candidateId,
-        type: 'EMAIL'
-      }
-    });
-
-    return {
-      data: emails,
-      pagination: {
-        currentPage: page,
-        totalPages: Math.ceil(totalEmails / limit),
-        totalCount: totalEmails
-      }
-    };
+  if (!candidate) {
+    const error = new Error('Candidate not found or access denied.');
+    error.statusCode = 404;
+    throw error;
   }
 
+  // Récupérer les emails
+  const emails = await prisma.message.findMany({
+    where: {
+      candidateId
+    },
+    skip,
+    take: limit,
+    orderBy: { createdAt: 'desc' },
+    include: {
+      sender: { select: { id: true, firstName: true, lastName: true, email: true } },
+      template: { select: { id: true, name: true } }
+    }
+  });
 
-  async scheduleMeeting(userId, companyId, candidateId, meetingData) {
-    await checkCandidatePermission(userId, companyId);
+  const totalEmails = await prisma.message.count({
+    where: {
+      candidateId
+    }
+  });
 
-    const { title, startTime, endTime, attendees = [], location, isGoogleMeet, description } = meetingData;
+  return {
+    data: emails,
+    pagination: {
+      currentPage: page,
+      totalPages: Math.ceil(totalEmails / limit),
+      totalCount: totalEmails
+    }
+  };
+}
 
-    const candidate = await prisma.candidate.findFirst({
-      where: {
-        id: candidateId,
-        applications: { some: { job: { companyId } } }
+
+  // Dans backend/src/api/candidates/candidate.service.js
+// Remplacez la fonction scheduleMeeting par celle-ci:
+
+async scheduleMeeting(userId, companyId, candidateId, meetingData) {
+  await checkCandidatePermission(userId, companyId);
+
+  const { title, startTime, endTime, attendees = [], location, isGoogleMeet, description } = meetingData;
+
+  const candidate = await prisma.candidate.findFirst({
+    where: {
+      id: candidateId,
+      applications: { some: { job: { companyId } } }
+    },
+    include: {
+      applications: {
+        take: 1,
+        include: {
+          job: { select: { id: true, companyId: true } }
+        }
+      }
+    }
+  });
+
+  if (!candidate) {
+    const error = new Error('Candidate not found or access denied.');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  // Récupérer les informations de l'organisateur
+  const organizer = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, email: true, firstName: true, lastName: true }
+  });
+
+  if (!organizer) {
+    const error = new Error('Organizer not found.');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  // Récupérer le jobId de la première application du candidat
+  const jobId = candidate.applications[0]?.job?.id;
+
+  const meeting = await prisma.$transaction(async (tx) => {
+    // 1. Créer la réunion
+    const newMeeting = await tx.meeting.create({
+      data: {
+        title,
+        description,
+        startTime: new Date(startTime),
+        endTime: new Date(endTime),
+        location: isGoogleMeet ? 'Google Meet' : location,
+        videoCallLink: isGoogleMeet ? `https://meet.google.com/${Math.random().toString(36).substring(2, 12)}` : null,
+        organizerId: userId,
+        candidateId,
+        jobId,
+        status: 'SCHEDULED'
       }
     });
 
-    if (!candidate) {
-      const error = new Error('Candidate not found or access denied.');
-      error.statusCode = 404;
-      throw error;
+    // 2. Ajouter l'organisateur comme participant
+    await tx.meetingAttendee.create({
+      data: {
+        meetingId: newMeeting.id,
+        userId: organizer.id,
+        email: organizer.email,
+        name: `${organizer.firstName} ${organizer.lastName}`.trim(),
+        status: 'ACCEPTED'
+      }
+    });
+
+    // 3. Ajouter le candidat comme participant (s'il n'est pas déjà dans la liste des participants)
+    if (candidate.email && !attendees.some(a => a.email?.toLowerCase() === candidate.email?.toLowerCase())) {
+      await tx.meetingAttendee.create({
+        data: {
+          meetingId: newMeeting.id,
+          email: candidate.email,
+          name: `${candidate.firstName} ${candidate.lastName}`.trim(),
+          isCandidate: true,
+          status: 'PENDING'
+        }
+      });
     }
 
-    const meeting = await prisma.$transaction(async (tx) => {
-      const newMeeting = await tx.meeting.create({
+    // 4. Ajouter les autres participants 
+    // Vérifier que chaque email est unique pour ce meeting
+    const uniqueAttendees = [];
+    const emailsAlreadyAdded = new Set([organizer.email?.toLowerCase()]);
+    
+    if (candidate.email) {
+      emailsAlreadyAdded.add(candidate.email.toLowerCase());
+    }
+
+    // Filtrer les participants pour éviter les doublons
+    for (const attendee of attendees) {
+      if (!attendee.email) continue;
+      
+      const email = attendee.email.toLowerCase();
+      if (!emailsAlreadyAdded.has(email)) {
+        uniqueAttendees.push(attendee);
+        emailsAlreadyAdded.add(email);
+      }
+    }
+    
+    // Ajouter chaque participant unique
+    for (const attendee of uniqueAttendees) {
+      await tx.meetingAttendee.create({
         data: {
-          title,
-          description,
-          startTime: new Date(startTime),
-          endTime: new Date(endTime),
-          location: isGoogleMeet ? 'Google Meet' : location,
-          videoCallLink: isGoogleMeet ? 'https://meet.google.com/new' : null,
-          organizerId: userId,
-          candidateId,
-          status: 'SCHEDULED',
-          attendees: {
-            create: [
-              {
-                email: candidate.email,
-                name: `${candidate.firstName} ${candidate.lastName}`,
-                isCandidate: true,
-                status: 'PENDING'
-              },
-              ...attendees.map(att => ({
-                email: att.email,
-                name: att.name,
-                userId: att.userId,
-                isCandidate: false,
-                status: 'PENDING'
-              }))
-            ]
-          }
-        },
-        include: {
-          attendees: true,
-          organizer: { select: { id: true, firstName: true, lastName: true, email: true } }
+          meetingId: newMeeting.id,
+          email: attendee.email,
+          name: attendee.name || attendee.email.split('@')[0],
+          userId: attendee.userId,
+          status: 'PENDING'
         }
       });
+    }
 
-      // Créer une activité
-      await tx.activity.create({
-        data: {
-          candidateId,
-          type: 'MEETING_SCHEDULED',
-          description: `Meeting scheduled: ${title}`,
-          performedBy: userId,
-          metadata: { 
-            meetingId: newMeeting.id, 
-            startTime, 
-            endTime,
-            attendeeCount: attendees.length + 1 // +1 pour le candidat
-          }
+    // 5. Créer une activité
+    await tx.activity.create({
+      data: {
+        candidateId,
+        type: 'MEETING_SCHEDULED',
+        description: `Meeting scheduled: ${title}`,
+        performedBy: userId,
+        metadata: { 
+          meetingId: newMeeting.id,
+          startTime,
+          endTime
         }
-      });
-
-      return newMeeting;
+      }
     });
 
-    return meeting;
+    // Récupérer la réunion avec ses participants
+    return await tx.meeting.findUnique({
+      where: { id: newMeeting.id },
+      include: {
+        organizer: { select: { id: true, firstName: true, lastName: true, email: true } },
+        attendees: true
+      }
+    });
+  });
+
+  // Essayer de créer une invitation calendrier (ne pas bloquer si ça échoue)
+  try {
+    // Collecter tous les emails des participants
+    const allAttendeeEmails = meeting.attendees
+      .filter(att => att.email) // S'assurer que l'email existe
+      .map(att => att.email);
+    
+    // Créer l'invitation (Google Calendar si configuré)
+    if (allAttendeeEmails.length > 0) {
+      await createMeetingInvitation({
+        title: title || 'Entretien',
+        description: description || '',
+        startDateTime: startTime,
+        endDateTime: endTime,
+        attendeeEmails: allAttendeeEmails,
+        location: meeting.location || '',
+        includeGoogleMeet: isGoogleMeet,
+        organizerEmail: organizer.email
+      }).catch(err => console.error('Failed to create calendar invitation:', err));
+    }
+  } catch (error) {
+    console.error('Error creating calendar invitation:', error);
+    // Ne pas bloquer le processus si l'invitation calendrier échoue
   }
+
+  // Envoyer un email au candidat si possible
+  if (candidate.email) {
+    try {
+      // Formater la date et l'heure pour l'affichage
+      let formattedDate = 'Date à confirmer';
+      let formattedTime = 'Heure à confirmer';
+      let durationMinutes = 30; // Valeur par défaut
+      
+      try {
+        const startDate = new Date(startTime);
+        const endDate = new Date(endTime);
+        
+        formattedDate = startDate.toLocaleDateString('fr-FR', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+        
+        formattedTime = startDate.toLocaleTimeString('fr-FR', {
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        
+        durationMinutes = Math.round((endDate - startDate) / 60000);
+      } catch (dateError) {
+        console.error('Error formatting date/time:', dateError);
+      }
+
+      // Construire le nom de l'organisateur
+      const organizerName = organizer.firstName && organizer.lastName
+        ? `${organizer.firstName} ${organizer.lastName}`.trim()
+        : organizer.email.split('@')[0];
+      
+      // Construire le nom du candidat
+      const candidateName = candidate.firstName && candidate.lastName
+        ? `${candidate.firstName} ${candidate.lastName}`.trim()
+        : candidate.email.split('@')[0];
+
+      // Version simplifiée de l'email sans pièce jointe ICS pour commencer
+      await emailService.sendEmail({
+        to: candidate.email,
+        subject: `Invitation: ${title || 'Entretien'}`,
+        html: `
+          <h2>Invitation à un entretien</h2>
+          <p>Bonjour ${candidateName},</p>
+          <p>Vous avez été invité(e) à un entretien par <strong>${organizerName}</strong>.</p>
+          
+          <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #4F46E5;">
+            <h3 style="margin-top: 0; color: #4F46E5;">${title || 'Entretien'}</h3>
+            <p><strong>Date:</strong> ${formattedDate}</p>
+            <p><strong>Heure:</strong> ${formattedTime}</p>
+            <p><strong>Durée:</strong> ${durationMinutes} minutes</p>
+            <p><strong>Lieu:</strong> ${meeting.location || 'À distance'}</p>
+            ${meeting.videoCallLink ? `<p><strong>Lien visioconférence:</strong> <a href="${meeting.videoCallLink}" style="color: #4F46E5;">${meeting.videoCallLink}</a></p>` : ''}
+          </div>
+          
+          ${description ? `<h4>Description:</h4><p>${description}</p>` : ''}
+          
+          <p>Veuillez confirmer votre présence en répondant à cet email.</p>
+          <p>Si vous avez des questions ou si vous souhaitez reporter cet entretien, n'hésitez pas à nous contacter.</p>
+          
+          <p>Cordialement,<br>${organizerName}</p>
+        `
+      }).catch(err => console.error('Failed to send invitation email:', err));
+    } catch (error) {
+      console.error('Error sending invitation email:', error);
+      // Ne pas bloquer le processus si l'envoi d'email échoue
+    }
+  }
+
+  return meeting;
+}
 
   // Nouvelle fonction : Télécharger un fichier
   async uploadFile(userId, companyId, candidateId, fileData) {
@@ -1185,6 +1663,8 @@ async findByJobAndStage(jobTitle, stageName) {
   });
   return candidates;
 }
+
+
  
 
 }

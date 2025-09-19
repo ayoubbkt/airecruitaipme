@@ -12,6 +12,13 @@ const config = {
   gemini: {
     apiKey: process.env.GEMINI_API_KEY,
   },
+  email: {
+    host: process.env.EMAIL_HOST,
+    port: process.env.EMAIL_PORT,
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+    provider: process.env.EMAIL_PROVIDER || 'smtp', // Ajouté
+  },
 
 };
 
